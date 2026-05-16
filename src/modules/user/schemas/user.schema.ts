@@ -30,7 +30,6 @@ export class User {
   @Prop({ type: Date })
   dateOfBirth: Date;
 
-  // Foreign Keys
   @Prop({ type: Number, required: true, default: GenderEnum.MALE })
   gender: GenderEnum; // 0: Female, 1: Male, 2: Other
 
@@ -41,19 +40,19 @@ export class User {
   status: AccountStatusEnum; // 'Active', 'Inactive', 'Banned'
 
   // Role-Specific Fields
-  @Prop()
-  licenseNumber: string; // For Jockey/Referee
+  // @Prop()
+  // licenseNumber: string; // For Jockey/Referee
 
-  @Prop({ default: 0 })
-  experienceYears: number;
+  // @Prop({ default: 0 })
+  // experienceYears: number;
 
-  @Prop()
-  weight: number; // For Jockey
+  // @Prop()
+  // weight: number; // For Jockey
 
-  @Prop()
-  stableName: string; // For Horse Owner
+  // @Prop()
+  // stableName: string; // For Horse Owner
 
-  @Prop({ default: 0 })
-  balance: number; // For Spectator (virtual rewards)
+  // @Prop({ default: 0 })
+  // balance: number; // For Spectator (virtual rewards)
 }
 export const UserSchema = SchemaFactory.createForClass(User);
