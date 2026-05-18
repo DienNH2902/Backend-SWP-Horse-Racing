@@ -53,7 +53,7 @@ jobs:
           # Dùng > để ghi đè file mới tinh, tránh dính rác từ lần chạy trước
           cat <<EOF > .env
           PORT=${{ vars.PORT }}
-          MONGO_URI=${{ secrets.MONGO_URI }}
+          MONGODB_URI=${{ secrets.MONGODB_URI }}
           JWT_SECRET=${{ secrets.JWT_SECRET }}
           EOF
 
