@@ -1,0 +1,69 @@
+name: Deploy Horse Racing API
+
+on:
+  push:
+    branches: ['main']
+
+jobs:
+  # --- JOB 1: CHẠY TRÊN MÁY CHỦ GITHUB (Offload Build) ---
+  build-and-cache:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4 # 👈 Đổi thành v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4 # 👈 Đổi thành v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies & Build
+        run: |
+          yarn install
+          yarn build
+
+      # Nén thư mục dist và các file cần thiết lại làm "Cache"
+      - name: Upload Artifact (Lưu Cache)
+        uses: actions/upload-artifact@v4 # 👈 Đổi thành v4
+        with:
+          name: horse-racing-build
+          path: |
+            dist/
+            package.json
+            yarn.lock
+            Dockerfile
+            docker-compose.yml
+
+  # --- JOB 2: CHẠY TRÊN CON VPS (Triển khai Docker) ---
+  deploy-to-pi:
+    needs: build-and-cache
+    runs-on: self-hosted
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v4 # 👈 Đổi thành v4
+        with:
+          name: horse-racing-build
+          path: ./api-server
+
+      - name: 🔐 Khởi tạo file .env cho HorseRacingBackend
+        run: |
+          cd ./api-server 
+          echo ">>> Đang tạo file .env bảo mật..."
+
+          # Dùng > để ghi đè file mới tinh, tránh dính rác từ lần chạy trước
+          cat <<EOF > .env
+          PORT=${{ vars.PORT }}
+          MONGO_URI=${{ secrets.MONGO_URI }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          EOF
+
+          echo ">>> Khởi tạo .env thành công."
+
+      # Xóa container cũ, build image mới và chạy container mới
+      - name: Deploy with Docker Compose
+        run: |
+          cd ./api-server
+          # Docker Compose sẽ tự làm hết: dừng, xóa, build, chạy
+          docker compose up -d --build
+          # Dọn dẹp image cũ để tiết kiệm dung lượng thẻ nhớ
+          docker image prune -f

@@ -7,6 +7,7 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { GenderEnum } from 'src/constants/genderEnum.enum';
 
 export class UpdateUserDto {
@@ -31,12 +32,21 @@ export class UpdateUserDto {
   address?: string;
 
   @ApiProperty({
-    example: '1995-01-01',
-    description: 'YYYY-MM-DD format',
+    example: '29/03/2003',
+    description: 'DD/MM/YYYY format',
     required: false,
   })
   @IsDate()
   @IsOptional()
+  @Transform(({ value }) => {
+    // Nếu value truyền lên là chuỗi dạng DD/MM/YYYY
+    if (typeof value === 'string' && value.includes('/')) {
+      const [day, month, year] = value.split('/');
+      // Chuyển thành định dạng YYYY-MM-DD để tạo Object Date chuẩn
+      return new Date(`${year}-${month}-${day}`);
+    }
+    return value;
+  })
   dateOfBirth?: Date;
 
   @ApiProperty({
