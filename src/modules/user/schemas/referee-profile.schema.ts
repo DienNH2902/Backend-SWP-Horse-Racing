@@ -13,7 +13,13 @@ export class RefereeProfile {
   experienceYears: number;
 
   @Prop()
-  certificationLevel: string; // Cấp bậc chứng chỉ quốc tế/quốc gia
+  certification: string; // Cấp bậc chứng chỉ quốc tế/quốc gia
+
+  @Prop({ type: Number, default: 0 })
+  reputationPoints: number; // Điểm uy tín/danh tiếng của trọng tài
+
+  @Prop({ type: Number, default: 0 })
+  racesAttempt: number; // Số lượng trận đua mà trọng tài này đã từng điều khiển/bắt chính
 }
 export const RefereeProfileSchema =
   SchemaFactory.createForClass(RefereeProfile);

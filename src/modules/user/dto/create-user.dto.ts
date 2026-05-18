@@ -4,14 +4,14 @@ import {
   IsEmail,
   IsEnum,
   IsNotEmpty,
-  IsNumber,
   IsOptional,
   IsString,
   MinLength,
 } from 'class-validator';
-import { AccountStatusEnum } from 'src/constants/accountStatusEnum.enum';
+import { Transform } from 'class-transformer';
+// import { AccountStatusEnum } from 'src/constants/accountStatusEnum.enum';
 import { GenderEnum } from 'src/constants/genderEnum.enum';
-import { RoleEnum } from 'src/constants/roleEnum.enum';
+// import { RoleEnum } from 'src/constants/roleEnum.enum';
 
 export class CreateUserDto {
   @ApiProperty({ example: 'Nguyen Van A' })
@@ -19,12 +19,12 @@ export class CreateUserDto {
   @IsNotEmpty()
   fullName: string;
 
-  @ApiProperty({ example: 'user@example.com' })
+  @ApiProperty({ example: 'usera@example.com' })
   @IsEmail()
   @IsNotEmpty()
   email: string;
 
-  @ApiProperty({ example: 'password123', minLength: 6 })
+  @ApiProperty({ example: '123456', minLength: 6 })
   @IsString()
   @MinLength(6)
   password: string;
@@ -39,13 +39,31 @@ export class CreateUserDto {
   @IsOptional()
   address?: string;
 
+  // @ApiProperty({
+  //   example: '1995-01-01',
+  //   description: 'YYYY-MM-DD format',
+  //   required: false,
+  // })
+  // @IsDate()
+  // @IsOptional()
+  // @Type(() => Date)
+  // dateOfBirth?: Date;
   @ApiProperty({
-    example: '1995-01-01',
-    description: 'YYYY-MM-DD format',
+    example: '29/03/2003',
+    description: 'DD/MM/YYYY format',
     required: false,
   })
-  @IsDate()
   @IsOptional()
+  @Transform(({ value }) => {
+    // Nếu value truyền lên là chuỗi dạng DD/MM/YYYY
+    if (typeof value === 'string' && value.includes('/')) {
+      const [day, month, year] = value.split('/');
+      // Chuyển thành định dạng YYYY-MM-DD để tạo Object Date chuẩn
+      return new Date(`${year}-${month}-${day}`);
+    }
+    return value;
+  })
+  @IsDate()
   dateOfBirth?: Date;
 
   @ApiProperty({
@@ -59,29 +77,31 @@ export class CreateUserDto {
 
   @ApiProperty({ enum: GenderEnum, example: GenderEnum.MALE })
   @IsEnum(GenderEnum)
+  @IsOptional()
   gender: GenderEnum;
 
-  @ApiProperty({ enum: RoleEnum, example: RoleEnum.SPECTATOR })
-  @IsEnum(RoleEnum)
-  role?: RoleEnum;
+  // @ApiProperty({ enum: RoleEnum, example: RoleEnum.SPECTATOR })
+  // @IsEnum(RoleEnum)
+  // @IsOptional()
+  // role?: RoleEnum;
 
-  @ApiProperty({ enum: AccountStatusEnum, example: AccountStatusEnum.ACTIVE })
-  @IsOptional()
-  @IsEnum(AccountStatusEnum)
-  status?: AccountStatusEnum;
+  // @ApiProperty({ enum: AccountStatusEnum, example: AccountStatusEnum.ACTIVE })
+  // @IsOptional()
+  // @IsEnum(AccountStatusEnum)
+  // status?: AccountStatusEnum;
 
-  @ApiProperty({ example: 'STB-001', required: false })
-  @IsOptional()
-  @IsString()
-  licenseNumber?: string;
+  // @ApiProperty({ example: 'STB-001', required: false })
+  // @IsOptional()
+  // @IsString()
+  // licenseNumber?: string;
 
-  @ApiProperty({ example: 'My Stable', required: false })
-  @IsOptional()
-  @IsString()
-  stableName?: string;
+  // @ApiProperty({ example: 'My Stable', required: false })
+  // @IsOptional()
+  // @IsString()
+  // stableName?: string;
 
-  @ApiProperty({ example: 'user@example.com' })
-  @IsOptional()
-  @IsNumber()
-  weight?: number;
+  // @ApiProperty({ example: 'user@example.com' })
+  // @IsOptional()
+  // @IsNumber()
+  // weight?: number;
 }
