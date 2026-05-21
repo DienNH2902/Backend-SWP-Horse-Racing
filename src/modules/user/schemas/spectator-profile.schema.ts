@@ -3,14 +3,10 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
 @Schema({ timestamps: true })
 export class SpectatorProfile {
+  _id: Types.ObjectId;
+
   @Prop({ type: Types.ObjectId, ref: 'User', required: true, unique: true })
   userId: Types.ObjectId; // Nối với User có role 'Spectator'
-
-  // @Prop({ required: true, default: 0 })
-  // balance: number; // Số dư xu ảo/điểm thưởng
-
-  // @Prop({ type: String, default: 'VND' })
-  // currency: string;
 
   @Prop({ type: Number, default: 0 })
   pointBalance: number; // Số dư điểm hiện tại để dùng đặt cược
@@ -24,5 +20,5 @@ export class SpectatorProfile {
   @Prop({ type: Number, default: 0 })
   totalBets: number; // Tổng số lượt đã tham gia đặt cược
 }
-export const SpectatorWalletSchema =
+export const SpectatorProfileSchema =
   SchemaFactory.createForClass(SpectatorProfile);

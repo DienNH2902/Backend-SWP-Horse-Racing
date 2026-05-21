@@ -20,7 +20,7 @@ export class UsersService {
     });
   }
 
-  async createUser(dto: CreateUserDto) {
+  async createUser(dto: CreateUserDto): Promise<ResponseUserDto> {
     const existing = await this.userRepository.findOneUser({
       email: dto.email,
     });
@@ -35,24 +35,24 @@ export class UsersService {
     return this.toResponse(user);
   }
 
-  async findAllUser() {
+  async findAllUser(): Promise<ResponseUserDto[]> {
     const users = await this.userRepository.findAllUser();
     return users.map((u) => this.toResponse(u));
   }
 
-  async findOneUser(id: string) {
+  async findOneUser(id: string): Promise<ResponseUserDto> {
     const user = await this.userRepository.findOneUser({ _id: id });
     if (!user) throw new NotFoundException('User not found');
     return this.toResponse(user);
   }
 
-  async updateUser(id: string, dto: UpdateUserDto) {
+  async updateUser(id: string, dto: UpdateUserDto): Promise<ResponseUserDto> {
     const updated = await this.userRepository.findUserByIdAndUpdate(id, dto);
     if (!updated) throw new NotFoundException('User not found');
     return this.toResponse(updated);
   }
 
-  async removeUser(id: string) {
+  async removeUser(id: string): Promise<any> {
     return this.userRepository.deleteUser(id);
   }
 }

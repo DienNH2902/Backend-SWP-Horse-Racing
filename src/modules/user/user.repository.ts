@@ -14,8 +14,14 @@ export class UsersRepository {
   async findAllUser(): Promise<User[]> {
     return await this.userModel
       .find()
-      .populate('gender role status')
-      .lean()
+      .populate({
+        path: 'jockeyProfile',
+        populate: { path: 'licenses' }, // Lồng thêm tầng này để kéo mảng chứng chỉ lên
+      })
+      .populate('spectatorProfile')
+      .populate('refereeProfile')
+      .populate('horseOwnerProfile')
+      .lean({ virtuals: true })
       .exec();
   }
 
@@ -23,7 +29,21 @@ export class UsersRepository {
     return await this.userModel
       .findOne(filter)
       .select('-password -__v')
-      .populate('gender role status')
+      .populate({
+        path: 'jockeyProfile',
+        populate: { path: 'licenses' }, // Lồng thêm tầng này để kéo mảng chứng chỉ lên
+      })
+      .populate({ path: 'spectatorProfile' })
+      .populate({ path: 'refereeProfile' })
+      .populate({ path: 'horseOwnerProfile' })
+      .lean({ virtuals: true })
+      .exec();
+  }
+
+  async findOneUserWithPassword(email: string): Promise<User | null> {
+    return await this.userModel
+      .findOne({ email })
+      .select('+password')
       .lean()
       .exec();
   }
@@ -34,7 +54,6 @@ export class UsersRepository {
   ): Promise<User | null> {
     return await this.userModel
       .findByIdAndUpdate(id, updateData, { returnDocument: 'after' })
-      .populate('gender role status')
       .lean()
       .exec();
   }
