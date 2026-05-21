@@ -70,13 +70,13 @@ export class UpdateUserDto {
   //   @IsMongoId()
   //   status: string;
 
-  @ApiProperty({ example: 'STB-001', required: false })
-  @IsOptional()
-  @IsString()
-  licenseNumber?: string;
+  // @ApiProperty({ example: 'STB-001', required: false })
+  // @IsOptional()
+  // @IsString()
+  // licenseNumber?: string;
 
-  @ApiProperty({ example: 'My Stable', required: false })
-  @IsOptional()
-  @IsString()
-  stableName?: string;
+  // @ApiProperty({ example: 'My Stable', required: false })
+  // @IsOptional()
+  // @IsString()
+  // stableName?: string;
 }

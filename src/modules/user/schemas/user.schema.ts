@@ -5,7 +5,11 @@ import { RoleEnum } from 'src/constants/roleEnum.enum';
 import { AccountStatusEnum } from 'src/constants/accountStatusEnum.enum';
 
 export type UserDocument = HydratedDocument<User>;
-@Schema({ timestamps: true })
+@Schema({
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true },
+})
 export class User {
   _id: Types.ObjectId;
 
@@ -38,21 +42,37 @@ export class User {
 
   @Prop({ type: String, required: true, default: AccountStatusEnum.ACTIVE })
   status: AccountStatusEnum; // 'Active', 'Inactive', 'Banned'
-
-  // Role-Specific Fields
-  // @Prop()
-  // licenseNumber: string; // For Jockey/Referee
-
-  // @Prop({ default: 0 })
-  // experienceYears: number;
-
-  // @Prop()
-  // weight: number; // For Jockey
-
-  // @Prop()
-  // stableName: string; // For Horse Owner
-
-  // @Prop({ default: 0 })
-  // balance: number; // For Spectator (virtual rewards)
 }
 export const UserSchema = SchemaFactory.createForClass(User);
+
+// Liên kết ảo với bảng SpectatorProfile
+UserSchema.virtual('spectatorProfile', {
+  ref: 'SpectatorProfile', // Tên Model của bảng phụ tương ứng
+  localField: '_id', // Trường định danh tại bảng User hiện tại
+  foreignField: 'userId', // Trường liên kết nằm ở bảng phụ
+  justOne: true, // Mối quan hệ 1-1 (chỉ lấy 1 bản ghi duy nhất)
+});
+
+// Liên kết ảo với bảng JockeyProfile
+UserSchema.virtual('jockeyProfile', {
+  ref: 'JockeyProfile',
+  localField: '_id',
+  foreignField: 'userId',
+  justOne: true,
+});
+
+// Liên kết ảo với bảng RefereeProfile
+UserSchema.virtual('refereeProfile', {
+  ref: 'RefereeProfile',
+  localField: '_id',
+  foreignField: 'userId',
+  justOne: true,
+});
+
+// Liên kết ảo với bảng HorseOwnerProfile
+UserSchema.virtual('horseOwnerProfile', {
+  ref: 'HorseOwnerProfile',
+  localField: '_id',
+  foreignField: 'userId',
+  justOne: true,
+});
