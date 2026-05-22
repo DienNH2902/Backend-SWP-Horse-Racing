@@ -10,6 +10,8 @@ import { CreateJockeyLicenseDto } from './dto/create-jockey-license.dto';
 import { Model, Types } from 'mongoose';
 import { JockeyProfile } from '../user/schemas/jockey-profile.schema';
 import { InjectModel } from '@nestjs/mongoose';
+import { UpdateJockeyLicenseDto } from './dto/update-jockey-license.dto';
+import { JockeyLicense } from './schemas/jockey-license.schema';
 
 @Injectable()
 export class JockeyLicenseService {
@@ -79,6 +81,22 @@ export class JockeyLicenseService {
     return this.toResponse(newLicense);
   }
 
+  async getMyLicenses(userId: string): Promise<ResponseJockeyLicenseDto[]> {
+    const jockeyProfile = await this.jockeyProfileModel.findOne({
+      userId: new Types.ObjectId(userId),
+    });
+
+    if (!jockeyProfile) {
+      throw new NotFoundException('Không tìm thấy thông tin hồ sơ nài ngựa');
+    }
+
+    const listLicenses = await this.licenseRepository.findByJockeyProfileId(
+      jockeyProfile._id.toString(),
+    );
+
+    return this.toResponse(listLicenses) as ResponseJockeyLicenseDto[];
+  }
+
   // Lấy danh sách thô từ repo
   async getLicensesByProfile(
     jockeyProfileId: string,
@@ -90,6 +108,53 @@ export class JockeyLicenseService {
     }
 
     return this.toResponse(listLicenses) as ResponseJockeyLicenseDto[];
+  }
+
+  async update(
+    id: string,
+    userId: string,
+    dto: UpdateJockeyLicenseDto,
+  ): Promise<ResponseJockeyLicenseDto> {
+    const jockeyProfile = await this.jockeyProfileModel.findOne({
+      userId: new Types.ObjectId(userId),
+    });
+
+    if (!jockeyProfile) {
+      throw new NotFoundException('Không tìm thấy thông tin hồ sơ nài ngựa');
+    }
+
+    // Xác thực chứng chỉ này thực sự thuộc về tài khoản đang yêu cầu sửa
+    const license = await this.licenseRepository.findOneByProfile(
+      id,
+      jockeyProfile._id,
+    );
+    if (!license) {
+      throw new NotFoundException(
+        'Không tìm thấy chứng chỉ hoặc bạn không có quyền chỉnh sửa',
+      );
+    }
+
+    const updateData: Partial<JockeyLicense> = {
+      licenseCode: dto.licenseCode,
+      licenseUrl: dto.licenseUrl,
+    };
+
+    // Nếu có cập nhật ngày, xử lý chuyển đổi và kiểm tra tính hợp lệ
+    if (dto.racingStartDate) {
+      const parsedDate = new Date(dto.racingStartDate);
+      if (isNaN(parsedDate.getTime())) {
+        throw new BadRequestException(
+          'Định dạng ngày racingStartDate không hợp lệ (YYYY-MM-DD)',
+        );
+      }
+      updateData.racingStartDate = parsedDate;
+    }
+
+    const updatedLicense = await this.licenseRepository.updateLicense(
+      id,
+      updateData,
+    );
+    return this.toResponse(updatedLicense);
   }
 
   // Xóa chứng chỉ
