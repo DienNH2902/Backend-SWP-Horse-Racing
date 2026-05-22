@@ -1,5 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsUrl, IsDateString } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsUrl,
+  IsDate,
+  IsOptional,
+} from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateJockeyLicenseDto {
   //   @ApiProperty({
@@ -28,10 +35,21 @@ export class CreateJockeyLicenseDto {
   licenseUrl: string;
 
   @ApiProperty({
-    example: '2026-05-21',
-    description: 'Ngày bắt đầu có hiệu lực thi đấu (Định dạng YYYY-MM-DD)',
+    example: '10/05/2015',
+    description: 'DD/MM/YYYY format',
+    required: true,
   })
-  @IsDateString()
+  @IsOptional()
+  @Transform(({ value }) => {
+    // Nếu value truyền lên là chuỗi dạng DD/MM/YYYY
+    if (typeof value === 'string' && value.includes('/')) {
+      const [day, month, year] = value.split('/');
+      // Chuyển thành định dạng YYYY-MM-DD để tạo Object Date chuẩn
+      return new Date(`${year}-${month}-${day}`);
+    }
+    return value;
+  })
+  @IsDate()
   @IsNotEmpty()
-  racingStartDate: string;
+  racingStartDate: Date;
 }

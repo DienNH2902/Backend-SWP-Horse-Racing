@@ -61,22 +61,4 @@ export class UpdateUserDto {
   @ApiProperty({ example: 1, description: '0: Female, 1: Male, 2: Other' })
   @IsEnum(GenderEnum)
   gender: GenderEnum.MALE;
-
-  //   @ApiProperty({ example: '65f1b... (Role ID)' })
-  //   @IsMongoId()
-  //   role: string;
-
-  //   @ApiProperty({ example: '65f1c... (Status ID)' })
-  //   @IsMongoId()
-  //   status: string;
-
-  // @ApiProperty({ example: 'STB-001', required: false })
-  // @IsOptional()
-  // @IsString()
-  // licenseNumber?: string;
-
-  // @ApiProperty({ example: 'My Stable', required: false })
-  // @IsOptional()
-  // @IsString()
-  // stableName?: string;
 }

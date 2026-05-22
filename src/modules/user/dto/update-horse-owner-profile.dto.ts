@@ -1,5 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, IntersectionType } from '@nestjs/swagger';
 import { IsOptional, IsString } from 'class-validator';
+import { UpdateUserDto } from './update-user.dto';
 
 export class UpdateHorseOwnerProfileDto {
   @ApiProperty({ example: 'Golden Horse Stable', required: false })
@@ -12,3 +13,8 @@ export class UpdateHorseOwnerProfileDto {
   @IsString()
   stableAddress?: string;
 }
+
+export class UpdateHorseOwnerDto extends IntersectionType(
+  UpdateUserDto,
+  UpdateHorseOwnerProfileDto,
+) {}

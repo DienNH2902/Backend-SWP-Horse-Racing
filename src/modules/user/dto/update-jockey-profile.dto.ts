@@ -1,5 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, IntersectionType } from '@nestjs/swagger';
 import { IsOptional, IsNumber, Min } from 'class-validator';
+import { UpdateUserDto } from './update-user.dto';
 
 export class UpdateJockeyProfileDto {
   @ApiProperty({ example: 54, required: false })
@@ -14,3 +15,8 @@ export class UpdateJockeyProfileDto {
   @Min(100)
   height?: number;
 }
+
+export class UpdateJockeyDto extends IntersectionType(
+  UpdateUserDto,
+  UpdateJockeyProfileDto,
+) {}
