@@ -7,12 +7,14 @@ import {
   Param,
   UseGuards,
   Request,
+  Patch,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JockeyLicenseService } from './jockey-license.service';
 import { CreateJockeyLicenseDto } from './dto/create-jockey-license.dto';
 import { ResponseJockeyLicenseDto } from './dto/response-jockey-license.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { UpdateJockeyLicenseDto } from './dto/update-jockey-license.dto';
 
 @ApiTags('Jockey Licenses')
 @Controller('jockey-licenses')
@@ -31,16 +33,42 @@ export class JockeyLicenseController {
     return await this.licenseService.create(userId, dto);
   }
 
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'JOCKEY lấy danh sách chứng chỉ của chính mình' })
+  async getMyLicenses(
+    @Request() req: any,
+  ): Promise<ResponseJockeyLicenseDto[]> {
+    const userId = req.user._id as string;
+    return await this.licenseService.getMyLicenses(userId);
+  }
+
   @Get('profile/:profileId')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Lấy danh sách toàn bộ chứng chỉ theo ID của Jockey Profile',
+    summary: 'ADMIN lấy danh sách toàn bộ chứng chỉ theo ID của Jockey Profile',
   })
   async getByProfile(
     @Param('profileId') profileId: string,
   ): Promise<ResponseJockeyLicenseDto[]> {
     return await this.licenseService.getLicensesByProfile(profileId);
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'JOCKEY cập nhật chứng chỉ hành nghề theo ID',
+  })
+  async updateLicense(
+    @Param('id') id: string,
+    @Request() req: any,
+    @Body() dto: UpdateJockeyLicenseDto,
+  ): Promise<ResponseJockeyLicenseDto> {
+    const userId = req.user._id as string;
+    return await this.licenseService.update(id, userId, dto);
   }
 
   @Delete(':id')

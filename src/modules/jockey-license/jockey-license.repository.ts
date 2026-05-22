@@ -19,6 +19,29 @@ export class JockeyLicenseRepository {
       .exec();
   }
 
+  // Tìm một chứng chỉ cụ thể thuộc về một Profile
+  async findOneByProfile(
+    id: string,
+    jockeyProfileId: Types.ObjectId,
+  ): Promise<JockeyLicense | null> {
+    return await this.licenseModel
+      .findOne({
+        _id: new Types.ObjectId(id),
+        jockeyProfileId,
+      })
+      .exec();
+  }
+
+  // Cập nhật chứng chỉ hành nghề và trả về dữ liệu mới nhất
+  async updateLicense(
+    id: string,
+    data: Partial<JockeyLicense>,
+  ): Promise<JockeyLicense | null> {
+    return await this.licenseModel
+      .findByIdAndUpdate(id, data, { returnDocument: 'after' })
+      .exec();
+  }
+
   // Tạo mới một chứng chỉ cho Jockey
   async createLicense(data: Partial<JockeyLicense>): Promise<JockeyLicense> {
     return await this.licenseModel.create(data);
