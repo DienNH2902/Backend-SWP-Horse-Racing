@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger/dist';
 
 async function bootstrap() {
@@ -37,5 +37,15 @@ async function bootstrap() {
   );
 
   await app.listen(port);
+
+  const logger = new Logger('NestApplication');
+
+  logger.log('\x1b[33m%s\x1b[0m', 'GOLDEN HOOF APPLICATION IS STARTED');
+  logger.log(
+    `Application is running on: \x1b[36mhttp://localhost:${port}\x1b[0m`,
+  );
+  logger.log(
+    `App start at: \x1b[32m\x1b[4mhttp://localhost:${port}/horse-racing-swagger/index.html\x1b[0m`,
+  );
 }
 void bootstrap();
