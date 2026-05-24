@@ -12,6 +12,7 @@ import { JockeyProfile } from '../user/schemas/jockey-profile.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { UpdateJockeyLicenseDto } from './dto/update-jockey-license.dto';
 import { JockeyLicense } from './schemas/jockey-license.schema';
+import { AdminUpdateJockeyStatusDto } from './dto/admin/update-jockey-status.dto';
 
 @Injectable()
 export class JockeyLicenseService {
@@ -155,6 +156,39 @@ export class JockeyLicenseService {
       updateData,
     );
     return this.toResponse(updatedLicense);
+  }
+
+  async adminUpdateStatus(
+    profileId: string,
+    dto: AdminUpdateJockeyStatusDto,
+  ): Promise<any> {
+    // 1. Kiểm tra ID truyền lên có hợp lệ không trước khi query
+    if (!Types.ObjectId.isValid(profileId)) {
+      throw new BadRequestException('Định dạng ID hồ sơ không hợp lệ');
+    }
+
+    // 2. Tìm và cập nhật trạng thái trong JockeyProfile
+    const updatedProfile = await this.jockeyProfileModel
+      .findByIdAndUpdate(
+        profileId,
+        { jockeyStatus: dto.jockeyStatus },
+        { returnDocument: 'after' }, // Trả về data sau khi đã update
+      )
+      .exec();
+
+    // 3. Nếu không tìm thấy hồ sơ Jockey
+    if (!updatedProfile) {
+      throw new NotFoundException(
+        'Không tìm thấy thông tin hồ sơ Jockey yêu cầu cập nhật',
+      );
+    }
+
+    // 4. Trả về thông báo thành công kèm data đã cập nhật
+    return {
+      profileId: updatedProfile._id,
+      userId: updatedProfile.userId,
+      jockeyStatus: updatedProfile.jockeyStatus,
+    };
   }
 
   // Xóa chứng chỉ
