@@ -18,6 +18,7 @@ import { UpdateJockeyLicenseDto } from './dto/update-jockey-license.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RoleEnum } from 'src/constants/roleEnum.enum';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { AdminUpdateJockeyStatusDto } from './dto/admin/update-jockey-status.dto';
 
 @ApiTags('Jockey Licenses')
 @Controller('jockey-licenses')
@@ -76,6 +77,20 @@ export class JockeyLicenseController {
   ): Promise<ResponseJockeyLicenseDto> {
     const userId = req.user._id as string;
     return await this.licenseService.update(id, userId, dto);
+  }
+
+  @Patch('admin/update-status/:profileId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleEnum.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'ADMIN cập nhật trạng thái hoạt động cho Jockey theo Profile ID',
+  })
+  async adminUpdateJockeyStatus(
+    @Param('profileId') profileId: string,
+    @Body() dto: AdminUpdateJockeyStatusDto,
+  ) {
+    return await this.licenseService.adminUpdateStatus(profileId, dto);
   }
 
   @Delete(':id')
