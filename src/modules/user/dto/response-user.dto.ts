@@ -240,6 +240,7 @@ export class ResponseUserDto {
   @Expose() gender: number;
   @Expose() role: string;
   @Expose() status: string;
+  // @Expose() refreshToken: string;
 
   // ==========================================
   // 1. CÁC FIELDS CHUYÊN BIỆT CHO JOCKEY

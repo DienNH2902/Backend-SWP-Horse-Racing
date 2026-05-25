@@ -7,7 +7,12 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiHeader,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -63,6 +68,11 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Lấy thông tin profile chi tiết của tài khoản hiện tại',
+  })
+  @ApiHeader({
+    name: 'x-refresh-token',
+    description: 'Dán chuỗi Refresh Token vào đây để test tự động gia hạn',
+    required: false, // Để false để lúc bình thường không bắt buộc nhập
   })
   getProfile(@Request() req: any) {
     // Thông tin user đã được JwtStrategy validate và nhét sẵn vào req.user

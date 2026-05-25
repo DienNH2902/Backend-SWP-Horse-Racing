@@ -23,6 +23,8 @@ import { RegisterJockeyDto } from '../user/dto/create-jockey.dto';
 import { RegisterRefereeDto } from '../user/dto/create-referee.dto';
 import { RegisterHorseOwnerDto } from '../user/dto/create-horse-owner.dto';
 import { JockeyStatusEnum } from 'src/constants/jockeyStatusEnum.enum';
+import { ConfigService } from '@nestjs/config';
+import { StringValue } from 'ms';
 
 type RegisterPayload =
   | RegisterSpectatorDto
@@ -35,6 +37,7 @@ export class AuthService {
   constructor(
     private readonly userRepository: UsersRepository,
     private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
     @InjectModel(JockeyProfile.name) private jockeyModel: Model<JockeyProfile>,
     @InjectModel(SpectatorProfile.name)
     private spectatorModel: Model<SpectatorProfile>,
@@ -126,8 +129,24 @@ export class AuthService {
       role: user.role,
     };
 
+    const accessTokenTime = (this.configService.get<string>(
+      'JWT_ACCESS_EXPIRES',
+    ) || '3h') as StringValue;
+    const refreshTokenTime = (this.configService.get<string>(
+      'JWT_REFRESH_EXPIRES',
+    ) || '7d') as StringValue;
+
+    // Sinh cặp đôi token với thời gian sống khác nhau
+    const accessToken = this.jwtService.sign(payload, {
+      expiresIn: accessTokenTime,
+    }); // Hết hạn nhanh
+    const refreshToken = this.jwtService.sign(payload, {
+      expiresIn: refreshTokenTime,
+    }); // Hết hạn lâu
+
     return {
-      access_token: this.jwtService.sign(payload),
+      access_token: accessToken,
+      refresh_token: refreshToken,
     };
   }
 }
