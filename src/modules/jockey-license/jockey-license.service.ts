@@ -135,21 +135,18 @@ export class JockeyLicenseService {
       );
     }
 
-    const updateData: Partial<JockeyLicense> = {
-      licenseCode: dto.licenseCode,
-      licenseUrl: dto.licenseUrl,
-    };
+    const updateData: Partial<JockeyLicense> = { ...dto };
 
     // Nếu có cập nhật ngày, xử lý chuyển đổi và kiểm tra tính hợp lệ
-    if (dto.racingStartDate) {
-      const parsedDate = new Date(dto.racingStartDate);
-      if (isNaN(parsedDate.getTime())) {
-        throw new BadRequestException(
-          'Định dạng ngày racingStartDate không hợp lệ (YYYY-MM-DD)',
-        );
-      }
-      updateData.racingStartDate = parsedDate;
-    }
+    // if (dto.racingStartDate) {
+    //   const parsedDate = new Date(dto.racingStartDate);
+    //   if (isNaN(parsedDate.getTime())) {
+    //     throw new BadRequestException(
+    //       'Định dạng ngày racingStartDate không hợp lệ (YYYY-MM-DD)',
+    //     );
+    //   }
+    //   updateData.racingStartDate = parsedDate;
+    // }
 
     const updatedLicense = await this.licenseRepository.updateLicense(
       id,

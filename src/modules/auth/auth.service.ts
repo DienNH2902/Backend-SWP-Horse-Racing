@@ -126,8 +126,13 @@ export class AuthService {
       role: user.role,
     };
 
+    // Sinh cặp đôi token với thời gian sống khác nhau
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '3h' }); // Hết hạn nhanh
+    const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' }); // Hết hạn lâu
+
     return {
-      access_token: this.jwtService.sign(payload),
+      access_token: accessToken,
+      refresh_token: refreshToken,
     };
   }
 }
