@@ -6,10 +6,11 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { JockeyLicenseModule } from './modules/jockey-license/jockey-license.module';
+import { TournamentModule } from './modules/tournament/tournament.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ isGlobal: true }), //Để cho phép configService ở mọi nơi mà không cần import lại
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
@@ -20,6 +21,7 @@ import { JockeyLicenseModule } from './modules/jockey-license/jockey-license.mod
     UserModule,
     AuthModule,
     JockeyLicenseModule,
+    TournamentModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -55,6 +55,7 @@ export class UsersService {
   //   return this.toResponse(updated);
   // }
 
+  //1. Cập nhật cho Spectator
   async updateSpectator(
     id: string,
     dto: UpdateUserDto,
