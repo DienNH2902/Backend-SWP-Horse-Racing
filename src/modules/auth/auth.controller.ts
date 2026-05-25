@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
-  // ApiHeader,
+  ApiHeader,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
@@ -69,11 +69,11 @@ export class AuthController {
   @ApiOperation({
     summary: 'Lấy thông tin profile chi tiết của tài khoản hiện tại',
   })
-  // @ApiHeader({
-  //   name: 'x-refresh-token',
-  //   description: 'Dán chuỗi Refresh Token vào đây để test tự động gia hạn',
-  //   required: false, // Để false để lúc bình thường không bắt buộc nhập
-  // })
+  @ApiHeader({
+    name: 'x-refresh-token',
+    description: 'Dán chuỗi Refresh Token vào đây để test tự động gia hạn',
+    required: false, // Để false để lúc bình thường không bắt buộc nhập
+  })
   getProfile(@Request() req: any) {
     // Thông tin user đã được JwtStrategy validate và nhét sẵn vào req.user
     return plainToInstance(ResponseUserDto, req.user, {
