@@ -6,6 +6,7 @@ import { UsersService } from '../../user/user.service';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Request, Response } from 'express';
+import { StringValue } from 'ms';
 
 interface JwtPayload {
   sub: string;
@@ -87,8 +88,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
           email: user.email,
           role: user.role,
         };
+
+        const accessTokenTime = (this.configService.get<string>(
+          'JWT_ACCESS_EXPIRES',
+        ) || '3h') as StringValue;
         const newAccessToken = this.jwtService.sign(newPayload, {
-          expiresIn: '3h',
+          expiresIn: accessTokenTime,
         });
 
         res.setHeader('x-new-access-token', newAccessToken);
