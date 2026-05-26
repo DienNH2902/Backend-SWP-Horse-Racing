@@ -1,4 +1,3 @@
-// src/modules/auth/auth.service.ts
 import {
   Injectable,
   UnauthorizedException,
@@ -25,12 +24,20 @@ import { RegisterHorseOwnerDto } from '../user/dto/create-horse-owner.dto';
 import { JockeyStatusEnum } from 'src/constants/jockeyStatusEnum.enum';
 import { ConfigService } from '@nestjs/config';
 import { StringValue } from 'ms';
+import { ResponseUserDto } from '../user/dto/response-user.dto';
+import { plainToInstance } from 'class-transformer';
 
 type RegisterPayload =
   | RegisterSpectatorDto
   | RegisterJockeyDto
   | RegisterRefereeDto
   | RegisterHorseOwnerDto;
+
+interface JwtPayload {
+  sub: string;
+  email: string;
+  role: string;
+}
 
 @Injectable()
 export class AuthService {
@@ -114,7 +121,7 @@ export class AuthService {
   }
 
   // Luồng xử lý đăng nhập & cấp phát token JWT
-  async login(dto: LoginDto) {
+  async login(dto: LoginDto): Promise<string> {
     const user = await this.userRepository.findOneUserWithPassword(dto.email);
     if (!user)
       throw new UnauthorizedException('Email hoặc mật khẩu không chính xác');
@@ -123,30 +130,29 @@ export class AuthService {
     if (!isMatch)
       throw new UnauthorizedException('Email hoặc mật khẩu không chính xác');
 
-    const payload = {
+    const payload: JwtPayload = {
       sub: user._id.toString(),
       email: user.email,
       role: user.role,
     };
 
-    const accessTokenTime = (this.configService.get<string>(
-      'JWT_ACCESS_EXPIRES',
-    ) || '3h') as StringValue;
-    const refreshTokenTime = (this.configService.get<string>(
-      'JWT_REFRESH_EXPIRES',
-    ) || '7d') as StringValue;
+    return this.generateToken(payload);
+  }
 
-    // Sinh cặp đôi token với thời gian sống khác nhau
-    const accessToken = this.jwtService.sign(payload, {
-      expiresIn: accessTokenTime,
-    }); // Hết hạn nhanh
-    const refreshToken = this.jwtService.sign(payload, {
-      expiresIn: refreshTokenTime,
-    }); // Hết hạn lâu
+  private generateToken(payload: JwtPayload): string {
+    const jwtSecret = this.configService.get<string>('JWT_SECRET');
+    const expiresTime = (this.configService.get<string>('JWT_ACCESS_EXPIRES') ||
+      '7d') as StringValue;
 
-    return {
-      access_token: accessToken,
-      refresh_token: refreshToken,
-    };
+    return this.jwtService.sign(payload, {
+      secret: jwtSecret,
+      expiresIn: expiresTime,
+    });
+  }
+
+  getProfile(user: any): ResponseUserDto {
+    return plainToInstance(ResponseUserDto, user, {
+      excludeExtraneousValues: true,
+    });
   }
 }

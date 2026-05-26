@@ -1,4 +1,3 @@
-// src/modules/auth/auth.controller.ts
 import {
   Controller,
   Post,
@@ -9,7 +8,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
-  ApiHeader,
+  // ApiHeader,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
@@ -20,7 +19,6 @@ import { RegisterSpectatorDto } from '../user/dto/create-spectator.dto';
 import { RegisterJockeyDto } from '../user/dto/create-jockey.dto';
 import { RegisterRefereeDto } from '../user/dto/create-referee.dto';
 import { RegisterHorseOwnerDto } from '../user/dto/create-horse-owner.dto';
-import { plainToInstance } from 'class-transformer';
 import { ResponseUserDto } from '../user/dto/response-user.dto';
 
 // type RegisterPayload = RegisterSpectatorDto &
@@ -69,15 +67,12 @@ export class AuthController {
   @ApiOperation({
     summary: 'Lấy thông tin profile chi tiết của tài khoản hiện tại',
   })
-  @ApiHeader({
-    name: 'x-refresh-token',
-    description: 'Dán chuỗi Refresh Token vào đây để test tự động gia hạn',
-    required: false, // Để false để lúc bình thường không bắt buộc nhập
-  })
-  getProfile(@Request() req: any) {
-    // Thông tin user đã được JwtStrategy validate và nhét sẵn vào req.user
-    return plainToInstance(ResponseUserDto, req.user, {
-      excludeExtraneousValues: true, // Chỉ lấy các trường được gắn @Expose()
-    });
+  // @ApiHeader({
+  //   name: 'x-refresh-token',
+  //   description: 'Dán chuỗi Refresh Token vào đây để test tự động gia hạn',
+  //   required: false, // Để false để lúc bình thường không bắt buộc nhập
+  // })
+  getProfile(@Request() req: any): ResponseUserDto {
+    return this.authService.getProfile(req.user);
   }
 }
