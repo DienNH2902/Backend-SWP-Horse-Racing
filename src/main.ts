@@ -10,7 +10,7 @@ async function bootstrap() {
   // CẤU HÌNH CORS CHUẨN CHO ĐỒ ÁN / DỰ ÁN CHẠY COOKIE
   app.enableCors({
     // 1. Chỉ định chính xác địa chỉ của Frontend được phép gọi tới
-    origin: 'http://localhost:3000', // Sửa lại đúng Port mà FE của bạn đang chạy (3000, 5173, v.v.)
+    origin: 'http://localhost:5173', // Sửa lại đúng Port mà FE của bạn đang chạy (3000, 5173, v.v.)
 
     // 2. Cho phép các phương thức HTTP nào được quyền tác động vào BE
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',

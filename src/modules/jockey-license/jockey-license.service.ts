@@ -82,6 +82,11 @@ export class JockeyLicenseService {
     return this.toResponse(newLicense);
   }
 
+  async getAllLicense(): Promise<ResponseJockeyLicenseDto[]> {
+    const licenses = await this.licenseRepository.findAllLicense();
+    return licenses.map((l) => this.toResponse(l));
+  }
+
   async getMyLicenses(userId: string): Promise<ResponseJockeyLicenseDto[]> {
     const jockeyProfile = await this.jockeyProfileModel.findOne({
       userId: new Types.ObjectId(userId),
