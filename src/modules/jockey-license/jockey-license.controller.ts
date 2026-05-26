@@ -41,8 +41,9 @@ export class JockeyLicenseController {
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleEnum.ADMIN)
-  @ApiOperation({ summary: 'Get all licenses' })
-  findAll() {
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'ADMIN lấy tất cả chứng chỉ hành nghề' })
+  findAll(): Promise<ResponseJockeyLicenseDto[]> {
     return this.licenseService.getAllLicense();
   }
 
