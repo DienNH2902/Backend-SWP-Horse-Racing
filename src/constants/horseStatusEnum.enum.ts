@@ -1,0 +1,7 @@
+export enum HorseStatusEnum {
+  IDLE = 'IDLE',
+  INJURED = 'INJURED',
+  REGISTERED = 'REGISTERED',
+  RACING = 'RACING',
+  SUSPENDED = 'SUSPENDED',
+}
