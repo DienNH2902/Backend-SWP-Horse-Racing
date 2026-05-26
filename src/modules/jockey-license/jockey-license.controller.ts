@@ -38,6 +38,14 @@ export class JockeyLicenseController {
     return await this.licenseService.create(userId, dto);
   }
 
+  @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleEnum.ADMIN)
+  @ApiOperation({ summary: 'Get all licenses' })
+  findAll() {
+    return this.licenseService.getAllLicense();
+  }
+
   @Get('me')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleEnum.JOCKEY)
