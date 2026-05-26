@@ -10,6 +10,11 @@ export class JockeyLicenseRepository {
     private readonly licenseModel: Model<JockeyLicense>,
   ) {}
 
+  //Tìm tất cả License
+  async findAllLicense(): Promise<JockeyLicense[]> {
+    return await this.licenseModel.find();
+  }
+
   // Tìm danh sách chứng chỉ theo ID của Jockey Profile
   async findByJockeyProfileId(
     jockeyProfileId: string,
