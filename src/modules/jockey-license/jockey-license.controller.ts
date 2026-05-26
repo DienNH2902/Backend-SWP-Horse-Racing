@@ -43,7 +43,7 @@ export class JockeyLicenseController {
   @Roles(RoleEnum.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'ADMIN lấy tất cả chứng chỉ hành nghề' })
-  findAll() {
+  findAll(): Promise<ResponseJockeyLicenseDto[]> {
     return this.licenseService.getAllLicense();
   }
 
