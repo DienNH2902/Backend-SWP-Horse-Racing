@@ -7,6 +7,21 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger/dist';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // CẤU HÌNH CORS CHUẨN CHO ĐỒ ÁN / DỰ ÁN CHẠY COOKIE
+  app.enableCors({
+    // 1. Chỉ định chính xác địa chỉ của Frontend được phép gọi tới
+    origin: 'http://localhost:3000', // Sửa lại đúng Port mà FE của bạn đang chạy (3000, 5173, v.v.)
+
+    // 2. Cho phép các phương thức HTTP nào được quyền tác động vào BE
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+
+    // 3. Cho phép FE gửi kèm Cookie hoặc Header xác thực (Rất quan trọng khi dùng Cookie)
+    credentials: true,
+
+    // 4. Các Header mà FE được phép gửi lên
+    allowedHeaders: 'Content-Type, Authorization, X-Requested-With, Accept',
+  });
+
   const config = new DocumentBuilder()
     .setTitle('Horse Racing') // Tiêu đề hiển thị trên Swagger UI
     .setDescription('Horse Racing Backend Service API Documentation') // Mô tả chi tiết hơn về API
