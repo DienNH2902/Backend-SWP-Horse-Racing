@@ -9,20 +9,6 @@ export class ResponseHorseDto {
   //   @Transform(({ obj }) => obj.userId?.toString() || obj.userId)
   //   userId: string;
 
-  // Trả về chuỗi ID thuần túy cho trường userId
-  @Expose()
-  @Transform(({ obj }) => obj.userId?._id?.toString() || obj.userId?.toString())
-  userId: string;
-
-  // Kéo thông tin fullName từ Object được populate ra ngoài thành thuộc tính phẳng
-  @Expose()
-  @Transform(({ obj }) => obj.userId?.fullName)
-  ownerName: string;
-
-  @Expose()
-  @Transform(({ obj }) => obj.userId?.email)
-  ownerEmail: string;
-
   @Expose()
   name: string;
 
@@ -43,4 +29,18 @@ export class ResponseHorseDto {
 
   @Expose()
   totalWin: number;
+
+  // Trả về chuỗi ID thuần túy cho trường userId
+  @Expose()
+  @Transform(({ obj }) => obj.userId?._id?.toString() || obj.userId?.toString())
+  userId: string;
+
+  // Kéo thông tin fullName từ Object được populate ra ngoài thành thuộc tính phẳng
+  @Expose()
+  @Transform(({ obj }) => obj.userId?.fullName)
+  ownerName: string;
+
+  @Expose()
+  @Transform(({ obj }) => obj.userId?.email)
+  ownerEmail: string;
 }
