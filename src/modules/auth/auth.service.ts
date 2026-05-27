@@ -35,8 +35,10 @@ type RegisterPayload =
 
 interface JwtPayload {
   sub: string;
+  fullName: string;
   email: string;
   role: string;
+  gender: number;
 }
 
 @Injectable()
@@ -65,14 +67,15 @@ export class AuthService {
 
     // 1. Tạo User gốc (Mặc định để INACTIVE hoặc PENDING chờ admin duyệt nếu cần)
     const userPayload = {
-      fullName: dto.fullName,
-      email: dto.email,
+      // fullName: dto.fullName,
+      // email: dto.email,
+      // phoneNumber: dto.phoneNumber,
+      // address: dto.address,
+      // dateOfBirth: dto.dateOfBirth,
+      // gender: dto.gender,
+      // role: dto.role,
+      ...dto,
       password: hashedPassword,
-      phoneNumber: dto.phoneNumber,
-      address: dto.address,
-      dateOfBirth: dto.dateOfBirth,
-      gender: dto.gender,
-      role: dto.role,
       status: AccountStatusEnum.ACTIVE, // Tùy chọn trạng thái ban đầu của hệ thống
     };
 
@@ -132,8 +135,10 @@ export class AuthService {
 
     const payload: JwtPayload = {
       sub: user._id.toString(),
+      fullName: user.fullName,
       email: user.email,
       role: user.role,
+      gender: user.gender,
     };
 
     return this.generateToken(payload);
