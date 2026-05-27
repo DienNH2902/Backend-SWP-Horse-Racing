@@ -12,7 +12,11 @@ export class JockeyLicenseRepository {
 
   //Tìm tất cả License
   async findAllLicense(): Promise<JockeyLicense[]> {
-    return await this.licenseModel.find();
+    return await this.licenseModel
+      .find()
+      .populate('jockeyProfileId')
+      .lean()
+      .exec();
   }
 
   // Tìm danh sách chứng chỉ theo ID của Jockey Profile
