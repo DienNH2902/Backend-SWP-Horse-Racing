@@ -6,6 +6,13 @@ export class ResponseJockeyLicenseDto {
   _id: string;
 
   @Expose()
+  @Transform(
+    ({ obj }) =>
+      obj.jockeyProfileId?._id?.toString() || obj.jockeyProfileId?.toString(),
+  )
+  jockeyProfileId: string;
+
+  @Expose()
   licenseCode: string;
 
   @Expose()
