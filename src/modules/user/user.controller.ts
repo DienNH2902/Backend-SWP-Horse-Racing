@@ -7,6 +7,7 @@ import {
   Delete,
   Put,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { UsersService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -17,6 +18,7 @@ import { ResponseUserDto } from './dto/response-user.dto';
 import { UpdateJockeyDto } from './dto/update-jockey-profile.dto';
 import { UpdateRefereeDto } from './dto/update-referee-profile.dto';
 import { UpdateHorseOwnerDto } from './dto/update-horse-owner-profile.dto';
+import { RoleEnum } from 'src/constants/roleEnum.enum';
 
 @ApiTags('Users')
 @Controller('users')
@@ -33,6 +35,12 @@ export class UsersController {
   @ApiOperation({ summary: 'Get all users' })
   findAll() {
     return this.userService.findAllUser();
+  }
+
+  @Get('role')
+  @ApiOperation({ summary: 'Get all users by role' })
+  findAllJockeys(@Query('role') role: RoleEnum) {
+    return this.userService.findAllUsersByRole(role);
   }
 
   @Get(':id')

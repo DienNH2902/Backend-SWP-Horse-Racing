@@ -12,6 +12,7 @@ import { HashUtil } from 'src/utils/helpers';
 import { UpdateHorseOwnerDto } from './dto/update-horse-owner-profile.dto';
 import { UpdateRefereeDto } from './dto/update-referee-profile.dto';
 import { UpdateJockeyDto } from './dto/update-jockey-profile.dto';
+import { RoleEnum } from 'src/constants/roleEnum.enum';
 
 @Injectable()
 export class UsersService {
@@ -40,6 +41,11 @@ export class UsersService {
 
   async findAllUser(): Promise<ResponseUserDto[]> {
     const users = await this.userRepository.findAllUser();
+    return users.map((u) => this.toResponse(u));
+  }
+
+  async findAllUsersByRole(role: RoleEnum): Promise<ResponseUserDto[]> {
+    const users = await this.userRepository.findAllUsersByRole(role);
     return users.map((u) => this.toResponse(u));
   }
 

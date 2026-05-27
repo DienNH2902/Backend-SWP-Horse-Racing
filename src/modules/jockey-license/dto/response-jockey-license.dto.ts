@@ -12,6 +12,31 @@ export class ResponseJockeyLicenseDto {
   )
   jockeyProfileId: string;
 
+  // @Expose()
+  // @Transform(({ obj }) => obj.userId?._id?.toString() || obj.userId?.toString())
+  // userId: string;
+
+  // @Expose()
+  // @Transform(({ obj }) => {
+  //   // Nếu jockeyProfileId là Object đã populate, lấy _id của nó ra
+  //   if (obj.jockeyProfileId && typeof obj.jockeyProfileId === 'object') {
+  //     return obj.jockeyProfileId._id?.toString();
+  //   }
+  //   return obj.jockeyProfileId?.toString();
+  // })
+  // jockeyProfileId: string;
+
+  // Thuộc tính mới: Tự động trích xuất userId từ sâu trong object lồng
+  @Expose()
+  @Transform(({ obj }) => {
+    if (obj.jockeyProfileId && typeof obj.jockeyProfileId === 'object') {
+      // Trường hợp deep populate: obj.jockeyProfileId.userId
+      return obj.jockeyProfileId.userId?.toString();
+    }
+    return null;
+  })
+  userId: string;
+
   @Expose()
   licenseCode: string;
 

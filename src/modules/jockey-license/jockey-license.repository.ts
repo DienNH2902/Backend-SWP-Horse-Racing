@@ -14,7 +14,10 @@ export class JockeyLicenseRepository {
   async findAllLicense(): Promise<JockeyLicense[]> {
     return await this.licenseModel
       .find()
-      .populate('jockeyProfileId')
+      .populate({
+        path: 'jockeyProfileId', // Kéo thông tin bảng Profile lên
+        select: 'userId', // Trong Profile chỉ cần lấy đúng trường userId
+      })
       .lean()
       .exec();
   }
@@ -25,6 +28,11 @@ export class JockeyLicenseRepository {
   ): Promise<JockeyLicense[]> {
     return await this.licenseModel
       .find({ jockeyProfileId: new Types.ObjectId(jockeyProfileId) })
+      .populate({
+        path: 'jockeyProfileId', // Kéo thông tin bảng Profile lên
+        select: 'userId', // Trong Profile chỉ cần lấy đúng trường userId
+      })
+      .lean()
       .exec();
   }
 
