@@ -8,6 +8,7 @@ import { RefereeProfile } from './schemas/referee-profile.schema';
 import { UpdateJockeyProfileDto } from './dto/update-jockey-profile.dto';
 import { UpdateHorseOwnerProfileDto } from './dto/update-horse-owner-profile.dto';
 import { UpdateRefereeProfileDto } from './dto/update-referee-profile.dto';
+import { RoleEnum } from 'src/constants/roleEnum.enum';
 
 @Injectable()
 export class UsersRepository {
@@ -37,6 +38,42 @@ export class UsersRepository {
       .populate('horseOwnerProfile')
       .lean({ virtuals: true })
       .exec();
+  }
+
+  // async findAllJockeys(): Promise<User[]> {
+  //   return await this.userModel
+  //     .find({ role: RoleEnum.JOCKEY })
+  //     .populate({
+  //       path: 'jockeyProfile',
+  //       populate: { path: 'licenses' }, // Lồng thêm tầng này để kéo mảng chứng chỉ lên
+  //     })
+  //     .lean()
+  //     .exec();
+  // }
+
+  async findAllUsersByRole(role: RoleEnum): Promise<User[]> {
+    const query = this.userModel.find({ role }).select('-password -__v');
+
+    // Kỹ thuật Dynamic Populate: Chỉ đi chợ lấy đúng thứ mình cần
+    switch (role) {
+      case RoleEnum.JOCKEY:
+        query.populate({
+          path: 'jockeyProfile',
+          populate: { path: 'licenses' },
+        });
+        break;
+      case RoleEnum.REFEREE:
+        query.populate('refereeProfile');
+        break;
+      case RoleEnum.HORSE_OWNER:
+        query.populate('horseOwnerProfile');
+        break;
+      case RoleEnum.SPECTATOR:
+        query.populate('spectatorProfile');
+        break;
+    }
+
+    return await query.lean({ virtuals: true }).exec();
   }
 
   async findOneUser(filter: QueryFilter<User>): Promise<User | null> {
