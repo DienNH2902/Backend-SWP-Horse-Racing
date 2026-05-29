@@ -41,6 +41,12 @@ interface JwtPayload {
   gender: number;
 }
 
+interface GoogleUserPayload {
+  email: string;
+  name: string;
+  avatar: string;
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -153,6 +159,78 @@ export class AuthService {
       secret: jwtSecret,
       expiresIn: expiresTime,
     });
+  }
+
+  // loginWithGoogle(googleUser: GoogleUserPayload | undefined) {
+  //   if (!googleUser) {
+  //     return { message: 'No user from google' };
+  //   }
+
+  //   // Giả sử lấy được thông tin user từ DB bao gồm id và role:
+  //   const internalUser = {
+  //     id: 'user_uuid_123',
+  //     email: googleUser.email, // ESLint đã biết chắc chắn đây là string, không còn là any
+  //     role: 'USER',
+  //   };
+
+  //   const payload = {
+  //     sub: internalUser.id,
+  //     email: internalUser.email,
+  //     role: internalUser.role,
+  //   };
+
+  //   return {
+  //     access_token: this.jwtService.sign(payload),
+  //   };
+  // }
+
+  // Luồng xử lý đăng nhập bằng Google OAuth2 công phá trực tiếp vào DB
+  async loginWithGoogle(
+    googleUser: GoogleUserPayload | undefined,
+  ): Promise<string> {
+    if (!googleUser) {
+      throw new UnauthorizedException('Không có dữ liệu người dùng từ Google');
+    }
+
+    // 1. Tìm xem email từ Google đã tồn tại trong hệ thống chưa
+    let user = await this.userRepository.findOneUser({
+      email: googleUser.email,
+    });
+
+    // 2. Nếu chưa tồn tại (Người dùng lần đầu đăng nhập hệ thống qua Google) -> Tự động đăng ký
+    if (!user) {
+      // Tạo một chuỗi mật khẩu ngẫu nhiên ngầm vì Schema bắt buộc phải có password
+      const randomPassword =
+        Math.random().toString(36).slice(-10) + Date.now().toString();
+      const hashedPassword = await HashUtil.hash(randomPassword);
+
+      const userPayload = {
+        fullName: googleUser.name,
+        email: googleUser.email,
+        avatar: googleUser.avatar,
+        role: RoleEnum.SPECTATOR,
+        status: AccountStatusEnum.ACTIVE,
+        password: hashedPassword, // Bổ sung password đã băm để vượt qua validation của Mongoose
+      };
+
+      // Lưu User gốc vào MongoDB thông qua Repository
+      user = await this.userRepository.createUser(userPayload);
+
+      // Tạo Profile phụ tương ứng (Spectator) để đồng bộ cấu trúc hệ thống
+      await this.spectatorModel.create({ userId: user._id });
+    }
+
+    // 3. Đóng gói payload theo đúng cấu trúc định dạng JwtPayload của hệ thống bạn
+    const payload: JwtPayload = {
+      sub: user._id.toString(),
+      fullName: user.fullName,
+      email: user.email,
+      role: user.role,
+      gender: user.gender || 0, // Fallback giá trị mặc định nếu user mới tạo chưa có giới tính
+    };
+
+    // 4. Ký và trả về chuỗi JWT token chuẩn của hệ thống
+    return this.generateToken(payload);
   }
 
   getProfile(user: any): ResponseUserDto {
