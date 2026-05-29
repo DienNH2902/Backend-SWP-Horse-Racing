@@ -24,7 +24,7 @@ export class JockeyInvitation {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   jockeyId: Types.ObjectId;
 
-  @Prop({ required: true, min: 0, max: 100 })
+  @Prop({ required: true, min: 0})
   proposeContractAmount: number;
 
   @Prop({ required: true, min: 0, max: 100 })
