@@ -2,7 +2,9 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
 import { Logger, ValidationPipe } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger/dist';
+// import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger/dist';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -23,7 +25,7 @@ async function bootstrap() {
   });
 
   const config = new DocumentBuilder()
-    .setTitle('Horse Racing') // Tiêu đề hiển thị trên Swagger UI
+    .setTitle('Golden Hoof Horse Racing') // Tiêu đề hiển thị trên Swagger UI
     .setDescription('Horse Racing Backend Service API Documentation') // Mô tả chi tiết hơn về API
     .setVersion('1.0')
     .addBearerAuth()
