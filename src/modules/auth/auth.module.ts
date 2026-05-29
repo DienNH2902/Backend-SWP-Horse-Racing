@@ -26,6 +26,7 @@ import {
   HorseOwnerProfile,
   HorseOwnerProfileSchema,
 } from '../user/schemas/horse-owner-profile.schema';
+import { GoogleStrategy } from './strategies/google.strategy';
 
 @Module({
   imports: [
@@ -47,7 +48,7 @@ import {
     ]),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, GoogleStrategy],
   exports: [PassportModule, JwtStrategy],
 })
 export class AuthModule {}
