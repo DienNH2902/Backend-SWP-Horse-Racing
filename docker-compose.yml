@@ -9,6 +9,9 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    volumes:
+      # Ánh xạ thư mục lưu ảnh từ container ra ngoài VPS để không bị mất khi deploy lại
+      - ./uploads:/app/uploads
     logging:
       driver: "json-file"
       options:

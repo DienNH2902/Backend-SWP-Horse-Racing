@@ -8,6 +8,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { JockeyLicenseModule } from './modules/jockey-license/jockey-license.module';
 import { TournamentModule } from './modules/tournament/tournament.module';
 import { HorseModule } from './modules/horse/horse.module';
+import { UploadModule } from './modules/upload/upload.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { HorseModule } from './modules/horse/horse.module';
     JockeyLicenseModule,
     TournamentModule,
     HorseModule,
+    UploadModule,
   ],
   controllers: [AppController],
   providers: [AppService],
