@@ -12,7 +12,11 @@ import { UploadModule } from './modules/upload/upload.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }), //Để cho phép configService ở mọi nơi mà không cần import lại
+    ConfigModule.forRoot({
+      envFilePath:
+        process.env.NODE_ENV === 'production' ? '.env.production' : '.env',
+      isGlobal: true,
+    }), //Để cho phép configService ở mọi nơi mà không cần import lại
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
