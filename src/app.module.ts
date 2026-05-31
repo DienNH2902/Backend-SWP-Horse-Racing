@@ -9,6 +9,9 @@ import { JockeyLicenseModule } from './modules/jockey-license/jockey-license.mod
 import { TournamentModule } from './modules/tournament/tournament.module';
 import { HorseModule } from './modules/horse/horse.module';
 import { JockeyInvitationModule } from './modules/invitation/invitation.module';
+import { RegistrationModule } from './modules/registration/registration.module';
+import { TransactionModule } from './modules/transaction/transaction.module';
+import { NotificationModule } from './modules/notification/notification.module';
 
 @Module({
   imports: [
@@ -26,6 +29,9 @@ import { JockeyInvitationModule } from './modules/invitation/invitation.module';
     TournamentModule,
     HorseModule,
     JockeyInvitationModule,
+    RegistrationModule,
+    TransactionModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [AppService],
