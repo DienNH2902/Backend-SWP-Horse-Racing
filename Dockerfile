@@ -11,5 +11,5 @@ RUN yarn install --production --frozen-lockfile
 # Copy thư mục dist đã được GitHub build sẵn ở Job 1 vào
 COPY dist ./dist
 
-# Lệnh khởi động server NestJS
-CMD ["node", "dist/main.js"]
+# Lệnh khởi động server NestJS kèm biến môi trường kích hoạt .env.production
+CMD ["sh", "-c", "NODE_ENV=production node dist/main.js"]

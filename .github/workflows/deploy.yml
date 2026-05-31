@@ -35,7 +35,7 @@ jobs:
             docker-compose.yml
 
   # --- JOB 2: CHẠY TRÊN CON VPS (Triển khai Docker) ---
-  deploy-to-pi:
+  deploy-to-vps:
     needs: build-and-cache
     runs-on: self-hosted
     steps:
@@ -55,6 +55,15 @@ jobs:
           PORT=${{ vars.PORT }}
           MONGODB_URI=${{ secrets.MONGODB_URI }}
           JWT_SECRET=${{ secrets.JWT_SECRET }}
+          JWT_ACCESS_EXPIRES=${{ vars.JWT_ACCESS_EXPIRES }}
+          GOOGLE_CLIENT_ID=${{ vars.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_CALLBACK_URL=${{ vars.GOOGLE_CALLBACK_URL }}
+          APP_URL=${{ vars.APP_URL }}
+          VNP_TMN_CODE=${{ vars.VNP_TMN_CODE }}
+          VNP_HASH_SECRET=${{ secrets.VNP_HASH_SECRET }}
+          VNP_URL=${{ vars.VNP_URL }}
+          VNP_RETURN_URL=${{ vars.VNP_RETURN_URL }}
           EOF
 
           echo ">>> Khởi tạo .env thành công."
