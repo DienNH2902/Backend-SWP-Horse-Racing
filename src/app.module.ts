@@ -9,6 +9,7 @@ import { JockeyLicenseModule } from './modules/jockey-license/jockey-license.mod
 import { TournamentModule } from './modules/tournament/tournament.module';
 import { HorseModule } from './modules/horse/horse.module';
 import { UploadModule } from './modules/upload/upload.module';
+import { VnPayModule } from './modules/vnpay/vnpay.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { UploadModule } from './modules/upload/upload.module';
     TournamentModule,
     HorseModule,
     UploadModule,
+    VnPayModule,
   ],
   controllers: [AppController],
   providers: [AppService],
