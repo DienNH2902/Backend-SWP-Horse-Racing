@@ -12,10 +12,16 @@ import { JockeyInvitationModule } from './modules/invitation/invitation.module';
 import { RegistrationModule } from './modules/registration/registration.module';
 import { TransactionModule } from './modules/transaction/transaction.module';
 import { NotificationModule } from './modules/notification/notification.module';
+import { UploadModule } from './modules/upload/upload.module';
+import { VnPayModule } from './modules/vnpay/vnpay.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }), //Để cho phép configService ở mọi nơi mà không cần import lại
+    ConfigModule.forRoot({
+      envFilePath:
+        process.env.NODE_ENV === 'production' ? '.env.production' : '.env',
+      isGlobal: true,
+    }), //Để cho phép configService ở mọi nơi mà không cần import lại
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
@@ -32,6 +38,8 @@ import { NotificationModule } from './modules/notification/notification.module';
     RegistrationModule,
     TransactionModule,
     NotificationModule,
+    UploadModule,
+    VnPayModule,
   ],
   controllers: [AppController],
   providers: [AppService],
