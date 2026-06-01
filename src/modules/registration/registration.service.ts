@@ -9,15 +9,15 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { plainToInstance } from 'class-transformer';
 import { RegistrationRepository } from './registration.repository';
-import { RegistrationStatusEnum } from '../../constants/registrationStatus.enum';
-import { TransactionTypeEnum } from '../../constants/transactionType.enum';
+import { RegistrationStatusEnum } from 'src/constants/registrationStatus.enum';
+import { TransactionTypeEnum } from 'src/constants/transactionType.enum';
 import {
   CreateRegistrationDto,
+  ConfirmRegistrationDto,
   RejectRegistrationDto,
   ResponseRegistrationDto,
 } from './dto';
 
-// Import các model liên quan
 import {
   JockeyInvitation,
   JockeyInvitationDocument,
@@ -32,6 +32,10 @@ import {
   HorseOwnerProfile,
   HorseOwnerProfileDocument,
 } from '../user/schemas/horse-owner-profile.schema';
+import {
+  Tournament,
+  TournamentDocument,
+} from '../tournament/schemas/tournament.schema';
 import {
   Transaction,
   TransactionDocument,
@@ -55,6 +59,9 @@ export class RegistrationService {
     @InjectModel(HorseOwnerProfile.name)
     private readonly ownerProfileModel: Model<HorseOwnerProfileDocument>,
 
+    @InjectModel(Tournament.name)
+    private readonly tournamentModel: Model<TournamentDocument>,
+
     @InjectModel(Transaction.name)
     private readonly transactionModel: Model<TransactionDocument>,
 
@@ -62,7 +69,7 @@ export class RegistrationService {
     private readonly notificationModel: Model<NotificationDocument>,
   ) {}
 
-  // ─── Helper ────────────────────────────────────────────────────────────────
+  // ─── Helpers ───────────────────────────────────────────────────────────────
 
   private toResponse(data: any): ResponseRegistrationDto {
     return plainToInstance(ResponseRegistrationDto, data, {
@@ -114,39 +121,49 @@ export class RegistrationService {
       );
     }
 
-    // 3. Check balance >= entryFee
+    // 3. Lấy entryFee từ Tournament
+    const tournamentIdStr = this.resolveId(invitation.tournamentId);
+    const tournament = await this.tournamentModel
+      .findById(tournamentIdStr)
+      .lean();
+    if (!tournament) {
+      throw new NotFoundException('Không tìm thấy giải đấu');
+    }
+    const entryFee = tournament.entryFee;
+
+    // 4. Check balance >= entryFee
     const ownerProfile = await this.ownerProfileModel
       .findOne({ userId: new Types.ObjectId(requesterId) })
       .lean();
     if (!ownerProfile) {
       throw new NotFoundException('Không tìm thấy hồ sơ chủ ngựa');
     }
-    if (ownerProfile.balance < dto.entryFee) {
+    if (ownerProfile.balance < entryFee) {
       throw new BadRequestException(
-        `Số dư không đủ. Số dư hiện tại: ${ownerProfile.balance}, phí đăng ký: ${dto.entryFee}`,
+        `Số dư không đủ. Số dư hiện tại: ${ownerProfile.balance}, phí đăng ký: ${entryFee}`,
       );
     }
 
-    // 4. Check chưa có registration active cho (tournamentId, horseId)
-    const existing = await this.registrationRepository.findActiveByTournamentAndHorse(
-      this.resolveId(invitation.tournamentId),
-      this.resolveId(invitation.horseId),
-    );
+    // 5. Check chưa có registration active cho (tournamentId, horseId)
+    const existing =
+      await this.registrationRepository.findActiveByTournamentAndHorse(
+        tournamentIdStr,
+        this.resolveId(invitation.horseId),
+      );
     if (existing) {
       throw new ConflictException(
         'Ngựa này đã được đăng ký trong giải đấu, không thể đăng ký trùng',
       );
     }
 
-    // 5. Insert Registration
+    // 6. Insert Registration — gateNumber chưa có, admin sẽ assign khi confirm
     const registration = await this.registrationRepository.create({
       jockeyInvitationId: new Types.ObjectId(dto.jockeyInvitationId),
       tournamentId: invitation.tournamentId,
       horseId: invitation.horseId,
       jockeyId: invitation.jockeyId,
       ownerId: invitation.horseOwnerId,
-      entryFee: dto.entryFee,
-      gateNumber: dto.gateNumber,
+      entryFee,
       status: RegistrationStatusEnum.PENDING,
       registeredAt: new Date(),
     });
@@ -203,9 +220,12 @@ export class RegistrationService {
     return this.toResponse(reg);
   }
 
-  // ─── Feature 2: Admin confirm ─────────────────────────────────────────────
+  // ─── Feature 2: Admin confirm — assign gateNumber, trừ tiền ───────────────
 
-  async adminConfirm(id: string): Promise<ResponseRegistrationDto> {
+  async adminConfirm(
+    id: string,
+    dto: ConfirmRegistrationDto,
+  ): Promise<ResponseRegistrationDto> {
     // 1. Check registration status = pending
     const reg = await this.registrationRepository.findById(id);
     if (!reg) throw new NotFoundException('Không tìm thấy đăng ký');
@@ -217,7 +237,7 @@ export class RegistrationService {
 
     const ownerIdStr = this.resolveId(reg.ownerId);
 
-    // 2. Re-check balance tại thời điểm duyệt
+    // 2. Re-check balance tại thời điểm admin duyệt
     const ownerProfile = await this.ownerProfileModel
       .findOne({ userId: new Types.ObjectId(ownerIdStr) })
       .lean();
@@ -232,7 +252,6 @@ export class RegistrationService {
         },
       });
 
-      // Gửi notification cho owner
       await this.notificationModel.create({
         userId: new Types.ObjectId(ownerIdStr),
         type: 'registration_auto_rejected',
@@ -255,26 +274,27 @@ export class RegistrationService {
     // 4. Insert Transaction
     await this.transactionModel.create({
       senderId: new Types.ObjectId(ownerIdStr),
-      receiverId: null, // system — hoặc thay bằng systemAccountId nếu có
+      receiverId: null,
       content: `Phí đăng ký giải đấu`,
       amount: reg.entryFee,
       type: TransactionTypeEnum.ENTRY_FEE,
     });
 
-    // 5. Cập nhật status Registration
+    // 5. Cập nhật status + gán gateNumber do admin chỉ định
     const updated = await this.registrationRepository.updateById(id, {
       $set: {
         status: RegistrationStatusEnum.CONFIRMED,
+        gateNumber: dto.gateNumber,
         confirmedAt: new Date(),
       },
     });
 
-    // 6. Gửi notification cho owner
+    // 6. Notification cho owner
     await this.notificationModel.create({
       userId: new Types.ObjectId(ownerIdStr),
       type: 'registration_confirmed',
       title: 'Đăng ký được duyệt',
-      content: `Đăng ký tham gia giải đấu của bạn đã được duyệt. Phí ${reg.entryFee} đã được trừ.`,
+      content: `Đăng ký tham gia giải đấu đã được duyệt. Ô chuồng: ${dto.gateNumber}. Phí ${reg.entryFee} đã được trừ.`,
       isRead: false,
     });
 
@@ -305,12 +325,11 @@ export class RegistrationService {
 
     const ownerIdStr = this.resolveId(reg.ownerId);
 
-    // Gửi notification kèm lý do
     await this.notificationModel.create({
       userId: new Types.ObjectId(ownerIdStr),
       type: 'registration_rejected',
       title: 'Đăng ký bị từ chối',
-      content: `Đăng ký tham gia giải đấu của bạn bị từ chối. Lý do: ${dto.reason}`,
+      content: `Đăng ký tham gia giải đấu bị từ chối. Lý do: ${dto.reason}`,
       isRead: false,
     });
 

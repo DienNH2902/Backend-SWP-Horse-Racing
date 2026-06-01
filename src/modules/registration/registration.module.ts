@@ -27,6 +27,7 @@ import {
   Notification,
   NotificationSchema,
 } from '../notification/schemas/notification.schema';
+import { Tournament, TournamentSchema } from '../tournament/schemas/tournament.schema'; 
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import {
       { name: JockeyInvitation.name, schema: JockeyInvitationSchema },
       { name: Contract.name, schema: ContractSchema },
       { name: HorseOwnerProfile.name, schema: HorseOwnerProfileSchema },
+      { name: Tournament.name, schema: TournamentSchema },
       { name: Transaction.name, schema: TransactionSchema },
       { name: Notification.name, schema: NotificationSchema },
     ]),

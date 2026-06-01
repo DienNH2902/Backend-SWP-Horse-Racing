@@ -70,4 +70,9 @@ export class CreateTournamentDto {
   @IsNumber()
   @Min(1)
   totalRaces: number;
+
+  @ApiProperty({ example: 500000, description: 'Phí tham gia giải đấu' })
+  @IsNumber()
+  @Min(0)
+  entryFee: number;
 }

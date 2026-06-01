@@ -36,6 +36,9 @@ export class Tournament extends Document {
 
   @Prop({ required: true, min: 1 })
   totalRaces: number; // Tổng số trận đấu/lượt chạy trong toàn giải
+
+  @Prop({ required: true, min: 0 })
+  entryFee: number;
 }
 
 export const TournamentSchema = SchemaFactory.createForClass(Tournament);

@@ -23,6 +23,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { RoleEnum } from 'src/constants/roleEnum.enum';
 import {
   CreateRegistrationDto,
+  ConfirmRegistrationDto,
   RejectRegistrationDto,
   ResponseRegistrationDto,
 } from './dto';
@@ -102,11 +103,14 @@ export class AdminRegistrationController {
 
   @Patch(':id/confirm')
   @ApiOperation({
-    summary: 'Admin duyệt đăng ký → trừ entryFee, tạo transaction, gửi notification',
+    summary: 'Admin duyệt đăng ký, assign gateNumber → trừ entryFee, tạo transaction, gửi notification',
   })
   @ApiParam({ name: 'id', description: 'Registration ID' })
-  confirm(@Param('id') id: string): Promise<ResponseRegistrationDto> {
-    return this.service.adminConfirm(id);
+  confirm(
+    @Param('id') id: string,
+    @Body() dto: ConfirmRegistrationDto,
+  ): Promise<ResponseRegistrationDto> {
+    return this.service.adminConfirm(id, dto);
   }
 
   @Patch(':id/reject')
