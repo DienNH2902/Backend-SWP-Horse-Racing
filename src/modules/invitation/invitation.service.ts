@@ -93,15 +93,21 @@ export class JockeyInvitationService {
 
   // ─── Jockey xem các lời mời gửi đến ───────────────────────────────────────
 
-  async getMyInvitations(jockeyId: string): Promise<ResponseJockeyInvitationDto[]> {
-    const invitations = await this.invitationRepository.findByJockeyId(jockeyId);
+  async getMyInvitations(
+    jockeyId: string,
+  ): Promise<ResponseJockeyInvitationDto[]> {
+    const invitations =
+      await this.invitationRepository.findByJockeyId(jockeyId);
     return invitations.map((i) => this.toInvitationResponse(i));
   }
 
   // ─── HorseOwner xem các lời mời đã gửi ────────────────────────────────────
 
-  async getSentInvitations(horseOwnerId: string): Promise<ResponseJockeyInvitationDto[]> {
-    const invitations = await this.invitationRepository.findByHorseOwnerId(horseOwnerId);
+  async getSentInvitations(
+    horseOwnerId: string,
+  ): Promise<ResponseJockeyInvitationDto[]> {
+    const invitations =
+      await this.invitationRepository.findByHorseOwnerId(horseOwnerId);
     return invitations.map((i) => this.toInvitationResponse(i));
   }
 
@@ -111,7 +117,10 @@ export class JockeyInvitationService {
     invitationId: string,
     dto: RespondJockeyInvitationDto,
     jockeyId: string,
-  ): Promise<{ invitation: ResponseJockeyInvitationDto; contract?: ResponseContractDto }> {
+  ): Promise<{
+    invitation: ResponseJockeyInvitationDto;
+    contract?: ResponseContractDto;
+  }> {
     const invitation = await this.invitationRepository.findById(invitationId);
 
     if (!invitation) {
@@ -197,7 +206,8 @@ export class JockeyInvitationService {
       throw new ForbiddenException('Bạn không có quyền xem hợp đồng này');
     }
 
-    const contract = await this.contractRepository.findByInvitationId(invitationId);
+    const contract =
+      await this.contractRepository.findByInvitationId(invitationId);
     if (!contract) {
       throw new NotFoundException(
         'Chưa có hợp đồng nào được tạo từ lời mời này',

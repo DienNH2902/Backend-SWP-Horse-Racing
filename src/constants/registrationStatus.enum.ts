@@ -3,4 +3,3 @@ export enum RegistrationStatusEnum {
   CONFIRMED = 'confirmed',
   REJECTED = 'rejected',
 }
- 

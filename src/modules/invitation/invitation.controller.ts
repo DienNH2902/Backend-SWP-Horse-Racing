@@ -39,7 +39,9 @@ export class JockeyInvitationController {
   @Post()
   @UseGuards(RolesGuard)
   @Roles(RoleEnum.HORSE_OWNER)
-  @ApiOperation({ summary: 'Chủ ngựa gửi lời mời cho jockey tham gia giải đua' })
+  @ApiOperation({
+    summary: 'Chủ ngựa gửi lời mời cho jockey tham gia giải đua',
+  })
   send(
     @Body() dto: CreateJockeyInvitationDto,
     @Request() req: any,
@@ -54,7 +56,9 @@ export class JockeyInvitationController {
   @UseGuards(RolesGuard)
   @Roles(RoleEnum.JOCKEY)
   @ApiOperation({ summary: 'Jockey xem danh sách lời mời được gửi đến' })
-  getMyInvitations(@Request() req: any): Promise<ResponseJockeyInvitationDto[]> {
+  getMyInvitations(
+    @Request() req: any,
+  ): Promise<ResponseJockeyInvitationDto[]> {
     return this.service.getMyInvitations(req.user._id as string);
   }
 
@@ -90,14 +94,18 @@ export class JockeyInvitationController {
   @UseGuards(RolesGuard)
   @Roles(RoleEnum.JOCKEY)
   @ApiOperation({
-    summary: 'Jockey phản hồi lời mời (accept/reject). Accept → tự động tạo contract',
+    summary:
+      'Jockey phản hồi lời mời (accept/reject). Accept → tự động tạo contract',
   })
   @ApiParam({ name: 'id', description: 'JockeyInvitation ID' })
   respond(
     @Param('id') id: string,
     @Body() dto: RespondJockeyInvitationDto,
     @Request() req: any,
-  ): Promise<{ invitation: ResponseJockeyInvitationDto; contract?: ResponseContractDto }> {
+  ): Promise<{
+    invitation: ResponseJockeyInvitationDto;
+    contract?: ResponseContractDto;
+  }> {
     return this.service.respondToInvitation(id, dto, req.user._id as string);
   }
 
