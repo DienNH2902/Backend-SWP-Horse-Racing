@@ -42,6 +42,18 @@ export class CreateJockeyInvitationDto {
   @Max(100)
   proposeJockeyShareRate: number;
 
+  @ApiProperty({ example: 60 })
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  ownerCompensationRate: number;
+
+  @ApiProperty({ example: 40 })
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  jockeyCompensationRate: number;
+
   @ApiProperty({
     example: 'Mời bạn tham gia giải đua tháng 6',
     required: false,

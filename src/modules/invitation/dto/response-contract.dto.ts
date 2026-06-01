@@ -48,6 +48,12 @@ export class ResponseContractDto {
   jockeyShareRate: number;
 
   @Expose()
+  ownerCompensationRate: number;
+
+  @Expose()
+  jockeyCompensationRate: number;
+
+  @Expose()
   status: string;
 
   @Expose()

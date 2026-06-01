@@ -49,6 +49,12 @@ export class ResponseJockeyInvitationDto {
   proposeJockeyShareRate: number;
 
   @Expose()
+  ownerCompensationRate: number;
+
+  @Expose()
+  jockeyCompensationRate: number;
+
+  @Expose()
   message: string;
 
   @Expose()

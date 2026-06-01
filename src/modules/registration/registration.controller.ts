@@ -35,7 +35,7 @@ import {
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class RegistrationController {
-  constructor(private readonly service: RegistrationService) {}
+  constructor(private readonly registrationService: RegistrationService) {}
 
   @Post()
   @UseGuards(RolesGuard)
@@ -45,7 +45,10 @@ export class RegistrationController {
     @Body() dto: CreateRegistrationDto,
     @Request() req: any,
   ): Promise<ResponseRegistrationDto> {
-    return this.service.createRegistration(dto, req.user._id as string);
+    return this.registrationService.createRegistration(
+      dto,
+      req.user._id as string,
+    );
   }
 
   @Get('my')
@@ -57,7 +60,7 @@ export class RegistrationController {
     @Request() req: any,
     @Query('tournamentId') tournamentId?: string,
   ): Promise<ResponseRegistrationDto[]> {
-    return this.service.getMyRegistrations(
+    return this.registrationService.getMyRegistrations(
       req.user._id as string,
       tournamentId,
     );
@@ -72,7 +75,10 @@ export class RegistrationController {
     @Param('id') id: string,
     @Request() req: any,
   ): Promise<ResponseRegistrationDto> {
-    return this.service.getRegistrationById(id, req.user._id as string);
+    return this.registrationService.getRegistrationById(
+      id,
+      req.user._id as string,
+    );
   }
 }
 
@@ -84,7 +90,7 @@ export class RegistrationController {
 @Roles(RoleEnum.ADMIN)
 @ApiBearerAuth()
 export class AdminRegistrationController {
-  constructor(private readonly service: RegistrationService) {}
+  constructor(private readonly registrationService: RegistrationService) {}
 
   @Get()
   @ApiOperation({
@@ -100,7 +106,7 @@ export class AdminRegistrationController {
     @Query('status') status?: string,
     @Query('tournamentId') tournamentId?: string,
   ): Promise<ResponseRegistrationDto[]> {
-    return this.service.adminGetAll({ status, tournamentId });
+    return this.registrationService.adminGetAll({ status, tournamentId });
   }
 
   @Get(':id')
@@ -109,7 +115,7 @@ export class AdminRegistrationController {
   })
   @ApiParam({ name: 'id', description: 'Registration ID' })
   getOne(@Param('id') id: string): Promise<ResponseRegistrationDto> {
-    return this.service.adminGetById(id);
+    return this.registrationService.adminGetById(id);
   }
 
   @Patch(':id/confirm')
@@ -122,7 +128,7 @@ export class AdminRegistrationController {
     @Param('id') id: string,
     @Body() dto: ApproveRegistrationDto,
   ): Promise<ResponseRegistrationDto> {
-    return this.service.adminConfirm(id, dto);
+    return this.registrationService.adminConfirm(id, dto);
   }
 
   @Patch(':id/reject')
@@ -134,7 +140,7 @@ export class AdminRegistrationController {
     @Param('id') id: string,
     @Body() dto: RejectRegistrationDto,
   ): Promise<ResponseRegistrationDto> {
-    return this.service.adminReject(id, dto);
+    return this.registrationService.adminReject(id, dto);
   }
 
   @Patch(':id/waitlist')
@@ -143,25 +149,25 @@ export class AdminRegistrationController {
   })
   @ApiParam({ name: 'id', description: 'Registration ID' })
   waitlist(@Param('id') id: string): Promise<ResponseRegistrationDto> {
-    return this.service.adminWaitlist(id);
+    return this.registrationService.adminWaitlist(id);
   }
 }
 
 // ─── Race routes (Phase sau — Referee dùng) ───────────────────────────────────
 
-@ApiTags('Races')
-@Controller('races')
-@UseGuards(JwtAuthGuard)
-@ApiBearerAuth()
-export class RaceRegistrationController {
-  constructor(private readonly service: RegistrationService) {}
+// @ApiTags('Races')
+// @Controller('races')
+// @UseGuards(JwtAuthGuard)
+// @ApiBearerAuth()
+// export class RaceRegistrationController {
+//   constructor(private readonly registrationService: RegistrationService) {}
 
-  @Get(':id/registrations')
-  @ApiOperation({
-    summary: 'Xem danh sách horse confirmed trong race (dùng cho Referee)',
-  })
-  @ApiParam({ name: 'id', description: 'Race / Tournament ID' })
-  getConfirmed(@Param('id') id: string): Promise<ResponseRegistrationDto[]> {
-    return this.service.getConfirmedByRace(id);
-  }
-}
+//   @Get(':id/registrations')
+//   @ApiOperation({
+//     summary: 'Xem danh sách horse confirmed trong race (dùng cho Referee)',
+//   })
+//   @ApiParam({ name: 'id', description: 'Race / Tournament ID' })
+//   getConfirmed(@Param('id') id: string): Promise<ResponseRegistrationDto[]> {
+//     return this.registrationService.getConfirmedByRace(id);
+//   }
+// }

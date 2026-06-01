@@ -23,6 +23,10 @@ import { Contract, ContractSchema } from './schemas/contract.schema';
     JockeyInvitationRepository,
     ContractRepository,
   ],
-  exports: [JockeyInvitationService, ContractRepository],
+  exports: [
+    JockeyInvitationService,
+    JockeyInvitationRepository,
+    ContractRepository,
+  ],
 })
 export class JockeyInvitationModule {}

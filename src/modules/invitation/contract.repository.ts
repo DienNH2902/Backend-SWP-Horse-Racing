@@ -7,15 +7,15 @@ import { Contract, ContractDocument } from './schemas/contract.schema';
 export class ContractRepository {
   constructor(
     @InjectModel(Contract.name)
-    private readonly model: Model<ContractDocument>,
+    private readonly contractModel: Model<ContractDocument>,
   ) {}
 
   async create(data: Partial<Contract>): Promise<Contract> {
-    return new this.model(data).save();
+    return new this.contractModel(data).save();
   }
 
   async findById(id: string): Promise<Contract | null> {
-    return this.model
+    return this.contractModel
       .findById(id)
       .populate('tournamentId horseId jockeyId horseOwnerId jockeyInvitationId')
       .lean()
@@ -26,7 +26,7 @@ export class ContractRepository {
     tournamentId: string,
     horseOwnerId: string,
   ): Promise<Contract[]> {
-    return this.model
+    return this.contractModel
       .find({
         tournamentId: new Types.ObjectId(tournamentId),
         horseOwnerId: new Types.ObjectId(horseOwnerId),
@@ -37,7 +37,7 @@ export class ContractRepository {
   }
 
   async findByJockeyId(jockeyId: string): Promise<Contract[]> {
-    return this.model
+    return this.contractModel
       .find({ jockeyId: new Types.ObjectId(jockeyId) })
       .populate('tournamentId horseId horseOwnerId')
       .lean()
@@ -45,7 +45,7 @@ export class ContractRepository {
   }
 
   async findByInvitationId(invitationId: string): Promise<Contract | null> {
-    return this.model
+    return this.contractModel
       .findOne({ jockeyInvitationId: new Types.ObjectId(invitationId) })
       .lean()
       .exec();

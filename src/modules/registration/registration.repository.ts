@@ -13,15 +13,15 @@ import { RegistrationStatusEnum } from 'src/constants/registrationStatus.enum';
 export class RegistrationRepository {
   constructor(
     @InjectModel(Registration.name)
-    private readonly model: Model<RegistrationDocument>,
+    private readonly registrationModel: Model<RegistrationDocument>,
   ) {}
 
   async create(data: Partial<Registration>): Promise<Registration> {
-    return new this.model(data).save();
+    return new this.registrationModel(data).save();
   }
 
   async findById(id: string): Promise<Registration | null> {
-    return this.model
+    return this.registrationModel
       .findById(id)
       .populate('tournamentId horseId jockeyId ownerId jockeyInvitationId')
       .lean()
@@ -38,7 +38,7 @@ export class RegistrationRepository {
     if (tournamentId) {
       filter.tournamentId = new Types.ObjectId(tournamentId);
     }
-    return this.model
+    return this.registrationModel
       .find(filter)
       .populate('tournamentId horseId jockeyId')
       .sort({ createdAt: -1 })
@@ -46,10 +46,8 @@ export class RegistrationRepository {
       .exec();
   }
 
-  async findAll(
-    filter: QueryFilter<Registration> = {},
-  ): Promise<Registration[]> {
-    return this.model
+  async findAll(filter: QueryFilter<Registration>): Promise<Registration[]> {
+    return this.registrationModel
       .find(filter)
       .populate('tournamentId horseId jockeyId ownerId')
       .sort({ createdAt: -1 })
@@ -61,7 +59,7 @@ export class RegistrationRepository {
     tournamentId: string,
     horseId: string,
   ): Promise<Registration | null> {
-    return this.model
+    return this.registrationModel
       .findOne({
         tournamentId: new Types.ObjectId(tournamentId),
         horseId: new Types.ObjectId(horseId),
@@ -75,7 +73,7 @@ export class RegistrationRepository {
     id: string,
     update: UpdateQuery<Registration>,
   ): Promise<Registration | null> {
-    return this.model
+    return this.registrationModel
       .findByIdAndUpdate(id, update, { returnDocument: 'after' })
       .populate('tournamentId horseId jockeyId ownerId')
       .lean()
@@ -83,12 +81,66 @@ export class RegistrationRepository {
   }
 
   async findConfirmedByRace(raceId: string): Promise<Registration[]> {
-    return this.model
+    return this.registrationModel
       .find({
         tournamentId: new Types.ObjectId(raceId),
         status: RegistrationStatusEnum.CONFIRMED,
       })
       .populate('horseId jockeyId ownerId')
+      .lean()
+      .exec();
+  }
+
+  async updateStatusToWaitlisted(id: string): Promise<Registration | null> {
+    return this.registrationModel
+      .findByIdAndUpdate(
+        id,
+        { $set: { status: RegistrationStatusEnum.WAITLISTED } },
+        { returnDocument: 'after' },
+      )
+      .populate('tournamentId horseId jockeyId ownerId')
+      .lean()
+      .exec();
+  }
+
+  async updateStatusToConfirmed(
+    id: string,
+    gateNumber: number,
+  ): Promise<Registration | null> {
+    return this.registrationModel
+      .findByIdAndUpdate(
+        id,
+        {
+          $set: {
+            status: RegistrationStatusEnum.CONFIRMED,
+            gateNumber: gateNumber,
+            confirmedAt: new Date(),
+          },
+        },
+        { returnDocument: 'after' },
+      )
+      .populate('tournamentId horseId jockeyId ownerId')
+      .lean()
+      .exec();
+  }
+
+  async updateStatusToRejected(
+    id: string,
+    reason: string,
+  ): Promise<Registration | null> {
+    return this.registrationModel
+      .findByIdAndUpdate(
+        id,
+        {
+          $set: {
+            status: RegistrationStatusEnum.REJECTED,
+            rejectedReason: reason,
+            rejectedAt: new Date(),
+          },
+        },
+        { returnDocument: 'after' },
+      )
+      .populate('tournamentId horseId jockeyId ownerId')
       .lean()
       .exec();
   }

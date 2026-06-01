@@ -1,14 +1,15 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import { ContractStatusEnum } from 'src/constants/contractStatusEnum.enum';
 
 export type ContractDocument = Contract & Document;
 
-export enum ContractStatusEnum {
-  ACTIVE = 'ACTIVE',
-  COMPLETED = 'COMPLETED',
-  BREACHED = 'BREACHED',
-  CANCELLED = 'CANCELLED',
-}
+// export enum ContractStatusEnum {
+//   ACTIVE = 'ACTIVE',
+//   COMPLETED = 'COMPLETED',
+//   BREACHED = 'BREACHED',
+//   CANCELLED = 'CANCELLED',
+// }
 
 @Schema({ timestamps: true })
 export class Contract {
@@ -38,6 +39,12 @@ export class Contract {
 
   @Prop({ required: true, min: 0, max: 100 })
   jockeyShareRate: number;
+
+  @Prop({ required: true, min: 0, max: 100 })
+  ownerCompensationRate: number; // Tỷ lệ đền bù của chủ ngựa khi vi phạm điều khoản
+
+  @Prop({ required: true, min: 0, max: 100 })
+  jockeyCompensationRate: number; // Tỷ lệ đền bù của nài ngựa khi tự ý hủy kèo
 
   @Prop({
     type: String,

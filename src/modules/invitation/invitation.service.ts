@@ -9,24 +9,23 @@ import { plainToInstance } from 'class-transformer';
 import { Types } from 'mongoose';
 import { JockeyInvitationRepository } from './invitation.repository';
 import { ContractRepository } from './contract.repository';
-import { InvitationStatusEnum } from './schemas/invitation.schema';
-import { ContractStatusEnum } from './schemas/contract.schema';
+import { ContractStatusEnum } from 'src/constants/contractStatusEnum.enum';
 import {
   CreateJockeyInvitationDto,
   RespondJockeyInvitationDto,
   ResponseJockeyInvitationDto,
   ResponseContractDto,
 } from './dto';
+import { JockeyInvitationEnum } from 'src/constants/jockeyInvitationEnum.enum';
 
 @Injectable()
 export class JockeyInvitationService {
   constructor(
-    private readonly invitationRepository: JockeyInvitationRepository,
+    private readonly jockeyInvitationRepository: JockeyInvitationRepository,
     private readonly contractRepository: ContractRepository,
   ) {}
 
-  // ─── Helpers ───────────────────────────────────────────────────────────────
-
+  // Helper
   private toInvitationResponse(data: any): ResponseJockeyInvitationDto {
     return plainToInstance(ResponseJockeyInvitationDto, data, {
       excludeExtraneousValues: true,
@@ -39,28 +38,27 @@ export class JockeyInvitationService {
     });
   }
 
-  /**
-   * Lấy ownerIdStr an toàn bất kể trường đã populate hay chưa
-   */
+  // Lấy ownerIdStr an toàn bất kể trường đã populate hay chưa
+
   private resolveId(field: any): string {
     return field?._id?.toString() || field?.toString();
   }
 
-  // ─── HorseOwner gửi invitation ─────────────────────────────────────────────
+  // HorseOwner gửi invitation
 
   async sendInvitation(
     dto: CreateJockeyInvitationDto,
     horseOwnerId: string,
   ): Promise<ResponseJockeyInvitationDto> {
-    // Validate: tổng shareRate phải = 100
+    // Validate: tổng shareRate phải = 100%
     if (dto.proposeOwnerShareRate + dto.proposeJockeyShareRate !== 100) {
       throw new BadRequestException(
         'Tổng proposeOwnerShareRate và proposeJockeyShareRate phải bằng 100',
       );
     }
 
-    // Validate: chưa có PENDING nào cho bộ (tournament, horse, jockey) này
-    const existingPending = await this.invitationRepository.findPending(
+    // Validate: chưa có thư mời PENDING nào cho bộ (tournament, horse, jockey) này
+    const existingPending = await this.jockeyInvitationRepository.findPending(
       dto.tournamentId,
       dto.horseId,
       dto.jockeyId,
@@ -76,7 +74,7 @@ export class JockeyInvitationService {
     // Note: thêm check này nếu muốn ngăn trường hợp mời jockey đã ký hợp đồng
     // const existing = await this.contractRepository.findByInvitationId(...);
 
-    const invitation = await this.invitationRepository.create({
+    const invitation = await this.jockeyInvitationRepository.create({
       tournamentId: new Types.ObjectId(dto.tournamentId),
       horseOwnerId: new Types.ObjectId(horseOwnerId),
       horseId: new Types.ObjectId(dto.horseId),
@@ -84,6 +82,8 @@ export class JockeyInvitationService {
       proposeContractAmount: dto.proposeContractAmount,
       proposeOwnerShareRate: dto.proposeOwnerShareRate,
       proposeJockeyShareRate: dto.proposeJockeyShareRate,
+      ownerCompensationRate: dto.ownerCompensationRate,
+      jockeyCompensationRate: dto.jockeyCompensationRate,
       message: dto.message,
       invitedAt: new Date(),
     });
@@ -91,28 +91,26 @@ export class JockeyInvitationService {
     return this.toInvitationResponse(invitation);
   }
 
-  // ─── Jockey xem các lời mời gửi đến ───────────────────────────────────────
-
+  // Jockey xem các lời mời gửi đến
   async getMyInvitations(
     jockeyId: string,
   ): Promise<ResponseJockeyInvitationDto[]> {
     const invitations =
-      await this.invitationRepository.findByJockeyId(jockeyId);
+      await this.jockeyInvitationRepository.findByJockeyId(jockeyId);
     return invitations.map((i) => this.toInvitationResponse(i));
   }
 
-  // ─── HorseOwner xem các lời mời đã gửi ────────────────────────────────────
+  // HorseOwner xem các lời mời đã gửi
 
   async getSentInvitations(
     horseOwnerId: string,
   ): Promise<ResponseJockeyInvitationDto[]> {
     const invitations =
-      await this.invitationRepository.findByHorseOwnerId(horseOwnerId);
+      await this.jockeyInvitationRepository.findByHorseOwnerId(horseOwnerId);
     return invitations.map((i) => this.toInvitationResponse(i));
   }
 
-  // ─── Jockey phản hồi (accept / reject) ────────────────────────────────────
-
+  // Jockey phản hồi (accept / reject)
   async respondToInvitation(
     invitationId: string,
     dto: RespondJockeyInvitationDto,
@@ -121,7 +119,8 @@ export class JockeyInvitationService {
     invitation: ResponseJockeyInvitationDto;
     contract?: ResponseContractDto;
   }> {
-    const invitation = await this.invitationRepository.findById(invitationId);
+    const invitation =
+      await this.jockeyInvitationRepository.findById(invitationId);
 
     if (!invitation) {
       throw new NotFoundException('Không tìm thấy lời mời');
@@ -133,21 +132,22 @@ export class JockeyInvitationService {
     }
 
     // Chỉ phản hồi được khi status = PENDING
-    if (invitation.status !== InvitationStatusEnum.PENDING) {
+    if (invitation.status !== JockeyInvitationEnum.PENDING) {
       throw new ConflictException(
         `Lời mời này đã ở trạng thái "${invitation.status}", không thể phản hồi`,
       );
     }
 
     // Cập nhật status invitation
-    const updated = await this.invitationRepository.updateById(invitationId, {
-      $set: { status: dto.status },
-    });
+    const updated = await this.jockeyInvitationRepository.updateStatus(
+      invitationId,
+      dto.status,
+    );
 
     const invitationResponse = this.toInvitationResponse(updated);
 
-    // Nếu ACCEPTED → tự động tạo Contract
-    if (dto.status === InvitationStatusEnum.ACCEPTED) {
+    // Nếu status ACCEPTED → tự động tạo Contract
+    if (dto.status === JockeyInvitationEnum.ACCEPTED) {
       const contract = await this.contractRepository.create({
         tournamentId: invitation.tournamentId,
         horseOwnerId: invitation.horseOwnerId,
@@ -157,6 +157,8 @@ export class JockeyInvitationService {
         contractAmount: invitation.proposeContractAmount,
         ownerShareRate: invitation.proposeOwnerShareRate,
         jockeyShareRate: invitation.proposeJockeyShareRate,
+        ownerCompensationRate: invitation.ownerCompensationRate,
+        jockeyCompensationRate: invitation.jockeyCompensationRate,
         status: ContractStatusEnum.ACTIVE,
         signedAt: new Date(),
       });
@@ -170,13 +172,14 @@ export class JockeyInvitationService {
     return { invitation: invitationResponse };
   }
 
-  // ─── Xem chi tiết invitation ────────────────────────────────────────────────
+  // Xem chi tiết invitation
 
   async getInvitationById(
     invitationId: string,
     requesterId: string,
   ): Promise<ResponseJockeyInvitationDto> {
-    const invitation = await this.invitationRepository.findById(invitationId);
+    const invitation =
+      await this.jockeyInvitationRepository.findById(invitationId);
     if (!invitation) throw new NotFoundException('Không tìm thấy lời mời');
 
     const jockeyIdStr = this.resolveId(invitation.jockeyId);
@@ -190,13 +193,14 @@ export class JockeyInvitationService {
     return this.toInvitationResponse(invitation);
   }
 
-  // ─── Xem contract theo invitation ──────────────────────────────────────────
+  // Xem contract theo invitation
 
   async getContractByInvitation(
     invitationId: string,
     requesterId: string,
   ): Promise<ResponseContractDto> {
-    const invitation = await this.invitationRepository.findById(invitationId);
+    const invitation =
+      await this.jockeyInvitationRepository.findById(invitationId);
     if (!invitation) throw new NotFoundException('Không tìm thấy lời mời');
 
     const jockeyIdStr = this.resolveId(invitation.jockeyId);

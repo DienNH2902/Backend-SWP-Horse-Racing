@@ -1,18 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum } from 'class-validator';
-import { InvitationStatusEnum } from '../schemas/invitation.schema';
-
-const RESPOND_STATUSES = [
-  InvitationStatusEnum.ACCEPTED,
-  InvitationStatusEnum.REJECTED,
-] as const;
-type RespondStatus = (typeof RESPOND_STATUSES)[number];
+import { IsEnum, IsNotEmpty } from 'class-validator';
+import { JockeyInvitationEnum } from 'src/constants/jockeyInvitationEnum.enum';
 
 export class RespondJockeyInvitationDto {
   @ApiProperty({
-    enum: RESPOND_STATUSES,
-    example: InvitationStatusEnum.ACCEPTED,
+    example: JockeyInvitationEnum.ACCEPTED,
+    enum: JockeyInvitationEnum,
+    description: 'Trạng thái mới của thư mời Jockey cần cập nhật',
   })
-  @IsEnum(RESPOND_STATUSES)
-  status: RespondStatus;
+  @IsEnum(JockeyInvitationEnum, { message: 'Trạng thái không hợp lệ' })
+  @IsNotEmpty({ message: 'Trạng thái không được để trống' })
+  status: JockeyInvitationEnum;
 }

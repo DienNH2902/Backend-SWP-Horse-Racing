@@ -3,7 +3,6 @@ import { MongooseModule } from '@nestjs/mongoose';
 import {
   RegistrationController,
   AdminRegistrationController,
-  RaceRegistrationController,
 } from './registration.controller';
 import { RegistrationService } from './registration.service';
 import { RegistrationRepository } from './registration.repository';
@@ -37,6 +36,10 @@ import {
   Tournament,
   TournamentSchema,
 } from '../tournament/schemas/tournament.schema';
+import { TournamentModule } from '../tournament/tournament.module';
+import { NotificationModule } from '../notification/notification.module';
+import { TransactionModule } from '../transaction/transaction.module';
+import { JockeyInvitationModule } from '../invitation/invitation.module';
 
 @Module({
   imports: [
@@ -49,11 +52,15 @@ import {
       { name: Transaction.name, schema: TransactionSchema },
       { name: Notification.name, schema: NotificationSchema },
     ]),
+    JockeyInvitationModule,
+    TournamentModule,
+    TransactionModule,
+    NotificationModule,
   ],
   controllers: [
     RegistrationController,
     AdminRegistrationController,
-    RaceRegistrationController,
+    RegistrationController,
   ],
   providers: [RegistrationService, RegistrationRepository],
   exports: [RegistrationService, RegistrationRepository],

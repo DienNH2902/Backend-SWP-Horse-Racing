@@ -9,8 +9,19 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { plainToInstance } from 'class-transformer';
 import { RegistrationRepository } from './registration.repository';
+import { JockeyInvitationRepository } from '../invitation/invitation.repository';
+import { ContractRepository } from '../invitation/contract.repository';
+import { TournamentRepository } from '../tournament/tournament.repository';
+// import { TransactionRepository } from '../transaction/transaction.repository';
+// import { NotificationRepository } from '../notification/notification.repository';
+import {
+  HorseOwnerProfile,
+  HorseOwnerProfileDocument,
+} from '../user/schemas/horse-owner-profile.schema';
 import { RegistrationStatusEnum } from 'src/constants/registrationStatus.enum';
-import { TransactionTypeEnum } from 'src/constants/transactionType.enum';
+// import { TransactionTypeEnum } from 'src/constants/transactionType.enum';
+import { JockeyInvitationEnum } from 'src/constants/jockeyInvitationEnum.enum';
+import { ContractStatusEnum } from 'src/constants/contractStatusEnum.enum';
 import {
   CreateRegistrationDto,
   ApproveRegistrationDto,
@@ -18,59 +29,21 @@ import {
   ResponseRegistrationDto,
 } from './dto';
 
-import {
-  JockeyInvitation,
-  JockeyInvitationDocument,
-  InvitationStatusEnum,
-} from '../invitation/schemas/invitation.schema';
-import {
-  Contract,
-  ContractDocument,
-  ContractStatusEnum,
-} from '../invitation/schemas/contract.schema';
-import {
-  HorseOwnerProfile,
-  HorseOwnerProfileDocument,
-} from '../user/schemas/horse-owner-profile.schema';
-import {
-  Tournament,
-  TournamentDocument,
-} from '../tournament/schemas/tournament.schema';
-import {
-  Transaction,
-  TransactionDocument,
-} from '../transaction/schemas/transaction.schema';
-import {
-  Notification,
-  NotificationDocument,
-} from '../notification/schemas/notification.schema';
-
 @Injectable()
 export class RegistrationService {
   constructor(
     private readonly registrationRepository: RegistrationRepository,
-
-    @InjectModel(JockeyInvitation.name)
-    private readonly invitationModel: Model<JockeyInvitationDocument>,
-
-    @InjectModel(Contract.name)
-    private readonly contractModel: Model<ContractDocument>,
+    private readonly invitationRepository: JockeyInvitationRepository,
+    private readonly contractRepository: ContractRepository,
+    private readonly tournamentRepository: TournamentRepository,
+    // private readonly transactionRepository: TransactionRepository,
+    // private readonly notificationRepository: NotificationRepository,
 
     @InjectModel(HorseOwnerProfile.name)
-    private readonly ownerProfileModel: Model<HorseOwnerProfileDocument>,
-
-    @InjectModel(Tournament.name)
-    private readonly tournamentModel: Model<TournamentDocument>,
-
-    @InjectModel(Transaction.name)
-    private readonly transactionModel: Model<TransactionDocument>,
-
-    @InjectModel(Notification.name)
-    private readonly notificationModel: Model<NotificationDocument>,
+    private readonly horseOwnerProfileModel: Model<HorseOwnerProfileDocument>,
   ) {}
 
-  // ─── Helpers ───────────────────────────────────────────────────────────────
-
+  // ─── Helpers ───
   private toResponse(data: any): ResponseRegistrationDto {
     return plainToInstance(ResponseRegistrationDto, data, {
       excludeExtraneousValues: true,
@@ -81,20 +54,19 @@ export class RegistrationService {
     return field?._id?.toString() || field?.toString();
   }
 
-  // ─── Feature 1: HorseOwner tạo Registration ────────────────────────────────
-
+  // HorseOwner tạo Registration
   async createRegistration(
     dto: CreateRegistrationDto,
     requesterId: string,
   ): Promise<ResponseRegistrationDto> {
     // 1. Verify invitation tồn tại và status = ACCEPTED
-    const invitation = await this.invitationModel
-      .findById(dto.jockeyInvitationId)
-      .lean();
+    const invitation = await this.invitationRepository.findById(
+      dto.jockeyInvitationId,
+    );
     if (!invitation) {
       throw new NotFoundException('Không tìm thấy lời mời');
     }
-    if (invitation.status !== InvitationStatusEnum.ACCEPTED) {
+    if (invitation.status !== JockeyInvitationEnum.ACCEPTED) {
       throw new BadRequestException(
         'Lời mời chưa được jockey chấp nhận, không thể đăng ký',
       );
@@ -108,14 +80,11 @@ export class RegistrationService {
       );
     }
 
-    // 2. Verify contract tương ứng status = ACTIVE
-    const contract = await this.contractModel
-      .findOne({
-        jockeyInvitationId: new Types.ObjectId(dto.jockeyInvitationId),
-        status: ContractStatusEnum.ACTIVE,
-      })
-      .lean();
-    if (!contract) {
+    // 2. Verify contract tương ứng status = ACTIVE thông qua phương thức nghiệp vụ của repo
+    const contract = await this.contractRepository.findByInvitationId(
+      dto.jockeyInvitationId,
+    );
+    if (!contract || contract.status !== ContractStatusEnum.ACTIVE) {
       throw new BadRequestException(
         'Không tìm thấy hợp đồng active cho lời mời này',
       );
@@ -123,16 +92,15 @@ export class RegistrationService {
 
     // 3. Lấy entryFee từ Tournament
     const tournamentIdStr = this.resolveId(invitation.tournamentId);
-    const tournament = await this.tournamentModel
-      .findById(tournamentIdStr)
-      .lean();
+    const tournament =
+      await this.tournamentRepository.findTournamentById(tournamentIdStr);
     if (!tournament) {
       throw new NotFoundException('Không tìm thấy giải đấu');
     }
     const entryFee = tournament.entryFee;
 
     // 4. Check balance >= entryFee
-    const ownerProfile = await this.ownerProfileModel
+    const ownerProfile = await this.horseOwnerProfileModel
       .findOne({ userId: new Types.ObjectId(requesterId) })
       .lean();
     if (!ownerProfile) {
@@ -156,7 +124,7 @@ export class RegistrationService {
       );
     }
 
-    // 6. Insert Registration — gateNumber chưa có, admin sẽ assign khi confirm
+    // 6. Insert Registration
     const registration = await this.registrationRepository.create({
       jockeyInvitationId: new Types.ObjectId(dto.jockeyInvitationId),
       tournamentId: invitation.tournamentId,
@@ -171,8 +139,7 @@ export class RegistrationService {
     return this.toResponse(registration);
   }
 
-  // ─── Feature 1: HorseOwner xem registration của mình ──────────────────────
-
+  // HorseOwner xem registration của mình
   async getMyRegistrations(
     ownerId: string,
     tournamentId?: string,
@@ -190,17 +157,14 @@ export class RegistrationService {
   ): Promise<ResponseRegistrationDto> {
     const reg = await this.registrationRepository.findById(id);
     if (!reg) throw new NotFoundException('Không tìm thấy đăng ký');
-
     const ownerIdStr = this.resolveId(reg.ownerId);
     if (ownerIdStr !== requesterId) {
       throw new ForbiddenException('Bạn không có quyền xem đăng ký này');
     }
-
     return this.toResponse(reg);
   }
 
-  // ─── Feature 2: Admin xem danh sách ───────────────────────────────────────
-
+  // Admin xem danh sách
   async adminGetAll(filters: {
     status?: string;
     tournamentId?: string;
@@ -220,13 +184,12 @@ export class RegistrationService {
     return this.toResponse(reg);
   }
 
-  // ─── Feature 2: Admin confirm — assign gateNumber, trừ tiền ───────────────
-
+  // Admin confirm — assign gateNumber, trừ tiền
   async adminConfirm(
     id: string,
     dto: ApproveRegistrationDto,
   ): Promise<ResponseRegistrationDto> {
-    // 1. Check registration status = pending
+    // 1. Check registration status
     const reg = await this.registrationRepository.findById(id);
     if (!reg) throw new NotFoundException('Không tìm thấy đăng ký');
     if (reg.status !== RegistrationStatusEnum.WAITLISTED) {
@@ -234,69 +197,60 @@ export class RegistrationService {
         `Đăng ký đang ở trạng thái "${reg.status}", không thể duyệt`,
       );
     }
-
     const ownerIdStr = this.resolveId(reg.ownerId);
 
     // 2. Re-check balance tại thời điểm admin duyệt
-    const ownerProfile = await this.ownerProfileModel
+    const ownerProfile = await this.horseOwnerProfileModel
       .findOne({ userId: new Types.ObjectId(ownerIdStr) })
       .lean();
-
     if (!ownerProfile || ownerProfile.balance < reg.entryFee) {
-      // Auto reject nếu không đủ tiền
-      await this.registrationRepository.updateById(id, {
-        $set: {
-          status: RegistrationStatusEnum.REJECTED,
-          rejectedReason: 'Số dư tài khoản không đủ tại thời điểm duyệt',
-          rejectedAt: new Date(),
-        },
-      });
+      // Auto reject nếu không đủ tiền bằng phương thức nghiệp vụ của repo
+      await this.registrationRepository.updateStatusToRejected(
+        id,
+        'Số dư tài khoản không đủ tại thời điểm duyệt',
+      );
 
-      await this.notificationModel.create({
-        userId: new Types.ObjectId(ownerIdStr),
-        type: 'registration_auto_rejected',
-        title: 'Đăng ký bị từ chối tự động',
-        content: `Đăng ký của bạn bị từ chối do số dư không đủ. Phí đăng ký: ${reg.entryFee}`,
-        isRead: false,
-      });
-
+      // await this.notificationRepository.create({
+      //   userId: new Types.ObjectId(ownerIdStr),
+      //   type: 'registration_auto_rejected',
+      //   title: 'Đăng ký bị từ chối tự động',
+      //   content: `Đăng ký của bạn bị từ chối do số dư không đủ. Phí đăng ký: ${reg.entryFee}`,
+      //   isRead: false,
+      // });
       throw new BadRequestException(
         'Số dư chủ ngựa không đủ, đăng ký đã bị từ chối tự động',
       );
     }
 
-    // 3. Trừ entryFee
-    await this.ownerProfileModel.findOneAndUpdate(
+    // 3. Trừ entryFee (Giữ lại xử lý trực tiếp đối với thực thể chưa có repository riêng)
+    await this.horseOwnerProfileModel.findOneAndUpdate(
       { userId: new Types.ObjectId(ownerIdStr) },
       { $inc: { balance: -reg.entryFee } },
     );
 
-    // 4. Insert Transaction
-    await this.transactionModel.create({
-      senderId: new Types.ObjectId(ownerIdStr),
-      receiverId: null,
-      content: `Phí đăng ký giải đấu`,
-      amount: reg.entryFee,
-      type: TransactionTypeEnum.ENTRY_FEE,
-    });
+    // 4. Insert Transaction qua TransactionRepository
+    // await this.transactionRepository.create({
+    //   senderId: new Types.ObjectId(ownerIdStr),
+    //   receiverId: null,
+    //   content: `Phí đăng ký giải đấu`,
+    //   amount: reg.entryFee,
+    //   type: TransactionTypeEnum.ENTRY_FEE,
+    // });
 
-    // 5. Cập nhật status + gán gateNumber do admin chỉ định
-    const updated = await this.registrationRepository.updateById(id, {
-      $set: {
-        status: RegistrationStatusEnum.CONFIRMED,
-        gateNumber: dto.gateNumber,
-        confirmedAt: new Date(),
-      },
-    });
+    // 5. Cập nhật status + gán gateNumber thông qua hàm lưu trữ chuyên biệt
+    const updated = await this.registrationRepository.updateStatusToConfirmed(
+      id,
+      dto.gateNumber,
+    );
 
-    // 6. Notification cho owner
-    await this.notificationModel.create({
-      userId: new Types.ObjectId(ownerIdStr),
-      type: 'registration_confirmed',
-      title: 'Đăng ký được duyệt',
-      content: `Đăng ký tham gia giải đấu đã được duyệt. Ô chuồng: ${dto.gateNumber}. Phí ${reg.entryFee} đã được trừ.`,
-      isRead: false,
-    });
+    // 6. Notification cho owner qua NotificationRepository
+    // await this.notificationRepository.create({
+    //   userId: new Types.ObjectId(ownerIdStr),
+    //   type: 'registration_confirmed',
+    //   title: 'Đăng ký được duyệt',
+    //   content: `Đăng ký tham gia giải đấu đã được duyệt. Ô chuồng: ${dto.gateNumber}. Phí ${reg.entryFee} đã được trừ.`,
+    //   isRead: false,
+    // });
 
     return this.toResponse(updated);
   }
@@ -310,25 +264,23 @@ export class RegistrationService {
       );
     }
 
-    const updated = await this.registrationRepository.updateById(id, {
-      $set: { status: RegistrationStatusEnum.WAITLISTED },
-    });
+    // Gọi hàm đóng gói từ Repository
+    const updated =
+      await this.registrationRepository.updateStatusToWaitlisted(id);
 
-    // Thông báo cho owner biết được chấp nhận vào pool
-    const ownerIdStr = this.resolveId(reg.ownerId);
-    await this.notificationModel.create({
-      userId: new Types.ObjectId(ownerIdStr),
-      type: 'registration_waitlisted',
-      title: 'Đăng ký được chấp nhận vào danh sách',
-      content: `Ngựa của bạn đã được chấp nhận vào pool tham gia giải đấu. Vui lòng chờ admin phân bổ race.`,
-      isRead: false,
-    });
+    // const ownerIdStr = this.resolveId(reg.ownerId);
+    // await this.notificationRepository.create({
+    //   userId: new Types.ObjectId(ownerIdStr),
+    //   type: 'registration_waitlisted',
+    //   title: 'Đăng ký được chấp nhận vào danh sách',
+    //   content: `Ngựa của bạn đã được chấp nhận vào pool tham gia giải đấu. Vui lòng chờ admin phân bổ race.`,
+    //   isRead: false,
+    // });
 
     return this.toResponse(updated);
   }
 
-  // ─── Feature 2: Admin reject ──────────────────────────────────────────────
-
+  // Admin reject
   async adminReject(
     id: string,
     dto: RejectRegistrationDto,
@@ -341,31 +293,21 @@ export class RegistrationService {
       );
     }
 
-    const updated = await this.registrationRepository.updateById(id, {
-      $set: {
-        status: RegistrationStatusEnum.REJECTED,
-        rejectedReason: dto.reason,
-        rejectedAt: new Date(),
-      },
-    });
+    // Gọi hàm đóng gói từ Repository
+    const updated = await this.registrationRepository.updateStatusToRejected(
+      id,
+      dto.reason,
+    );
 
-    const ownerIdStr = this.resolveId(reg.ownerId);
-
-    await this.notificationModel.create({
-      userId: new Types.ObjectId(ownerIdStr),
-      type: 'registration_rejected',
-      title: 'Đăng ký bị từ chối',
-      content: `Đăng ký tham gia giải đấu bị từ chối. Lý do: ${dto.reason}`,
-      isRead: false,
-    });
+    // const ownerIdStr = this.resolveId(reg.ownerId);
+    // await this.notificationRepository.create({
+    //   userId: new Types.ObjectId(ownerIdStr),
+    //   type: 'registration_rejected',
+    //   title: 'Đăng ký bị từ chối',
+    //   content: `Đăng ký tham gia giải đấu bị từ chối. Lý do: ${dto.reason}`,
+    //   isRead: false,
+    // });
 
     return this.toResponse(updated);
-  }
-
-  // ─── Feature 3: Danh sách horse confirmed trong race ──────────────────────
-
-  async getConfirmedByRace(raceId: string): Promise<ResponseRegistrationDto[]> {
-    const list = await this.registrationRepository.findConfirmedByRace(raceId);
-    return list.map((r) => this.toResponse(r));
   }
 }
