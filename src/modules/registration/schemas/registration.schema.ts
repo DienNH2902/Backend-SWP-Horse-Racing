@@ -21,10 +21,13 @@ export class Registration {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   ownerId: Types.ObjectId;
 
+  @Prop({ type: Types.ObjectId, ref: 'Race' })
+  raceId: Types.ObjectId; 
+  
   @Prop({ required: true, min: 0 })
   entryFee: number;
 
-  @Prop({ required: true, min: 1 })
+  @Prop({ min: 1 })
   gateNumber: number;
 
   @Prop({
@@ -45,6 +48,8 @@ export class Registration {
 
   @Prop()
   rejectedAt: Date;
+
+
 }
 
 export const RegistrationSchema = SchemaFactory.createForClass(Registration);

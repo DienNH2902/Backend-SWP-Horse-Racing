@@ -229,7 +229,7 @@ export class RegistrationService {
     // 1. Check registration status = pending
     const reg = await this.registrationRepository.findById(id);
     if (!reg) throw new NotFoundException('Không tìm thấy đăng ký');
-    if (reg.status !== RegistrationStatusEnum.PENDING) {
+    if (reg.status !== RegistrationStatusEnum.WAITLISTED) {
       throw new ConflictException(
         `Đăng ký đang ở trạng thái "${reg.status}", không thể duyệt`,
       );
@@ -295,6 +295,33 @@ export class RegistrationService {
       type: 'registration_confirmed',
       title: 'Đăng ký được duyệt',
       content: `Đăng ký tham gia giải đấu đã được duyệt. Ô chuồng: ${dto.gateNumber}. Phí ${reg.entryFee} đã được trừ.`,
+      isRead: false,
+    });
+
+    return this.toResponse(updated);
+  }
+
+
+  async adminWaitlist(id: string): Promise<ResponseRegistrationDto> {
+    const reg = await this.registrationRepository.findById(id);
+    if (!reg) throw new NotFoundException('Không tìm thấy đăng ký');
+    if (reg.status !== RegistrationStatusEnum.PENDING) {
+      throw new ConflictException(
+        `Đăng ký đang ở trạng thái "${reg.status}", không thể chuyển vào danh sách chờ`,
+      );
+    }
+
+    const updated = await this.registrationRepository.updateById(id, {
+      $set: { status: RegistrationStatusEnum.WAITLISTED },
+    });
+
+    // Thông báo cho owner biết được chấp nhận vào pool
+    const ownerIdStr = this.resolveId(reg.ownerId);
+    await this.notificationModel.create({
+      userId: new Types.ObjectId(ownerIdStr),
+      type: 'registration_waitlisted',
+      title: 'Đăng ký được chấp nhận vào danh sách',
+      content: `Ngựa của bạn đã được chấp nhận vào pool tham gia giải đấu. Vui lòng chờ admin phân bổ race.`,
       isRead: false,
     });
 

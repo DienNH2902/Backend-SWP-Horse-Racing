@@ -122,6 +122,13 @@ export class AdminRegistrationController {
   ): Promise<ResponseRegistrationDto> {
     return this.service.adminReject(id, dto);
   }
+
+  @Patch(':id/waitlist')
+  @ApiOperation({ summary: 'Admin chấp nhận đăng ký vào pool (pending → waitlisted)' })
+  @ApiParam({ name: 'id', description: 'Registration ID' })
+  waitlist(@Param('id') id: string): Promise<ResponseRegistrationDto> {
+    return this.service.adminWaitlist(id);
+  }
 }
 
 // ─── Race routes (Phase sau — Referee dùng) ───────────────────────────────────
@@ -141,4 +148,10 @@ export class RaceRegistrationController {
   getConfirmed(@Param('id') id: string): Promise<ResponseRegistrationDto[]> {
     return this.service.getConfirmedByRace(id);
   }
+
+
+
 }
+
+
+
