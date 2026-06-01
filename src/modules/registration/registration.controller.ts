@@ -23,7 +23,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { RoleEnum } from 'src/constants/roleEnum.enum';
 import {
   CreateRegistrationDto,
-  ConfirmRegistrationDto,
+  ApproveRegistrationDto,
   RejectRegistrationDto,
   ResponseRegistrationDto,
 } from './dto';
@@ -57,7 +57,10 @@ export class RegistrationController {
     @Request() req: any,
     @Query('tournamentId') tournamentId?: string,
   ): Promise<ResponseRegistrationDto[]> {
-    return this.service.getMyRegistrations(req.user._id as string, tournamentId);
+    return this.service.getMyRegistrations(
+      req.user._id as string,
+      tournamentId,
+    );
   }
 
   @Get(':id')
@@ -84,8 +87,14 @@ export class AdminRegistrationController {
   constructor(private readonly service: RegistrationService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Admin xem danh sách đăng ký (filter by status, tournamentId)' })
-  @ApiQuery({ name: 'status', required: false, enum: ['pending', 'confirmed', 'rejected'] })
+  @ApiOperation({
+    summary: 'Admin xem danh sách đăng ký (filter by status, tournamentId)',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['pending', 'confirmed', 'rejected'],
+  })
   @ApiQuery({ name: 'tournamentId', required: false })
   getAll(
     @Query('status') status?: string,
@@ -95,7 +104,9 @@ export class AdminRegistrationController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Admin xem chi tiết đăng ký kèm thông tin horse, jockey, owner' })
+  @ApiOperation({
+    summary: 'Admin xem chi tiết đăng ký kèm thông tin horse, jockey, owner',
+  })
   @ApiParam({ name: 'id', description: 'Registration ID' })
   getOne(@Param('id') id: string): Promise<ResponseRegistrationDto> {
     return this.service.adminGetById(id);
@@ -103,24 +114,36 @@ export class AdminRegistrationController {
 
   @Patch(':id/confirm')
   @ApiOperation({
-    summary: 'Admin duyệt đăng ký, assign gateNumber → trừ entryFee, tạo transaction, gửi notification',
+    summary:
+      'Admin duyệt đăng ký, assign gateNumber → trừ entryFee, tạo transaction, gửi notification',
   })
   @ApiParam({ name: 'id', description: 'Registration ID' })
   confirm(
     @Param('id') id: string,
-    @Body() dto: ConfirmRegistrationDto,
+    @Body() dto: ApproveRegistrationDto,
   ): Promise<ResponseRegistrationDto> {
     return this.service.adminConfirm(id, dto);
   }
 
   @Patch(':id/reject')
-  @ApiOperation({ summary: 'Admin từ chối đăng ký kèm lý do, gửi notification cho owner' })
+  @ApiOperation({
+    summary: 'Admin từ chối đăng ký kèm lý do, gửi notification cho owner',
+  })
   @ApiParam({ name: 'id', description: 'Registration ID' })
   reject(
     @Param('id') id: string,
     @Body() dto: RejectRegistrationDto,
   ): Promise<ResponseRegistrationDto> {
     return this.service.adminReject(id, dto);
+  }
+
+  @Patch(':id/waitlist')
+  @ApiOperation({
+    summary: 'Admin chấp nhận đăng ký vào pool (pending → waitlisted)',
+  })
+  @ApiParam({ name: 'id', description: 'Registration ID' })
+  waitlist(@Param('id') id: string): Promise<ResponseRegistrationDto> {
+    return this.service.adminWaitlist(id);
   }
 }
 

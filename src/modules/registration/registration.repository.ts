@@ -1,10 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types, UpdateQuery } from 'mongoose';
-import { Registration, RegistrationDocument } from './schemas/registration.schema';
+import { Model, QueryFilter, Types, UpdateQuery } from 'mongoose';
+import {
+  Registration,
+  RegistrationDocument,
+} from './schemas/registration.schema';
 import { RegistrationStatusEnum } from 'src/constants/registrationStatus.enum';
 
-type FilterQuery<T> = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+//type FilterQuery<T> = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 @Injectable()
 export class RegistrationRepository {
@@ -29,7 +32,7 @@ export class RegistrationRepository {
     ownerId: string,
     tournamentId?: string,
   ): Promise<Registration[]> {
-    const filter: FilterQuery<Registration> = {
+    const filter: QueryFilter<Registration> = {
       ownerId: new Types.ObjectId(ownerId),
     };
     if (tournamentId) {
@@ -43,7 +46,9 @@ export class RegistrationRepository {
       .exec();
   }
 
-  async findAll(filter: FilterQuery<Registration> = {}): Promise<Registration[]> {
+  async findAll(
+    filter: QueryFilter<Registration> = {},
+  ): Promise<Registration[]> {
     return this.model
       .find(filter)
       .populate('tournamentId horseId jockeyId ownerId')

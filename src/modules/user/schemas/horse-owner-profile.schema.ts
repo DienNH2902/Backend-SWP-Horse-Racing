@@ -1,10 +1,14 @@
-import { Types,HydratedDocument } from 'mongoose';
+import { Types, HydratedDocument } from 'mongoose';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
-export type HorseOwnerProfileDocument =
-  HydratedDocument<HorseOwnerProfile>;
+export type HorseOwnerProfileDocument = HydratedDocument<HorseOwnerProfile>;
 
-@Schema({ timestamps: true })
+// Bắt buộc phải bật { toJSON: { virtuals: true }, toObject: { virtuals: true } } để Virtual hiển thị ra ngoài
+@Schema({
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true },
+})
 export class HorseOwnerProfile {
   _id: Types.ObjectId;
 
@@ -17,8 +21,8 @@ export class HorseOwnerProfile {
   @Prop()
   stableAddress: string;
 
-  @Prop({ default: 0 })
-  totalHorsesOwned: number;
+  // @Prop({ default: 0 })
+  // totalHorsesOwned: number;
 
   //auto
   @Prop({ type: Number, default: 0 })
@@ -29,3 +33,11 @@ export class HorseOwnerProfile {
 }
 export const HorseOwnerProfileSchema =
   SchemaFactory.createForClass(HorseOwnerProfile);
+
+// Định nghĩa lại Virtual trường 'totalHorsesOwned' kết nối sang bảng 'Horse'
+HorseOwnerProfileSchema.virtual('totalHorsesOwned', {
+  ref: 'Horse', // Giữ nguyên tên Model bảng Ngựa của bạn
+  localField: 'userId', // [SỬA LẠI]: Lấy userId (6a158d0dd0caea5be1a3b936) của profile làm mốc so sánh
+  foreignField: 'userId', // [SỬA LẠI]: Trỏ thẳng vào trường userId (6a158d0dd0caea5be1a3b936) nằm trong file horse.schema.ts
+  count: true, // Giữ nguyên tính năng chỉ đếm số lượng
+});

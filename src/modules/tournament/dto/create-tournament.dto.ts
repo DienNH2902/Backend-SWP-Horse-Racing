@@ -56,7 +56,7 @@ export class CreateTournamentDto {
   @IsNotEmpty()
   location: string;
 
-  @ApiProperty({ example: 5, description: 'Tổng số vòng đấu' })
+  @ApiProperty({ example: 2, description: 'Tổng số vòng đấu cố định' })
   @IsNumber()
   @Min(1)
   totalRounds: number;

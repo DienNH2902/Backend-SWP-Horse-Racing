@@ -7,14 +7,20 @@ import {
 } from './registration.controller';
 import { RegistrationService } from './registration.service';
 import { RegistrationRepository } from './registration.repository';
-import { Registration, RegistrationSchema } from './schemas/registration.schema';
+import {
+  Registration,
+  RegistrationSchema,
+} from './schemas/registration.schema';
 
 // Import schemas của các module liên quan
 import {
   JockeyInvitation,
   JockeyInvitationSchema,
 } from '../invitation/schemas/invitation.schema';
-import { Contract, ContractSchema } from '../invitation/schemas/contract.schema';
+import {
+  Contract,
+  ContractSchema,
+} from '../invitation/schemas/contract.schema';
 import {
   HorseOwnerProfile,
   HorseOwnerProfileSchema,
@@ -27,7 +33,10 @@ import {
   Notification,
   NotificationSchema,
 } from '../notification/schemas/notification.schema';
-import { Tournament, TournamentSchema } from '../tournament/schemas/tournament.schema'; 
+import {
+  Tournament,
+  TournamentSchema,
+} from '../tournament/schemas/tournament.schema';
 
 @Module({
   imports: [
