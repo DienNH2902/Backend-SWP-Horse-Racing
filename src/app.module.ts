@@ -14,6 +14,7 @@ import { TransactionModule } from './modules/transaction/transaction.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { UploadModule } from './modules/upload/upload.module';
 import { VnPayModule } from './modules/vnpay/vnpay.module';
+import { RaceModule } from './modules/race/race.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { VnPayModule } from './modules/vnpay/vnpay.module';
     NotificationModule,
     UploadModule,
     VnPayModule,
+    RaceModule,
   ],
   controllers: [AppController],
   providers: [AppService],

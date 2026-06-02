@@ -28,7 +28,7 @@ import {
   ResponseRegistrationDto,
 } from './dto';
 
-// ─── HorseOwner routes ────────────────────────────────────────────────────────
+// HorseOwner routes 
 
 @ApiTags('Registrations')
 @Controller('registrations')
@@ -73,8 +73,7 @@ export class RegistrationController {
   }
 }
 
-// ─── Admin routes ─────────────────────────────────────────────────────────────
-
+// Admin routes 
 @ApiTags('Admin — Registrations')
 @Controller('admin/registrations')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -85,7 +84,7 @@ export class AdminRegistrationController {
 
   @Get()
   @ApiOperation({ summary: 'Admin xem danh sách đăng ký (filter by status, tournamentId)' })
-  @ApiQuery({ name: 'status', required: false, enum: ['pending', 'confirmed', 'rejected'] })
+  @ApiQuery({ name: 'status', required: false, enum: ['waitlisted', 'pending', 'confirmed', 'rejected'] })
   @ApiQuery({ name: 'tournamentId', required: false })
   getAll(
     @Query('status') status?: string,
