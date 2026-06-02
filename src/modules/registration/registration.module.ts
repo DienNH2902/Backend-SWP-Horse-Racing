@@ -3,18 +3,23 @@ import { MongooseModule } from '@nestjs/mongoose';
 import {
   RegistrationController,
   AdminRegistrationController,
-  RaceRegistrationController,
 } from './registration.controller';
 import { RegistrationService } from './registration.service';
 import { RegistrationRepository } from './registration.repository';
-import { Registration, RegistrationSchema } from './schemas/registration.schema';
+import {
+  Registration,
+  RegistrationSchema,
+} from './schemas/registration.schema';
 
 // Import schemas của các module liên quan
 import {
   JockeyInvitation,
   JockeyInvitationSchema,
 } from '../invitation/schemas/invitation.schema';
-import { Contract, ContractSchema } from '../invitation/schemas/contract.schema';
+import {
+  Contract,
+  ContractSchema,
+} from '../invitation/schemas/contract.schema';
 import {
   HorseOwnerProfile,
   HorseOwnerProfileSchema,
@@ -27,7 +32,14 @@ import {
   Notification,
   NotificationSchema,
 } from '../notification/schemas/notification.schema';
-import { Tournament, TournamentSchema } from '../tournament/schemas/tournament.schema'; 
+import {
+  Tournament,
+  TournamentSchema,
+} from '../tournament/schemas/tournament.schema';
+import { TournamentModule } from '../tournament/tournament.module';
+import { NotificationModule } from '../notification/notification.module';
+import { TransactionModule } from '../transaction/transaction.module';
+import { JockeyInvitationModule } from '../invitation/invitation.module';
 
 @Module({
   imports: [
@@ -40,11 +52,15 @@ import { Tournament, TournamentSchema } from '../tournament/schemas/tournament.s
       { name: Transaction.name, schema: TransactionSchema },
       { name: Notification.name, schema: NotificationSchema },
     ]),
+    JockeyInvitationModule,
+    TournamentModule,
+    TransactionModule,
+    NotificationModule,
   ],
   controllers: [
     RegistrationController,
     AdminRegistrationController,
-    RaceRegistrationController,
+    RegistrationController,
   ],
   providers: [RegistrationService, RegistrationRepository],
   exports: [RegistrationService, RegistrationRepository],

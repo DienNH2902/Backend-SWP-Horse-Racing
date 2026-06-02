@@ -1,14 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import { JockeyInvitationEnum } from '../../../constants/jockeyInvitationEnum.enum';
 
 export type JockeyInvitationDocument = JockeyInvitation & Document;
-
-export enum InvitationStatusEnum {
-  PENDING = 'PENDING',
-  ACCEPTED = 'ACCEPTED',
-  REJECTED = 'REJECTED',
-  EXPIRED = 'EXPIRED',
-}
 
 @Schema({ timestamps: true })
 export class JockeyInvitation {
@@ -24,7 +18,7 @@ export class JockeyInvitation {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   jockeyId: Types.ObjectId;
 
-  @Prop({ required: true, min: 0})
+  @Prop({ required: true, min: 0 })
   proposeContractAmount: number;
 
   @Prop({ required: true, min: 0, max: 100 })
@@ -33,15 +27,21 @@ export class JockeyInvitation {
   @Prop({ required: true, min: 0, max: 100 })
   proposeJockeyShareRate: number;
 
+  @Prop({ required: true, min: 0, max: 100 })
+  ownerCompensationRate: number; // Tỷ lệ đền bù của chủ ngựa khi vi phạm điều khoản
+
+  @Prop({ required: true, min: 0, max: 100 })
+  jockeyCompensationRate: number; // Tỷ lệ đền bù của nài ngựa khi tự ý hủy kèo
+
   @Prop({ trim: true })
   message: string;
 
   @Prop({
     type: String,
-    enum: InvitationStatusEnum,
-    default: InvitationStatusEnum.PENDING,
+    enum: JockeyInvitationEnum,
+    default: JockeyInvitationEnum.PENDING,
   })
-  status: InvitationStatusEnum;
+  status: JockeyInvitationEnum;
 
   @Prop()
   invitedAt: Date;
@@ -59,7 +59,7 @@ JockeyInvitationSchema.index(
   { tournamentId: 1, horseId: 1, jockeyId: 1 },
   {
     unique: true,
-    partialFilterExpression: { status: InvitationStatusEnum.PENDING },
+    partialFilterExpression: { status: JockeyInvitationEnum.PENDING },
     name: 'unique_pending_invitation',
   },
 );

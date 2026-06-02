@@ -339,6 +339,18 @@ export class ResponseUserDto {
   )
   totalHorsesOwned?: number;
 
+  // @Expose()
+  // @Transform(({ obj }) => {
+  //   if (obj.role !== 'Horse Owner') return undefined;
+
+  //   // Đảm bảo lấy được giá trị kể cả khi dữ liệu chưa qua hoặc đã qua hàm biến đổi plain Object
+  //   const profile = obj.horseOwnerProfile;
+  //   if (!profile) return 0;
+
+  //   return profile.totalHorsesOwned ?? 0;
+  // })
+  // totalHorsesOwned?: number;
+
   // ==========================================
   // 4. CÁC FIELDS CHUYÊN BIỆT CHO SPECTATOR
   // ==========================================

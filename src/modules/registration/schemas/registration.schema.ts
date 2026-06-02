@@ -22,8 +22,8 @@ export class Registration {
   ownerId: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'Race' })
-  raceId: Types.ObjectId; 
-  
+  raceId: Types.ObjectId;
+
   @Prop({ required: true, min: 0 })
   entryFee: number;
 
@@ -48,8 +48,6 @@ export class Registration {
 
   @Prop()
   rejectedAt: Date;
-
-
 }
 
 export const RegistrationSchema = SchemaFactory.createForClass(Registration);

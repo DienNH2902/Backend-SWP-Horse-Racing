@@ -27,7 +27,6 @@ export class Transaction {
     required: true,
   })
   type: TransactionTypeEnum;
-
 }
 
 export const TransactionSchema = SchemaFactory.createForClass(Transaction);

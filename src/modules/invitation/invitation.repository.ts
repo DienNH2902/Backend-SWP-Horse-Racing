@@ -4,33 +4,36 @@ import { Model, Types, UpdateQuery } from 'mongoose';
 import {
   JockeyInvitation,
   JockeyInvitationDocument,
-  InvitationStatusEnum,
 } from './schemas/invitation.schema';
+import { JockeyInvitationEnum } from 'src/constants/jockeyInvitationEnum.enum';
 
 @Injectable()
 export class JockeyInvitationRepository {
   constructor(
     @InjectModel(JockeyInvitation.name)
-    private readonly model: Model<JockeyInvitationDocument>,
+    private readonly jockeyInvitationModel: Model<JockeyInvitationDocument>,
   ) {}
 
   async create(data: Partial<JockeyInvitation>): Promise<JockeyInvitation> {
-    return new this.model(data).save();
+    return new this.jockeyInvitationModel(data).save();
   }
 
   async findById(id: string): Promise<JockeyInvitation | null> {
-    return this.model
+    return this.jockeyInvitationModel
       .findById(id)
       .populate('tournamentId horseId jockeyId horseOwnerId')
       .lean()
       .exec();
   }
 
-  /**
-   * Tất cả invitation gửi đến jockey này (để jockey xem)
-   */
+  // Cũng là lấy 1 thư mời nhưng không populate để cho contract chỉ lưu String ObjectId, không lưu object
+  async findByIdForContract(id: string): Promise<JockeyInvitation | null> {
+    return this.jockeyInvitationModel.findById(id).lean().exec();
+  }
+
+  // Tất cả invitation gửi đến jockey này (để jockey xem)
   async findByJockeyId(jockeyId: string): Promise<JockeyInvitation[]> {
-    return this.model
+    return this.jockeyInvitationModel
       .find({ jockeyId: new Types.ObjectId(jockeyId) })
       .populate('tournamentId horseId horseOwnerId')
       .sort({ createdAt: -1 })
@@ -38,11 +41,9 @@ export class JockeyInvitationRepository {
       .exec();
   }
 
-  /**
-   * Tất cả invitation do horseOwner này gửi đi (để owner quản lý)
-   */
+  // Tất cả invitation do horseOwner này gửi đi (để owner quản lý)
   async findByHorseOwnerId(horseOwnerId: string): Promise<JockeyInvitation[]> {
-    return this.model
+    return this.jockeyInvitationModel
       .find({ horseOwnerId: new Types.ObjectId(horseOwnerId) })
       .populate('tournamentId horseId jockeyId')
       .sort({ createdAt: -1 })
@@ -50,20 +51,18 @@ export class JockeyInvitationRepository {
       .exec();
   }
 
-  /**
-   * Kiểm tra có PENDING nào tồn tại không (cho unique constraint check ở app layer)
-   */
+  // Kiểm tra có PENDING nào tồn tại không (cho unique constraint check ở app layer)
   async findPending(
     tournamentId: string,
     horseId: string,
     jockeyId: string,
   ): Promise<JockeyInvitation | null> {
-    return this.model
+    return this.jockeyInvitationModel
       .findOne({
         tournamentId: new Types.ObjectId(tournamentId),
         horseId: new Types.ObjectId(horseId),
         jockeyId: new Types.ObjectId(jockeyId),
-        status: InvitationStatusEnum.PENDING,
+        status: JockeyInvitationEnum.PENDING,
       })
       .lean()
       .exec();
@@ -71,24 +70,37 @@ export class JockeyInvitationRepository {
 
   async updateById(
     id: string,
-    update: UpdateQuery<JockeyInvitation>,
+    updateData: UpdateQuery<JockeyInvitation>,
   ): Promise<JockeyInvitation | null> {
-    return this.model
-      .findByIdAndUpdate(id, update, { returnDocument: 'after' })
+    return this.jockeyInvitationModel
+      .findByIdAndUpdate(id, updateData, { returnDocument: 'after' })
       .lean()
       .exec();
   }
 
-  /**
-   * Dùng cho cron job expire invitation quá hạn
-   */
+  // Cập nhật trạng thái của thư mời (Đã đóng gói toán tử $set ngầm bên trong)
+  async updateStatus(
+    id: string,
+    status: JockeyInvitationEnum,
+  ): Promise<JockeyInvitation | null> {
+    return this.jockeyInvitationModel
+      .findByIdAndUpdate(
+        id,
+        { $set: { status: status } },
+        { returnDocument: 'after' }, // Đảm bảo trả về bản ghi mới nhất sau khi sửa
+      )
+      .lean()
+      .exec();
+  }
+
+  // Dùng cho cron job expire invitation quá hạn
   async expireOlderThan(date: Date): Promise<number> {
-    const result = await this.model.updateMany(
+    const result = await this.jockeyInvitationModel.updateMany(
       {
-        status: InvitationStatusEnum.PENDING,
+        status: JockeyInvitationEnum.PENDING,
         createdAt: { $lt: date },
       },
-      { $set: { status: InvitationStatusEnum.EXPIRED } },
+      { $set: { status: JockeyInvitationEnum.EXPIRED } },
     );
     return result.modifiedCount;
   }
