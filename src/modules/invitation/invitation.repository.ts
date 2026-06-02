@@ -26,9 +26,12 @@ export class JockeyInvitationRepository {
       .exec();
   }
 
-  /**
-   * Tất cả invitation gửi đến jockey này (để jockey xem)
-   */
+  // Cũng là lấy 1 thư mời nhưng không populate để cho contract chỉ lưu String ObjectId, không lưu object
+  async findByIdForContract(id: string): Promise<JockeyInvitation | null> {
+    return this.jockeyInvitationModel.findById(id).lean().exec();
+  }
+
+  // Tất cả invitation gửi đến jockey này (để jockey xem)
   async findByJockeyId(jockeyId: string): Promise<JockeyInvitation[]> {
     return this.jockeyInvitationModel
       .find({ jockeyId: new Types.ObjectId(jockeyId) })
@@ -38,9 +41,7 @@ export class JockeyInvitationRepository {
       .exec();
   }
 
-  /**
-   * Tất cả invitation do horseOwner này gửi đi (để owner quản lý)
-   */
+  // Tất cả invitation do horseOwner này gửi đi (để owner quản lý)
   async findByHorseOwnerId(horseOwnerId: string): Promise<JockeyInvitation[]> {
     return this.jockeyInvitationModel
       .find({ horseOwnerId: new Types.ObjectId(horseOwnerId) })
@@ -50,9 +51,7 @@ export class JockeyInvitationRepository {
       .exec();
   }
 
-  /**
-   * Kiểm tra có PENDING nào tồn tại không (cho unique constraint check ở app layer)
-   */
+  // Kiểm tra có PENDING nào tồn tại không (cho unique constraint check ở app layer)
   async findPending(
     tournamentId: string,
     horseId: string,
@@ -79,9 +78,7 @@ export class JockeyInvitationRepository {
       .exec();
   }
 
-  /**
-   * Cập nhật trạng thái của thư mời (Đã đóng gói toán tử $set ngầm bên trong)
-   */
+  // Cập nhật trạng thái của thư mời (Đã đóng gói toán tử $set ngầm bên trong)
   async updateStatus(
     id: string,
     status: JockeyInvitationEnum,
@@ -96,9 +93,7 @@ export class JockeyInvitationRepository {
       .exec();
   }
 
-  /**
-   * Dùng cho cron job expire invitation quá hạn
-   */
+  // Dùng cho cron job expire invitation quá hạn
   async expireOlderThan(date: Date): Promise<number> {
     const result = await this.jockeyInvitationModel.updateMany(
       {

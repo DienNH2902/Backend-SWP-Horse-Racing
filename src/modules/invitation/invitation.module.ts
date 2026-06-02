@@ -9,6 +9,8 @@ import {
   JockeyInvitationSchema,
 } from './schemas/invitation.schema';
 import { Contract, ContractSchema } from './schemas/contract.schema';
+import { HorseModule } from '../horse/horse.module';
+import { UserModule } from '../user/user.module';
 
 @Module({
   imports: [
@@ -16,6 +18,8 @@ import { Contract, ContractSchema } from './schemas/contract.schema';
       { name: JockeyInvitation.name, schema: JockeyInvitationSchema },
       { name: Contract.name, schema: ContractSchema },
     ]),
+    HorseModule,
+    UserModule,
   ],
   controllers: [JockeyInvitationController],
   providers: [

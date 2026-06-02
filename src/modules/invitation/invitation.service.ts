@@ -17,12 +17,23 @@ import {
   ResponseContractDto,
 } from './dto';
 import { JockeyInvitationEnum } from 'src/constants/jockeyInvitationEnum.enum';
+import { HorseRepository } from '../horse/horse.repository';
+import { HorseStatusEnum } from 'src/constants/horseStatusEnum.enum';
+import { UsersRepository } from '../user/user.repository';
+import { AccountStatusEnum } from 'src/constants/accountStatusEnum.enum';
+import { JockeyStatusEnum } from 'src/constants/jockeyStatusEnum.enum';
+import { User } from '../user/schemas/user.schema';
 
+type PopulatedJockeyProfile = User & {
+  jockeyProfile?: { jockeyStatus: JockeyStatusEnum };
+};
 @Injectable()
 export class JockeyInvitationService {
   constructor(
     private readonly jockeyInvitationRepository: JockeyInvitationRepository,
     private readonly contractRepository: ContractRepository,
+    private readonly horseRepository: HorseRepository,
+    private readonly userRepository: UsersRepository,
   ) {}
 
   // Helper
@@ -57,6 +68,58 @@ export class JockeyInvitationService {
       );
     }
 
+    // Validate: tổng compensationRate phải = 100%
+    if (dto.ownerCompensationRate + dto.jockeyCompensationRate !== 100) {
+      throw new BadRequestException(
+        'Tổng ownerCompensationRate và jockeyCompensationRate phải bằng 100',
+      );
+    }
+
+    // Kiểm tra xem ngựa được đăng ký có thuộc chủ ngựa đó hay không
+    const horse = await this.horseRepository.findOneHorse({ _id: dto.horseId });
+    if (!horse) throw new NotFoundException('Horse not found');
+    // Lấy ra chuỗi ID chuẩn từ object userId đã được populate
+    const ownerIdStr =
+      horse.userId?._id?.toString() || horse.userId?.toString();
+
+    if (ownerIdStr !== horseOwnerId) {
+      throw new ForbiddenException('Bạn không có quyền sử dụng con ngựa này');
+    }
+
+    // Kiểm tra xem ngựa này có IDLE hay không
+    if (horse.horseStatus !== HorseStatusEnum.IDLE) {
+      throw new ForbiddenException(
+        `Không thể sử dụng ngựa ở trạng thái ${horse.horseStatus}`,
+      );
+    }
+
+    const jockey = (await this.userRepository.findOneUser({
+      _id: dto.jockeyId,
+    })) as PopulatedJockeyProfile;
+    if (!jockey) throw new NotFoundException('Không tìm thấy Jockey');
+
+    if (jockey.status !== AccountStatusEnum.ACTIVE)
+      throw new BadRequestException(
+        `Trạng thái Jockey này đang: ${jockey.status}, không thể mời`,
+      );
+
+    if (jockey.jockeyProfile?.jockeyStatus !== JockeyStatusEnum.AVAILABLE)
+      throw new BadRequestException(
+        `Trạng thái hồ sơ Jockey này đang: ${jockey.jockeyProfile?.jockeyStatus}, không thể mời`,
+      );
+
+    // Kiểm tra xem nài ngựa này đã ký hợp đồng với chủ ngựa khác chưa
+    const jockeyHasContractInTournament =
+      await this.contractRepository.findActiveContractByJockeyAndTournament(
+        dto.tournamentId,
+        dto.jockeyId,
+      );
+
+    if (jockeyHasContractInTournament) {
+      throw new ConflictException(
+        'Nài ngựa này đã ký hợp đồng tham gia giải đấu này rồi, không thể gửi thêm lời mời.',
+      );
+    }
     // Validate: chưa có thư mời PENDING nào cho bộ (tournament, horse, jockey) này
     const existingPending = await this.jockeyInvitationRepository.findPending(
       dto.tournamentId,
@@ -69,6 +132,19 @@ export class JockeyInvitationService {
           'Vui lòng chờ jockey phản hồi hoặc hết hạn trước khi gửi lại.',
       );
     }
+
+    // Validate: Cặp này chưa hề ký hợp đồng ACTIVE nào (Tránh mời lại khi đã chốt kèo)
+    // const existingActiveContract =
+    //   await this.contractRepository.findActiveContract(
+    //     dto.tournamentId,
+    //     dto.horseId,
+    //     dto.jockeyId,
+    //   );
+    // if (existingActiveContract) {
+    //   throw new ConflictException(
+    //     'Nài ngựa này đã ký hợp đồng chính thức cưỡi con ngựa được chọn tại giải đấu này rồi.',
+    //   );
+    // }
 
     // Validate: jockey chưa có contract ACTIVE cho cặp này (tránh mời jockey đã ký)
     // Note: thêm check này nếu muốn ngăn trường hợp mời jockey đã ký hợp đồng
@@ -120,7 +196,7 @@ export class JockeyInvitationService {
     contract?: ResponseContractDto;
   }> {
     const invitation =
-      await this.jockeyInvitationRepository.findById(invitationId);
+      await this.jockeyInvitationRepository.findByIdForContract(invitationId);
 
     if (!invitation) {
       throw new NotFoundException('Không tìm thấy lời mời');

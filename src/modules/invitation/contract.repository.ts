@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Contract, ContractDocument } from './schemas/contract.schema';
+import { ContractStatusEnum } from 'src/constants/contractStatusEnum.enum';
 
 @Injectable()
 export class ContractRepository {
@@ -47,6 +48,36 @@ export class ContractRepository {
   async findByInvitationId(invitationId: string): Promise<Contract | null> {
     return this.contractModel
       .findOne({ jockeyInvitationId: new Types.ObjectId(invitationId) })
+      .lean()
+      .exec();
+  }
+
+  async findActiveContract(
+    tournamentId: string,
+    horseId: string,
+    jockeyId: string,
+  ): Promise<Contract | null> {
+    return this.contractModel
+      .findOne({
+        tournamentId: new Types.ObjectId(tournamentId),
+        horseId: new Types.ObjectId(horseId),
+        jockeyId: new Types.ObjectId(jockeyId),
+        status: ContractStatusEnum.ACTIVE,
+      })
+      .lean()
+      .exec();
+  }
+
+  async findActiveContractByJockeyAndTournament(
+    tournamentId: string,
+    jockeyId: string,
+  ) {
+    return this.contractModel
+      .findOne({
+        tournamentId: new Types.ObjectId(tournamentId),
+        jockeyId: new Types.ObjectId(jockeyId),
+        status: ContractStatusEnum.ACTIVE,
+      })
       .lean()
       .exec();
   }
