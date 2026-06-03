@@ -2,24 +2,34 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { RaceController } from './race.controller';
 import { RaceService } from './race.service';
+import { RaceAssignService } from './race-assign.service';
 import { RaceRepository } from './race.repository';
 import { Race, RaceSchema } from './schemas/race.schema';
 import { Tournament, TournamentSchema } from '../tournament/schemas/tournament.schema';
 import { RaceCourseModule } from './race-course/race-course.module';
 import { RaceConditionModule } from './race-condition/race-condition.module';
 import { TournamentRepository } from '../tournament/tournament.repository';
+import { RegistrationRepository } from '../registration/registration.repository';
+import { Registration, RegistrationSchema } from '../registration/schemas/registration.schema'
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Race.name, schema: RaceSchema },
       { name: Tournament.name, schema: TournamentSchema },
+      { name: Registration.name, schema: RegistrationSchema },
     ]),
     RaceCourseModule,
     RaceConditionModule,
   ],
   controllers: [RaceController],
-  providers: [RaceService, RaceRepository, TournamentRepository],
+  providers: [
+    RaceService, 
+    RaceAssignService,
+    RaceRepository, 
+    TournamentRepository,
+    RegistrationRepository
+  ],
   exports: [RaceService, RaceRepository],
 })
 export class RaceModule {}
