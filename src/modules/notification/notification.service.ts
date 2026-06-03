@@ -1,26 +1,56 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { plainToInstance } from 'class-transformer';
+import { NotificationRepository } from './notification.repository';
 import { CreateNotificationDto } from './dto/create-notification.dto';
-import { UpdateNotificationDto } from './dto/update-notification.dto';
+import { ResponseNotificationDto } from './dto/response-notification.dto';
+import { Types } from 'mongoose';
 
 @Injectable()
 export class NotificationService {
-  create(createNotificationDto: CreateNotificationDto) {
-    return 'This action adds a new notification';
+  constructor(
+    private readonly notificationRepository: NotificationRepository,
+  ) {}
+
+  private toResponse(data: any): ResponseNotificationDto {
+    return plainToInstance(ResponseNotificationDto, data, {
+      excludeExtraneousValues: true,
+    });
   }
 
-  findAll() {
-    return `This action returns all notification`;
+  async createNotification(
+    dto: CreateNotificationDto,
+  ): Promise<ResponseNotificationDto> {
+    const notification = await this.notificationRepository.create({
+      ...dto,
+      userId: new Types.ObjectId(dto.userId),
+    });
+    return this.toResponse(notification);
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} notification`;
+  async getMyNotifications(userId: string): Promise<ResponseNotificationDto[]> {
+    const notifications =
+      await this.notificationRepository.findByUserId(userId);
+    return notifications.map((n) => this.toResponse(n));
   }
 
-  update(id: number, updateNotificationDto: UpdateNotificationDto) {
-    return `This action updates a #${id} notification`;
+  async markAsRead(
+    id: string,
+    userId: string,
+  ): Promise<ResponseNotificationDto> {
+    const notification = await this.notificationRepository.markAsRead(
+      id,
+      userId,
+    );
+    if (!notification) throw new NotFoundException('Không tìm thấy thông báo');
+    return this.toResponse(notification);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} notification`;
+  async markAllAsRead(userId: string): Promise<void> {
+    await this.notificationRepository.markAllAsRead(userId);
+  }
+
+  async deleteNotification(id: string, userId: string): Promise<void> {
+    const notification = await this.notificationRepository.delete(id, userId);
+    if (!notification) throw new NotFoundException('Không tìm thấy thông báo');
   }
 }
