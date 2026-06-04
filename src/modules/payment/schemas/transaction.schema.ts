@@ -10,7 +10,7 @@ export class Transaction {
   senderId: Types.ObjectId;
 
   /**
-   * receiverId = null khi là entry_fee vào hệ thống (system transaction)
+   * receiverId = Platform khi là entry_fee vào hệ thống (system transaction)
    */
   @Prop({ type: Types.ObjectId, ref: 'User', default: null })
   receiverId: Types.ObjectId | null;

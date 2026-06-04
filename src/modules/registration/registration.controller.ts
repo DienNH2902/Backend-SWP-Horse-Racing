@@ -28,7 +28,7 @@ import {
   ResponseRegistrationDto,
 } from './dto';
 
-// HorseOwner routes 
+// HorseOwner routes
 
 @ApiTags('Registrations')
 @Controller('registrations')
@@ -82,7 +82,7 @@ export class RegistrationController {
   }
 }
 
-// Admin routes 
+// Admin routes
 @ApiTags('Admin — Registrations')
 @Controller('admin/registrations')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -92,8 +92,14 @@ export class AdminRegistrationController {
   constructor(private readonly registrationService: RegistrationService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Admin xem danh sách đăng ký (filter by status, tournamentId)' })
-  @ApiQuery({ name: 'status', required: false, enum: ['waitlisted', 'pending', 'confirmed', 'rejected'] })
+  @ApiOperation({
+    summary: 'Admin xem danh sách đăng ký (filter by status, tournamentId)',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['Waitlisted', 'Pending', 'Confirmed', 'Rejected'],
+  })
   @ApiQuery({ name: 'tournamentId', required: false })
   getAll(
     @Query('status') status?: string,
@@ -136,7 +142,7 @@ export class AdminRegistrationController {
     return this.registrationService.adminReject(id, dto);
   }
 
-  @Patch(':id/waitlist')
+  @Patch(':id/accept-to-waitlist')
   @ApiOperation({
     summary: 'Admin chấp nhận đăng ký vào pool (pending → waitlisted)',
   })

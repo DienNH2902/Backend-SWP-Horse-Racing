@@ -1,7 +1,8 @@
 export enum TransactionTypeEnum {
-  ENTRY_FEE = 'entry_fee',
-  PRIZE_PAYOUT = 'prize_payout',
-  DEPOSIT = 'deposit',
-  WITHDRAWAL = 'withdrawal',
-  REFUND = 'refund',
+  ENTRY_FEE = 'Entry_fee',
+  PRIZE_PAYOUT = 'Prize_payout',
+  DEPOSIT = 'Deposit',
+  WITHDRAWAL = 'Withdrawal',
+  REFUND = 'Refund',
+  PENALTY = 'Penalty',
 }

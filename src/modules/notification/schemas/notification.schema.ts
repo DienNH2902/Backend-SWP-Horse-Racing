@@ -1,5 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import { NotificationTitleEnum } from 'src/constants/notificationTitleEnum.enum';
+import { NotificationTypeEnum } from 'src/constants/notificationTypeEnum.enum';
 
 export type NotificationDocument = Notification & Document;
 
@@ -8,11 +10,21 @@ export class Notification {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   userId: Types.ObjectId;
 
-  @Prop({ required: true, trim: true })
-  type: string;
+  @Prop({
+    type: String,
+    enum: NotificationTypeEnum,
+    required: true,
+    trim: true,
+  })
+  type: NotificationTypeEnum;
 
-  @Prop({ required: true, trim: true })
-  title: string;
+  @Prop({
+    type: String,
+    enum: NotificationTitleEnum,
+    required: true,
+    trim: true,
+  })
+  title: NotificationTitleEnum;
 
   @Prop({ required: true, trim: true })
   content: string;
