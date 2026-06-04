@@ -12,4 +12,6 @@ export enum NotificationTitleEnum {
 
   RACE_REMINDER = 'Nhắc nhở lịch thi đấu',
   REWARD_RECEIVED = 'Phần thưởng giải đấu',
+
+  SYSTEM_ALERT = 'Thông báo hệ thống',
 }

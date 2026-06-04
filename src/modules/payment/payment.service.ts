@@ -134,7 +134,7 @@ import { JockeyProfile } from '../user/schemas/jockey-profile.schema';
 import { TransactionTypeEnum } from 'src/constants/transactionType.enum';
 import { RoleEnum } from 'src/constants/roleEnum.enum';
 import { ResponseTransactionDto } from './dto/response-transaction.dto';
-import { NotificationTypeEnum } from 'src/constants/notificationEnum.enum';
+import { NotificationTypeEnum } from 'src/constants/notificationTypeEnum.enum';
 import { NotificationTitleEnum } from 'src/constants/notificationTitleEnum.enum';
 
 export interface VnPayCallbackResponse {
