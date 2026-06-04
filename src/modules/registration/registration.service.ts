@@ -17,7 +17,6 @@ import {
   HorseOwnerProfileDocument,
 } from '../user/schemas/horse-owner-profile.schema';
 import { RegistrationStatusEnum } from 'src/constants/registrationStatus.enum';
-// import { TransactionTypeEnum } from 'src/constants/transactionType.enum';
 import { JockeyInvitationEnum } from 'src/constants/jockeyInvitationEnum.enum';
 import { ContractStatusEnum } from 'src/constants/contractStatusEnum.enum';
 import {
@@ -31,7 +30,7 @@ import { NotificationRepository } from '../notification/notification.repository'
 import { NotificationTypeEnum } from 'src/constants/notificationTypeEnum.enum';
 import { NotificationTitleEnum } from 'src/constants/notificationTitleEnum.enum';
 import { TransactionTypeEnum } from 'src/constants/transactionType.enum';
-import { TransactionTitleEnum } from 'src/constants/transactionTitileEnum.enum';
+import { TransactionTitleEnum } from 'src/constants/transactionTitleEnum.enum';
 
 @Injectable()
 export class RegistrationService {

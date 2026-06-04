@@ -136,6 +136,7 @@ import { RoleEnum } from 'src/constants/roleEnum.enum';
 import { ResponseTransactionDto } from './dto/response-transaction.dto';
 import { NotificationTypeEnum } from 'src/constants/notificationTypeEnum.enum';
 import { NotificationTitleEnum } from 'src/constants/notificationTitleEnum.enum';
+import { TransactionTitleEnum } from 'src/constants/transactionTitleEnum.enum';
 
 export interface VnPayCallbackResponse {
   success: boolean;
@@ -219,7 +220,7 @@ export class PaymentService {
       await this.transactionRepository.create({
         senderId: new Types.ObjectId(userId),
         receiverId: null,
-        content: `VNPay Deposit: ${txnRef}`,
+        content: TransactionTitleEnum.DEPOSIT,
         amount,
         type: TransactionTypeEnum.DEPOSIT,
       });
