@@ -17,12 +17,15 @@ export enum NotificationTypeEnum {
 
   // --- Hệ thống giải đấu / Vận hành (Tournament) ---
   TOURNAMENT_REGISTERED = 'Tournament_registered', // Đăng ký giải đấu thành công
+  TOURNAMENT_WAITLIST = 'Tournament_waitlist',
+  TOURNAMENT_REJECTED = 'Tournament_rejected',
   RACE_REMINDER = 'Race_reminder', // Nhắc nhở lịch đua sắp diễn ra
   JOCKEY_INJURED = 'Jockey_injured', // Cảnh báo nài gặp chấn thương (gửi ban tổ chức/chủ ngựa)
 
   // --- Tài khoản hệ thống (Account) ---
   ACCOUNT_LOCKED = 'Account_locked',
   PROFILE_VERIFIED = 'Profile_verified',
+  BALANCE_NOT_ENOUGH = 'Balance_not_enough',
 
   // Hệ thống
   SYSTEM_ALERT = 'System_alert',
