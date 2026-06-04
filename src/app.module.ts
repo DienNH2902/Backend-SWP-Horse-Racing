@@ -40,6 +40,7 @@ import { PaymentModule } from './modules/payment/payment.module';
     UploadModule,
     RaceModule,
     PaymentModule,
+    UploadModule,
   ],
   controllers: [AppController],
   providers: [AppService],

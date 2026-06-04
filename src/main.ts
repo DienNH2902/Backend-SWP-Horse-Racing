@@ -16,6 +16,7 @@ async function bootstrap() {
     origin: [
       'http://localhost:5173',
       'https://horse-racing.io.vn', // Điền domain chính thức của Frontend vào đây
+      'https://goldenhoof-fe.vercel.app',
     ],
 
     // 2. Cho phép các phương thức HTTP nào được quyền tác động vào BE

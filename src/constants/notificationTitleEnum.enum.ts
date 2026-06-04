@@ -10,8 +10,13 @@ export enum NotificationTitleEnum {
   INVITATION_ACCEPTED = 'Lời mời đã được chấp nhận',
   INVITATION_REJECTED = 'Lời mời đã bị từ chối',
 
+  TOURNAMENT_REGISTERED = 'Đăng ký giải đấu thành công',
+  TOURNAMENT_WAITLIST = 'Bạn đã được chuyển vào phòng chờ',
+  TOURNAMENT_REJECTED = 'Đăng ký giải đấu bị từ chối',
   RACE_REMINDER = 'Nhắc nhở lịch thi đấu',
   REWARD_RECEIVED = 'Phần thưởng giải đấu',
+
+  BALANCE_NOT_ENOUGH = 'Số dư tài khoản không đủ',
 
   SYSTEM_ALERT = 'Thông báo hệ thống',
 }

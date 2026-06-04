@@ -21,7 +21,9 @@ export class InvitationExpiryTask {
 
     const count = await this.repo.expireOlderThan(cutoff);
     if (count > 0) {
-      this.logger.log(`Đã expire ${count} lời mời quá ${this.EXPIRY_DAYS} ngày`);
+      this.logger.log(
+        `Đã expire ${count} lời mời quá ${this.EXPIRY_DAYS} ngày`,
+      );
     }
   }
 }

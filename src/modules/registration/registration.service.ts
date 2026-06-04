@@ -12,14 +12,11 @@ import { RegistrationRepository } from './registration.repository';
 import { JockeyInvitationRepository } from '../invitation/invitation.repository';
 import { ContractRepository } from '../invitation/contract.repository';
 import { TournamentRepository } from '../tournament/tournament.repository';
-// import { TransactionRepository } from '../transaction/transaction.repository';
-// import { NotificationRepository } from '../notification/notification.repository';
 import {
   HorseOwnerProfile,
   HorseOwnerProfileDocument,
 } from '../user/schemas/horse-owner-profile.schema';
 import { RegistrationStatusEnum } from 'src/constants/registrationStatus.enum';
-// import { TransactionTypeEnum } from 'src/constants/transactionType.enum';
 import { JockeyInvitationEnum } from 'src/constants/jockeyInvitationEnum.enum';
 import { ContractStatusEnum } from 'src/constants/contractStatusEnum.enum';
 import {
@@ -28,6 +25,12 @@ import {
   RejectRegistrationDto,
   ResponseRegistrationDto,
 } from './dto';
+import { TransactionRepository } from '../payment/transaction.repository';
+import { NotificationRepository } from '../notification/notification.repository';
+import { NotificationTypeEnum } from 'src/constants/notificationTypeEnum.enum';
+import { NotificationTitleEnum } from 'src/constants/notificationTitleEnum.enum';
+import { TransactionTypeEnum } from 'src/constants/transactionType.enum';
+import { TransactionTitleEnum } from 'src/constants/transactionTitleEnum.enum';
 
 @Injectable()
 export class RegistrationService {
@@ -36,8 +39,8 @@ export class RegistrationService {
     private readonly invitationRepository: JockeyInvitationRepository,
     private readonly contractRepository: ContractRepository,
     private readonly tournamentRepository: TournamentRepository,
-    // private readonly transactionRepository: TransactionRepository,
-    // private readonly notificationRepository: NotificationRepository,
+    private readonly transactionRepository: TransactionRepository,
+    private readonly notificationRepository: NotificationRepository,
 
     @InjectModel(HorseOwnerProfile.name)
     private readonly horseOwnerProfileModel: Model<HorseOwnerProfileDocument>,
@@ -210,13 +213,13 @@ export class RegistrationService {
         'Số dư tài khoản không đủ tại thời điểm duyệt',
       );
 
-      // await this.notificationRepository.create({
-      //   userId: new Types.ObjectId(ownerIdStr),
-      //   type: 'registration_auto_rejected',
-      //   title: 'Đăng ký bị từ chối tự động',
-      //   content: `Đăng ký của bạn bị từ chối do số dư không đủ. Phí đăng ký: ${reg.entryFee}`,
-      //   isRead: false,
-      // });
+      await this.notificationRepository.create({
+        userId: new Types.ObjectId(ownerIdStr),
+        type: NotificationTypeEnum.BALANCE_NOT_ENOUGH,
+        title: NotificationTitleEnum.BALANCE_NOT_ENOUGH,
+        content: `Đăng ký của bạn bị từ chối do số dư không đủ. Phí đăng ký: ${reg.entryFee}`,
+        isRead: false,
+      });
       throw new BadRequestException(
         'Số dư chủ ngựa không đủ, đăng ký đã bị từ chối tự động',
       );
@@ -229,13 +232,13 @@ export class RegistrationService {
     );
 
     // 4. Insert Transaction qua TransactionRepository
-    // await this.transactionRepository.create({
-    //   senderId: new Types.ObjectId(ownerIdStr),
-    //   receiverId: null,
-    //   content: `Phí đăng ký giải đấu`,
-    //   amount: reg.entryFee,
-    //   type: TransactionTypeEnum.ENTRY_FEE,
-    // });
+    await this.transactionRepository.create({
+      senderId: new Types.ObjectId(ownerIdStr),
+      receiverId: null,
+      content: TransactionTitleEnum.ENTRY_FEE,
+      amount: reg.entryFee,
+      type: TransactionTypeEnum.ENTRY_FEE,
+    });
 
     // 5. Cập nhật status + gán gateNumber thông qua hàm lưu trữ chuyên biệt
     const updated = await this.registrationRepository.updateStatusToConfirmed(
@@ -244,13 +247,13 @@ export class RegistrationService {
     );
 
     // 6. Notification cho owner qua NotificationRepository
-    // await this.notificationRepository.create({
-    //   userId: new Types.ObjectId(ownerIdStr),
-    //   type: 'registration_confirmed',
-    //   title: 'Đăng ký được duyệt',
-    //   content: `Đăng ký tham gia giải đấu đã được duyệt. Ô chuồng: ${dto.gateNumber}. Phí ${reg.entryFee} đã được trừ.`,
-    //   isRead: false,
-    // });
+    await this.notificationRepository.create({
+      userId: new Types.ObjectId(ownerIdStr),
+      type: NotificationTypeEnum.TOURNAMENT_REGISTERED,
+      title: NotificationTitleEnum.TOURNAMENT_REGISTERED,
+      content: `Đăng ký tham gia giải đấu đã được duyệt. Ô chuồng: ${dto.gateNumber}. Phí ${reg.entryFee} đã được trừ.`,
+      isRead: false,
+    });
 
     return this.toResponse(updated);
   }
@@ -268,14 +271,14 @@ export class RegistrationService {
     const updated =
       await this.registrationRepository.updateStatusToWaitlisted(id);
 
-    // const ownerIdStr = this.resolveId(reg.ownerId);
-    // await this.notificationRepository.create({
-    //   userId: new Types.ObjectId(ownerIdStr),
-    //   type: 'registration_waitlisted',
-    //   title: 'Đăng ký được chấp nhận vào danh sách',
-    //   content: `Ngựa của bạn đã được chấp nhận vào pool tham gia giải đấu. Vui lòng chờ admin phân bổ race.`,
-    //   isRead: false,
-    // });
+    const ownerIdStr = this.resolveId(reg.ownerId);
+    await this.notificationRepository.create({
+      userId: new Types.ObjectId(ownerIdStr),
+      type: NotificationTypeEnum.TOURNAMENT_WAITLIST,
+      title: NotificationTitleEnum.TOURNAMENT_WAITLIST,
+      content: `Ngựa của bạn đã được chấp nhận vào pool tham gia giải đấu. Vui lòng chờ admin phân bổ race.`,
+      isRead: false,
+    });
 
     return this.toResponse(updated);
   }
@@ -299,14 +302,14 @@ export class RegistrationService {
       dto.reason,
     );
 
-    // const ownerIdStr = this.resolveId(reg.ownerId);
-    // await this.notificationRepository.create({
-    //   userId: new Types.ObjectId(ownerIdStr),
-    //   type: 'registration_rejected',
-    //   title: 'Đăng ký bị từ chối',
-    //   content: `Đăng ký tham gia giải đấu bị từ chối. Lý do: ${dto.reason}`,
-    //   isRead: false,
-    // });
+    const ownerIdStr = this.resolveId(reg.ownerId);
+    await this.notificationRepository.create({
+      userId: new Types.ObjectId(ownerIdStr),
+      type: NotificationTypeEnum.TOURNAMENT_REJECTED,
+      title: NotificationTitleEnum.TOURNAMENT_REJECTED,
+      content: `Đăng ký tham gia giải đấu bị từ chối. Lý do: ${dto.reason}`,
+      isRead: false,
+    });
 
     return this.toResponse(updated);
   }
