@@ -231,7 +231,7 @@ export class RegistrationService {
     // 4. Insert Transaction qua TransactionRepository
     // await this.transactionRepository.create({
     //   senderId: new Types.ObjectId(ownerIdStr),
-    //   receiverId: Platform,
+    //   receiverId: null,
     //   content: `Phí đăng ký giải đấu`,
     //   amount: reg.entryFee,
     //   type: TransactionTypeEnum.ENTRY_FEE,
