@@ -24,7 +24,7 @@ export class RaceAssignService {
     });
   }
 
-  // ─── Admin assign referee vào race ────────────────────────────────────────
+  //  Admin assign referee vào race 
 
   async assignReferee(raceId: string, dto: AssignRefereeDto): Promise<ResponseRaceDto> {
     const race = await this.raceRepository.findById(raceId);

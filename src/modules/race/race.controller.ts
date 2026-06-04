@@ -7,6 +7,7 @@ import {
   Body,
   UseGuards,
   Query,
+  Request
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -83,6 +84,14 @@ export class RaceController {
     @Body() dto: BulkAssignHorsesDto,
   ): Promise<BulkAssignResultDto> {
     return this.assignService.bulkAssignHorses(raceId, dto);
+  }
+
+  @Get('my-races')
+  @UseGuards(RolesGuard)
+  @Roles(RoleEnum.REFEREE)
+  @ApiOperation({ summary: 'Referee xem danh sách race được assigned cho mình' })
+  getMyRaces(@Request() req: any): Promise<ResponseRaceDto[]> {
+    return this.service.getRacesByReferee(req.user._id as string);
   }
 
   @Get('tournament/:tournamentId')
