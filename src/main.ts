@@ -2,7 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
 import { Logger, ValidationPipe } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger/dist';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 
@@ -16,6 +16,7 @@ async function bootstrap() {
     origin: [
       'http://localhost:5173',
       'https://horse-racing.io.vn', // Điền domain chính thức của Frontend vào đây
+      'https://goldenhoof-fe.vercel.app',
     ],
 
     // 2. Cho phép các phương thức HTTP nào được quyền tác động vào BE
@@ -29,7 +30,7 @@ async function bootstrap() {
   });
 
   const config = new DocumentBuilder()
-    .setTitle('Horse Racing') // Tiêu đề hiển thị trên Swagger UI
+    .setTitle('Golden Hoof Horse Racing') // Tiêu đề hiển thị trên Swagger UI
     .setDescription('Horse Racing Backend Service API Documentation') // Mô tả chi tiết hơn về API
     .setVersion('1.0')
     .addBearerAuth()

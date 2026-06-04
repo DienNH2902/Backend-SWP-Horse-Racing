@@ -23,6 +23,13 @@ export class TournamentRepository {
   async findTournamentById(id: string): Promise<TournamentDocument | null> {
     return await this.tournamentModel.findById(id).exec();
   }
+  
+  async findById(id: string): Promise<Tournament | null> {
+    return this.tournamentModel
+      .findById(id)
+      .lean()
+      .exec() as Promise<Tournament | null>;
+  }
 
   async updateTournament(
     id: string,

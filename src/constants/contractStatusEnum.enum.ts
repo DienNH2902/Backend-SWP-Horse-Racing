@@ -1,0 +1,6 @@
+export enum ContractStatusEnum {
+  ACTIVE = 'ACTIVE',
+  COMPLETED = 'COMPLETED',
+  BREACHED = 'BREACHED',
+  CANCELLED = 'CANCELLED',
+}

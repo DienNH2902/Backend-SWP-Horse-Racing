@@ -8,8 +8,12 @@ import { AuthModule } from './modules/auth/auth.module';
 import { JockeyLicenseModule } from './modules/jockey-license/jockey-license.module';
 import { TournamentModule } from './modules/tournament/tournament.module';
 import { HorseModule } from './modules/horse/horse.module';
+import { JockeyInvitationModule } from './modules/invitation/invitation.module';
+import { RegistrationModule } from './modules/registration/registration.module';
+import { NotificationModule } from './modules/notification/notification.module';
 import { UploadModule } from './modules/upload/upload.module';
-import { VnPayModule } from './modules/vnpay/vnpay.module';
+import { RaceModule } from './modules/race/race.module';
+import { PaymentModule } from './modules/payment/payment.module';
 
 @Module({
   imports: [
@@ -30,8 +34,13 @@ import { VnPayModule } from './modules/vnpay/vnpay.module';
     JockeyLicenseModule,
     TournamentModule,
     HorseModule,
+    JockeyInvitationModule,
+    RegistrationModule,
+    NotificationModule,
     UploadModule,
-    VnPayModule,
+    RaceModule,
+    PaymentModule,
+    UploadModule,
   ],
   controllers: [AppController],
   providers: [AppService],

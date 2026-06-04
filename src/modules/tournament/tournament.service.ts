@@ -31,6 +31,7 @@ interface PopulatedTournament {
   status?: string;
   horsesPerRace?: number;
   totalRaces?: number;
+  entryFee?: number;
 }
 @Injectable()
 export class TournamentService {
@@ -131,6 +132,7 @@ export class TournamentService {
         status: tournamentRaw?.status || null,
         horsesPerRace: tournamentRaw?.horsesPerRace || null,
         totalRaces: tournamentRaw?.totalRaces || null,
+        entryFee: tournamentRaw?.entryFee || null,
       };
     });
   }

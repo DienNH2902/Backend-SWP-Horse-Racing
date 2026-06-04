@@ -35,7 +35,10 @@ export class UsersRepository {
       })
       .populate('spectatorProfile')
       .populate('refereeProfile')
-      .populate('horseOwnerProfile')
+      .populate({
+        path: 'horseOwnerProfile',
+        populate: { path: 'totalHorsesOwned' },
+      })
       .lean({ virtuals: true })
       .exec();
   }
@@ -66,7 +69,10 @@ export class UsersRepository {
         query.populate('refereeProfile');
         break;
       case RoleEnum.HORSE_OWNER:
-        query.populate('horseOwnerProfile');
+        query.populate({
+          path: 'horseOwnerProfile',
+          populate: { path: 'totalHorsesOwned' },
+        });
         break;
       case RoleEnum.SPECTATOR:
         query.populate('spectatorProfile');
@@ -75,6 +81,15 @@ export class UsersRepository {
 
     return await query.lean({ virtuals: true }).exec();
   }
+
+  async totalHorseOwned(ownerId: string) {
+    return await this.horseOwnerModel
+      .findById(ownerId)
+      .populate('totalHorsesOwned')
+      .exec();
+  }
+
+  // Output trả về sẽ tự có trường: totalHorsesOwned: 5 (nếu có 5 con ngựa trong DB)
 
   async findOneUser(filter: QueryFilter<User>): Promise<User | null> {
     return await this.userModel
@@ -86,7 +101,10 @@ export class UsersRepository {
       })
       .populate({ path: 'spectatorProfile' })
       .populate({ path: 'refereeProfile' })
-      .populate({ path: 'horseOwnerProfile' })
+      .populate({
+        path: 'horseOwnerProfile',
+        populate: { path: 'totalHorsesOwned' },
+      })
       .lean({ virtuals: true })
       .exec();
   }

@@ -49,4 +49,7 @@ export class ResponseTournamentDto {
 
   @Expose()
   totalRaces: number;
+
+  @Expose()
+  entryFee: number;
 }
