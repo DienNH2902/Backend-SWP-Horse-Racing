@@ -98,7 +98,7 @@ export class AdminRegistrationController {
   @ApiQuery({
     name: 'status',
     required: false,
-    enum: ['waitlisted', 'pending', 'confirmed', 'rejected'],
+    enum: ['Waitlisted', 'Pending', 'Confirmed', 'Rejected'],
   })
   @ApiQuery({ name: 'tournamentId', required: false })
   getAll(
@@ -142,7 +142,7 @@ export class AdminRegistrationController {
     return this.registrationService.adminReject(id, dto);
   }
 
-  @Patch(':id/waitlist')
+  @Patch(':id/accept-to-waitlist')
   @ApiOperation({
     summary: 'Admin chấp nhận đăng ký vào pool (pending → waitlisted)',
   })

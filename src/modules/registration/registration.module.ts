@@ -25,10 +25,6 @@ import {
   HorseOwnerProfileSchema,
 } from '../user/schemas/horse-owner-profile.schema';
 import {
-  Transaction,
-  TransactionSchema,
-} from '../transaction/schemas/transaction.schema';
-import {
   Notification,
   NotificationSchema,
 } from '../notification/schemas/notification.schema';
@@ -38,8 +34,12 @@ import {
 } from '../tournament/schemas/tournament.schema';
 import { TournamentModule } from '../tournament/tournament.module';
 import { NotificationModule } from '../notification/notification.module';
-import { TransactionModule } from '../transaction/transaction.module';
 import { JockeyInvitationModule } from '../invitation/invitation.module';
+import {
+  Transaction,
+  TransactionSchema,
+} from '../payment/schemas/transaction.schema';
+import { PaymentModule } from '../payment/payment.module';
 
 @Module({
   imports: [
@@ -54,7 +54,7 @@ import { JockeyInvitationModule } from '../invitation/invitation.module';
     ]),
     JockeyInvitationModule,
     TournamentModule,
-    TransactionModule,
+    PaymentModule,
     NotificationModule,
   ],
   controllers: [
