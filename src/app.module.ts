@@ -42,6 +42,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     UploadModule,
     RaceModule,
     PaymentModule,
+    UploadModule,
   ],
   controllers: [AppController],
   providers: [AppService],

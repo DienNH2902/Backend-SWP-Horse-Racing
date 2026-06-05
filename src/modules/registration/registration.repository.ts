@@ -144,4 +144,42 @@ export class RegistrationRepository {
       .lean()
       .exec();
   }
+
+
+  async countConfirmedByRace(raceId: string): Promise<number> {
+  return this.registrationModel.countDocuments({
+    raceId: new Types.ObjectId(raceId),
+    status: RegistrationStatusEnum.CONFIRMED,
+  });
+}
+
+async getUsedGateNumbers(raceId: string): Promise<number[]> {
+  const docs = await this.registrationModel
+    .find(
+      { raceId: new Types.ObjectId(raceId), status: RegistrationStatusEnum.CONFIRMED },
+      { gateNumber: 1 },
+    )
+    .lean()
+    .exec();
+  return docs.map((d) => d.gateNumber).filter(Boolean);
+}
+
+async bulkConfirmWithGate(
+  items: Array<{ id: string; gateNumber: number; raceId: string }>,
+): Promise<void> {
+  const ops = items.map((item) => ({
+    updateOne: {
+      filter: { _id: new Types.ObjectId(item.id) },
+      update: {
+        $set: {
+          status: RegistrationStatusEnum.CONFIRMED,
+          raceId: new Types.ObjectId(item.raceId),
+          gateNumber: item.gateNumber,
+          confirmedAt: new Date(),
+        },
+      },
+    },
+  }));
+  await this.registrationModel.bulkWrite(ops);
+}
 }

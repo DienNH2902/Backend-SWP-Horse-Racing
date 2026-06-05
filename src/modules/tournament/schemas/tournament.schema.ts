@@ -12,6 +12,9 @@ export class Tournament extends Document {
   @Prop({ required: true })
   description: string;
 
+  @Prop({ required: false, trim: true, default: null })
+  imageUrl: string;
+
   @Prop({ required: true })
   startDate: Date;
 
