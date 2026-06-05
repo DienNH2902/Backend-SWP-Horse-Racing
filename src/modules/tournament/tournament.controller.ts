@@ -8,6 +8,7 @@ import {
   Param,
   UseGuards,
   Request,
+  Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { TournamentService } from './tournament.service';
@@ -19,6 +20,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RoleEnum } from 'src/constants/roleEnum.enum';
+import { GetTournamentsQueryDto } from './dto/get-tournament-status-query.dto';
 
 @ApiTags('Tournaments')
 @Controller('tournaments')
@@ -39,9 +41,15 @@ export class TournamentController {
   @Get()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Lấy danh sách tất cả các giải đấu công khai' })
-  async getAll(): Promise<ResponseTournamentDto[]> {
-    return await this.tournamentService.getAllTournament();
+  // @ApiOperation({ summary: 'Lấy danh sách tất cả các giải đấu công khai' })
+  // async getAll(): Promise<ResponseTournamentDto[]> {
+  //   return await this.tournamentService.getAllTournament();
+  // }
+  @ApiOperation({
+    summary: 'Lấy danh sách tất cả giải đấu (Có thể lọc theo trạng thái)',
+  })
+  async getAllTournament(@Query() query: GetTournamentsQueryDto) {
+    return await this.tournamentService.getAllTournament(query);
   }
 
   @Get('my-tournaments')
