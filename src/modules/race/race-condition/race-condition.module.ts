@@ -13,6 +13,6 @@ import { RaceCondition, RaceConditionSchema } from './schemas/race-condition.sch
   ],
   controllers: [RaceConditionController],
   providers: [RaceConditionService, RaceConditionRepository],
-  exports: [RaceConditionService],
+  exports: [RaceConditionService, RaceConditionRepository],
 })
 export class RaceConditionModule {}
