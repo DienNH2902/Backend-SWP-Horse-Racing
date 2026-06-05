@@ -186,4 +186,13 @@ export class RaceRepository {
       .lean()
       .exec() as Promise<Race | null>;
   }
+
+  async findByReferee(refereeId: string): Promise<Race[]> {
+    return this.raceModel
+      .find({ refereeId: new Types.ObjectId(refereeId) })
+      .populate('tournamentId raceCourseId')
+      .sort({ date: 1, startTime: 1 })
+      .lean()
+      .exec() as Promise<Race[]>;
+  }
 }

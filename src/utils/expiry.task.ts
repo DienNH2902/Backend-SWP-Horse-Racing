@@ -4,7 +4,7 @@ import { JockeyInvitationRepository } from '../modules/invitation/invitation.rep
 
 /**
  * Cron job tự động expire các invitation PENDING quá 7 ngày.
- * Cần cài: npm i @nestjs/schedule
+ * Cần cài: yarn add @nestjs/schedule
  * Thêm ScheduleModule.forRoot() vào AppModule.
  */
 @Injectable()

@@ -14,6 +14,7 @@ import { NotificationModule } from './modules/notification/notification.module';
 import { UploadModule } from './modules/upload/upload.module';
 import { RaceModule } from './modules/race/race.module';
 import { PaymentModule } from './modules/payment/payment.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { PaymentModule } from './modules/payment/payment.module';
       }),
       inject: [ConfigService],
     }),
+    ScheduleModule.forRoot(),
     UserModule,
     AuthModule,
     JockeyLicenseModule,

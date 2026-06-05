@@ -120,4 +120,9 @@ export class RaceService {
     return this.toResponse(race);
   }
 
+
+  async getRacesByReferee(refereeId: string): Promise<ResponseRaceDto[]> {
+    const races = await this.raceRepository.findByReferee(refereeId);
+    return races.map((r) => this.toResponse(r));
+  }
 }
