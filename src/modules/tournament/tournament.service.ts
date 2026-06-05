@@ -11,6 +11,7 @@ import { ResponseTournamentDto } from './dto/response-tournament.dto';
 import { plainToInstance } from 'class-transformer';
 import { UserTournamentRepository } from './user-tournament.repository';
 import { Types } from 'mongoose';
+import { GetTournamentsQueryDto } from './dto/get-tournament-status-query.dto';
 
 interface PopulatedUser {
   _id: Types.ObjectId;
@@ -74,8 +75,17 @@ export class TournamentService {
     return this.toResponse(tournament);
   }
 
-  async getAllTournament(): Promise<ResponseTournamentDto[]> {
-    const tournaments = await this.tournamentRepository.findAllTournament();
+  // async getAllTournament(): Promise<ResponseTournamentDto[]> {
+  //   const tournaments = await this.tournamentRepository.findAllTournament();
+  //   return this.toResponse(tournaments);
+  // }
+
+  async getAllTournament(
+    query: GetTournamentsQueryDto,
+  ): Promise<ResponseTournamentDto[]> {
+    const tournaments = await this.tournamentRepository.findAllTournament({
+      status: query.status,
+    });
     return this.toResponse(tournaments);
   }
 
