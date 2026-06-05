@@ -11,6 +11,7 @@ import {
 import { Contract, ContractSchema } from './schemas/contract.schema';
 import { HorseModule } from '../horse/horse.module';
 import { UserModule } from '../user/user.module';
+import { InvitationExpiryTask } from 'src/utils/expiry.task';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { UserModule } from '../user/user.module';
     JockeyInvitationService,
     JockeyInvitationRepository,
     ContractRepository,
+    InvitationExpiryTask,
   ],
   exports: [
     JockeyInvitationService,
