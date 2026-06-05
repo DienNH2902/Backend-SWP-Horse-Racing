@@ -195,4 +195,17 @@ export class RaceRepository {
       .lean()
       .exec() as Promise<Race[]>;
   }
+
+ 
+async updateStatus(raceId: string, status: RaceStatusEnum): Promise<void> {
+  await this.raceModel
+    .findByIdAndUpdate(
+      new Types.ObjectId(raceId),
+      {
+        status,
+        ...(status === RaceStatusEnum.SIMULATED && { simulatedAt: new Date() }),
+      },
+    )
+    .exec();
+}
 }

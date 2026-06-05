@@ -14,6 +14,7 @@ import { NotificationModule } from './modules/notification/notification.module';
 import { UploadModule } from './modules/upload/upload.module';
 import { RaceModule } from './modules/race/race.module';
 import { PaymentModule } from './modules/payment/payment.module';
+import { RaceSimulationModule } from './modules/race-simulation/race-simulation.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { PaymentModule } from './modules/payment/payment.module';
     RaceModule,
     PaymentModule,
     UploadModule,
+    RaceSimulationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

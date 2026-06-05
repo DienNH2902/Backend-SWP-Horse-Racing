@@ -182,4 +182,34 @@ async bulkConfirmWithGate(
   }));
   await this.registrationModel.bulkWrite(ops);
 }
+
+
+async findConfirmedWithDetails(raceId: string): Promise<any[]> {
+  const docs = await this.registrationModel
+    .find({
+      raceId: new Types.ObjectId(raceId),
+      status: RegistrationStatusEnum.CONFIRMED, 
+    })
+    .populate({
+      path: 'horseId',
+      select: 'weight height winRate totalWin',
+    })
+    .populate({
+      path: 'jockeyInvitationId',
+      select: 'jockeyId',
+      populate: {
+        path: 'jockeyId',
+        select: 'weight',
+      },
+    })
+    .lean()
+    .exec();
+
+  return docs.map((doc: any) => ({
+    ...doc,
+    horse: doc.horseId,
+    jockeyProfile: doc.jockeyInvitationId?.jockeyId,
+    gateNumber: doc.gateNumber,
+  }));
+}
 }

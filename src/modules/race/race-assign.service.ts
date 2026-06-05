@@ -46,7 +46,7 @@ export class RaceAssignService {
     return this.toRaceResponse(updated);
   }
 
-  // ─── Admin gán hàng loạt horse vào race ──────────────────────────────────
+  //  Admin gán hàng loạt horse vào race 
 
   async bulkAssignHorses(
     raceId: string,
