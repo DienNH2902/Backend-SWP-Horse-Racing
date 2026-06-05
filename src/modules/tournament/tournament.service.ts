@@ -25,6 +25,7 @@ interface PopulatedTournament {
   _id: Types.ObjectId;
   title?: string;
   description?: string;
+  imageUrl?: string;
   startDate?: Date;
   endDate?: Date;
   location?: string;
@@ -126,6 +127,9 @@ export class TournamentService {
           tournamentRaw?._id?.toString() || item.tournamentId?.toString(),
         title: tournamentRaw?.title || null,
         description: tournamentRaw?.description || null,
+        imageUrl:
+          tournamentRaw?.imageUrl ||
+          'https://thumb.photo-ac.com/a9/a9c7ce839f672dabd9752457822046e5_t.jpeg',
         startDate: formatDate(tournamentRaw?.startDate),
         endDate: formatDate(tournamentRaw?.endDate),
         location: tournamentRaw?.location || null,
