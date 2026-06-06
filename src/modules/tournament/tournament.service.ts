@@ -49,6 +49,19 @@ export class TournamentService {
     });
   }
 
+  private async calculateAvailableSlot(
+    tournamentId: string,
+    horsesPerRace: number,
+    totalRaces: number,
+  ): Promise<number> {
+    const participants =
+      await this.userTournamentRepository.findUsersByTournament(tournamentId);
+    const registeredCount = participants?.length || 0;
+    const maxCapacity = (horsesPerRace || 0) * (totalRaces || 0);
+    const availableSlot = maxCapacity - registeredCount;
+    return availableSlot > 0 ? availableSlot : 0;
+  }
+
   async createTournament(
     dto: CreateTournamentDto,
   ): Promise<ResponseTournamentDto> {
@@ -80,24 +93,99 @@ export class TournamentService {
   //   return this.toResponse(tournaments);
   // }
 
-  async getAllTournament(
-    query: GetTournamentsQueryDto,
-  ): Promise<ResponseTournamentDto[]> {
+  // async getAllTournament(
+  //   query: GetTournamentsQueryDto,
+  // ): Promise<ResponseTournamentDto[]> {
+  //   const tournaments = await this.tournamentRepository.findAllTournament({
+  //     status: query.status,
+  //   });
+  //   return this.toResponse(tournaments);
+  // }
+
+  async getAllTournament(query: GetTournamentsQueryDto): Promise<any[]> {
     const tournaments = await this.tournamentRepository.findAllTournament({
       status: query.status,
     });
-    return this.toResponse(tournaments);
+
+    // Duyệt qua từng giải đấu để tính toán động availableSlot
+    const result = await Promise.all(
+      tournaments.map(async (tournament) => {
+        const plainTournament = tournament.toObject();
+        const availableSlot = await this.calculateAvailableSlot(
+          plainTournament._id.toString(),
+          plainTournament.horsesPerRace,
+          plainTournament.totalRaces,
+        );
+
+        return {
+          ...this.toResponse(plainTournament),
+          availableSlot,
+        };
+      }),
+    );
+
+    return result;
   }
 
-  async getOneTournament(id: string): Promise<ResponseTournamentDto> {
+  // async getOneTournament(id: string): Promise<ResponseTournamentDto> {
+  //   const tournament = await this.tournamentRepository.findTournamentById(id);
+  //   if (!tournament) {
+  //     throw new NotFoundException('Không tìm thấy giải đấu yêu cầu');
+  //   }
+  //   return this.toResponse(tournament);
+  // }
+
+  async getOneTournament(id: string): Promise<any> {
     const tournament = await this.tournamentRepository.findTournamentById(id);
     if (!tournament) {
       throw new NotFoundException('Không tìm thấy giải đấu yêu cầu');
     }
-    return this.toResponse(tournament);
+
+    const plainTournament = tournament.toObject();
+    const availableSlot = await this.calculateAvailableSlot(
+      plainTournament._id.toString(),
+      plainTournament.horsesPerRace,
+      plainTournament.totalRaces,
+    );
+
+    return {
+      ...this.toResponse(plainTournament),
+      availableSlot,
+    };
   }
 
+  // async joinTournament(userId: string, tournamentId: string): Promise<any> {
+  //   const join = await this.userTournamentRepository.joinTournament(
+  //     userId,
+  //     tournamentId,
+  //   );
+  //   return {
+  //     _id: join._id.toString(),
+  //     userId: join.userId.toString(),
+  //     tournamentId: join.tournamentId.toString(),
+  //   };
+  // }
+
   async joinTournament(userId: string, tournamentId: string): Promise<any> {
+    // Thêm kiểm tra validation trước khi cho phép người dùng đăng ký tham gia
+    const tournament =
+      await this.tournamentRepository.findTournamentById(tournamentId);
+    if (!tournament) {
+      throw new NotFoundException('Giải đấu không tồn tại');
+    }
+
+    const slotLeft = await this.calculateAvailableSlot(
+      tournamentId,
+      tournament.horsesPerRace,
+      tournament.totalRaces,
+    );
+
+    if (slotLeft <= 0) {
+      throw new BadRequestException(
+        'Giải đấu đã đầy slot, không thể đăng ký thêm',
+      );
+    }
+
     const join = await this.userTournamentRepository.joinTournament(
       userId,
       tournamentId,
@@ -125,30 +213,41 @@ export class TournamentService {
     };
 
     // Trả về một mảng đã phẳng hóa dữ liệu trực tiếp, không đi qua hàm toResponse nữa
-    return tournaments.map((item) => {
-      const tournamentRaw = item.tournamentId as PopulatedTournament;
+    return Promise.all(
+      tournaments.map(async (item) => {
+        const tournamentRaw = item.tournamentId as PopulatedTournament;
+        const tId =
+          tournamentRaw?._id?.toString() || item.tournamentId?.toString();
 
-      return {
-        registrationId: item._id.toString(), // ID của bản ghi đăng ký trung gian
-        userId: item.userId?.toString(),
+        let availableSlot = 0;
+        if (tournamentRaw) {
+          availableSlot = await this.calculateAvailableSlot(
+            tId,
+            tournamentRaw.horsesPerRace || 0,
+            tournamentRaw.totalRaces || 0,
+          );
+        }
 
-        // Phẳng hóa toàn bộ thông tin giải đấu ra ngoài cấu trúc phẳng lỳ giống dự án Trà cũ
-        tournamentId:
-          tournamentRaw?._id?.toString() || item.tournamentId?.toString(),
-        title: tournamentRaw?.title || null,
-        description: tournamentRaw?.description || null,
-        imageUrl:
-          tournamentRaw?.imageUrl ||
-          'https://thumb.photo-ac.com/a9/a9c7ce839f672dabd9752457822046e5_t.jpeg',
-        startDate: formatDate(tournamentRaw?.startDate),
-        endDate: formatDate(tournamentRaw?.endDate),
-        location: tournamentRaw?.location || null,
-        status: tournamentRaw?.status || null,
-        horsesPerRace: tournamentRaw?.horsesPerRace || null,
-        totalRaces: tournamentRaw?.totalRaces || null,
-        entryFee: tournamentRaw?.entryFee || null,
-      };
-    });
+        return {
+          registrationId: item._id.toString(),
+          userId: item.userId?.toString(),
+          tournamentId: tId,
+          title: tournamentRaw?.title || null,
+          description: tournamentRaw?.description || null,
+          imageUrl:
+            tournamentRaw?.imageUrl ||
+            'https://thumb.photo-ac.com/a9/a9c7ce839f672dabd9752457822046e5_t.jpeg',
+          startDate: formatDate(tournamentRaw?.startDate),
+          endDate: formatDate(tournamentRaw?.endDate),
+          location: tournamentRaw?.location || null,
+          status: tournamentRaw?.status || null,
+          horsesPerRace: tournamentRaw?.horsesPerRace || null,
+          totalRaces: tournamentRaw?.totalRaces || null,
+          entryFee: tournamentRaw?.entryFee || null,
+          availableSlot, // Trả thêm dữ liệu slot trống ra cấu trúc phẳng
+        };
+      }),
+    );
   }
 
   async findUsersByTournament(tournamentId: string) {
