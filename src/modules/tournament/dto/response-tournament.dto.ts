@@ -55,4 +55,7 @@ export class ResponseTournamentDto {
 
   @Expose()
   entryFee: number;
+
+  @Expose()
+  availableSlot: number;
 }

@@ -145,41 +145,59 @@ export class RegistrationRepository {
       .exec();
   }
 
+  async countActiveRegistrationsByTournament(
+    tournamentId: string,
+  ): Promise<number> {
+    return this.registrationModel.countDocuments({
+      tournamentId: new Types.ObjectId(tournamentId),
+      // Chỉ đếm những đơn đã được duyệt (CONFIRMED) hoặc nằm trong hàng đợi (WAITLISTED, PENDING tùy nghiệp vụ của bạn)
+      status: {
+        $in: [
+          RegistrationStatusEnum.CONFIRMED,
+          RegistrationStatusEnum.WAITLISTED,
+          // RegistrationStatusEnum.PENDING, // Thêm PENDING nếu muốn giữ chỗ ngay khi vừa nộp đơn
+        ],
+      },
+    });
+  }
 
   async countConfirmedByRace(raceId: string): Promise<number> {
-  return this.registrationModel.countDocuments({
-    raceId: new Types.ObjectId(raceId),
-    status: RegistrationStatusEnum.CONFIRMED,
-  });
-}
+    return this.registrationModel.countDocuments({
+      raceId: new Types.ObjectId(raceId),
+      status: RegistrationStatusEnum.CONFIRMED,
+    });
+  }
 
-async getUsedGateNumbers(raceId: string): Promise<number[]> {
-  const docs = await this.registrationModel
-    .find(
-      { raceId: new Types.ObjectId(raceId), status: RegistrationStatusEnum.CONFIRMED },
-      { gateNumber: 1 },
-    )
-    .lean()
-    .exec();
-  return docs.map((d) => d.gateNumber).filter(Boolean);
-}
-
-async bulkConfirmWithGate(
-  items: Array<{ id: string; gateNumber: number; raceId: string }>,
-): Promise<void> {
-  const ops = items.map((item) => ({
-    updateOne: {
-      filter: { _id: new Types.ObjectId(item.id) },
-      update: {
-        $set: {
+  async getUsedGateNumbers(raceId: string): Promise<number[]> {
+    const docs = await this.registrationModel
+      .find(
+        {
+          raceId: new Types.ObjectId(raceId),
           status: RegistrationStatusEnum.CONFIRMED,
-          raceId: new Types.ObjectId(item.raceId),
-          gateNumber: item.gateNumber,
-          confirmedAt: new Date(),
+        },
+        { gateNumber: 1 },
+      )
+      .lean()
+      .exec();
+    return docs.map((d) => d.gateNumber).filter(Boolean);
+  }
+
+  async bulkConfirmWithGate(
+    items: Array<{ id: string; gateNumber: number; raceId: string }>,
+  ): Promise<void> {
+    const ops = items.map((item) => ({
+      updateOne: {
+        filter: { _id: new Types.ObjectId(item.id) },
+        update: {
+          $set: {
+            status: RegistrationStatusEnum.CONFIRMED,
+            raceId: new Types.ObjectId(item.raceId),
+            gateNumber: item.gateNumber,
+            confirmedAt: new Date(),
+          },
         },
       },
-    },
-  }));
-  await this.registrationModel.bulkWrite(ops);
-}
+    }));
+    await this.registrationModel.bulkWrite(ops);
+  }
 }
