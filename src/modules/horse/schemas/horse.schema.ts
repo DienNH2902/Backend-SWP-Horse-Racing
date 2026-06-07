@@ -16,6 +16,9 @@ export class Horse {
   @Prop({ required: true, trim: true })
   color: string;
 
+  @Prop({ type: String, default: null })
+  imageUrl: string;
+
   @Prop({
     type: String,
     enum: HorseStatusEnum,
