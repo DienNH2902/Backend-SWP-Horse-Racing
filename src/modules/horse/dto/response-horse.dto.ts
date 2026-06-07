@@ -16,6 +16,10 @@ export class ResponseHorseDto {
   color: string;
 
   @Expose()
+  @Transform(({ value }) => value || '')
+  imageUrl: string;
+
+  @Expose()
   horseStatus: string;
 
   @Expose()
