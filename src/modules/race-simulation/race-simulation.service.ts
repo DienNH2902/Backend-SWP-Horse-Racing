@@ -17,11 +17,9 @@ import { RaceCourseRepository } from '../race/race-course/race-course.repository
 import { RaceConditionRepository } from '../race/race-condition/race-condition.repository';
 import { RegistrationRepository } from '../registration/registration.repository';
 
-// ── Enums — THAY PATH NÀY cho đúng vị trí enum trong project của bạn ─────────
 import { RaceStatusEnum } from 'src/constants/raceStatus.enum';
 import { RawResultStatus } from './schemas/raw-result.schema';
 
-// ── Engine ────────────────────────────────────────────────────────────────────
 import { calcHorseRaceStats } from './engine/stats-calculator';
 import { calcConditionModifier } from './engine/condition-modifier';
 import { generateTicks } from './engine/tick-generator';

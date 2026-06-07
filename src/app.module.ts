@@ -15,6 +15,7 @@ import { UploadModule } from './modules/upload/upload.module';
 import { RaceModule } from './modules/race/race.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { RaceSimulationModule } from './modules/race-simulation/race-simulation.module';
+import { RefereeReportModule } from './modules/referee-report/referee-report.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { RaceSimulationModule } from './modules/race-simulation/race-simulation.
     PaymentModule,
     UploadModule,
     RaceSimulationModule,
+    RefereeReportModule,
   ],
   controllers: [AppController],
   providers: [AppService],

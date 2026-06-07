@@ -1,4 +1,6 @@
 import {
+  forwardRef,
+  Inject ,
   Injectable,
   NotFoundException,
   BadRequestException,
@@ -9,12 +11,15 @@ import { RaceRepository } from './race.repository';
 import { TournamentRepository } from '../tournament/tournament.repository'; 
 import { RaceStatusEnum } from '../../constants/raceStatus.enum';
 import { CreateRaceBatchDto, ResponseRaceDto } from './dto';
+import { RefereeReportService } from '../referee-report/referee-report.service';
 
 @Injectable()
 export class RaceService {
   constructor(
     private readonly raceRepository: RaceRepository,
     private readonly tournamentRepository: TournamentRepository,
+    @Inject(forwardRef(() => RefereeReportService))
+    private readonly refereeReportService: RefereeReportService,
   ) {}
 
   private toResponse(data: any): ResponseRaceDto {
@@ -124,5 +129,21 @@ export class RaceService {
   async getRacesByReferee(refereeId: string): Promise<ResponseRaceDto[]> {
     const races = await this.raceRepository.findByReferee(refereeId);
     return races.map((r) => this.toResponse(r));
+  }
+
+  async confirmReady(raceId: string, refereeId: string) {
+    const race = await this.raceRepository.findById(raceId);
+    if (!race) throw new NotFoundException('Không tìm thấy race');
+
+    if (race.status !== RaceStatusEnum.SCHEDULED) {
+      throw new BadRequestException(
+        `Race phải ở trạng thái "scheduled" để confirm ready`,
+      );
+    }
+
+    await this.raceRepository.updateStatus(raceId, RaceStatusEnum.READY);
+    await this.refereeReportService.createStartReport(raceId, refereeId);
+
+    return { message: 'Race đã sẵn sàng. Start report đã được tạo.' };
   }
 }
