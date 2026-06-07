@@ -215,4 +215,68 @@ export class UploadController {
       url: fileUrl,
     };
   }
+
+  @Post('horse-avatar')
+  @ApiOperation({
+    summary: 'Upload ảnh avatar cho ngựa (Dung lượng < 5MB)',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: (req, file, callback) => {
+          const path = './uploads/horses'; // Lưu riêng biệt không lẫn với avatar người dùng
+          if (!fs.existsSync(path)) {
+            fs.mkdirSync(path, { recursive: true });
+          }
+          callback(null, path);
+        },
+        filename: (req, file, callback) => {
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = extname(file.originalname);
+          callback(null, `tournament-${uniqueSuffix}${ext}`);
+        },
+      }),
+      fileFilter: (req, file, callback) => {
+        if (!file.mimetype.match(/\/(jpg|jpeg|png|webp)$/)) {
+          return callback(
+            new BadRequestException(
+              'Chỉ chấp nhận file ảnh (jpg, jpeg, png, webp)!',
+            ),
+            false,
+          );
+        }
+        callback(null, true);
+      },
+      limits: {
+        fileSize: 5 * 1024 * 1024,
+      },
+    }),
+  )
+  uploadHorseAvatar(@UploadedFile() file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('Không tìm thấy file để upload');
+    }
+
+    const appUrl =
+      this.configService.get<string>('APP_URL') || 'http://localhost:9000';
+    const fileUrl = `${appUrl}/static/horses/${file.filename}`;
+
+    return {
+      message: 'Upload ảnh giải đấu thành công!',
+      url: fileUrl,
+    };
+  }
 }
