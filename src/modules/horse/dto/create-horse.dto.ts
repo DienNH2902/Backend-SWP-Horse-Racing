@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsNumber, Min } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsNumber,
+  Min,
+  IsOptional,
+} from 'class-validator';
 
 export class CreateHorseDto {
   @ApiProperty({ example: 'Xích Thố' })
@@ -11,6 +17,14 @@ export class CreateHorseDto {
   @IsString()
   @IsNotEmpty()
   color: string;
+
+  @ApiProperty({
+    example: '',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  imageUrl?: string;
 
   @ApiProperty({ example: 1.65 })
   @IsNumber()
