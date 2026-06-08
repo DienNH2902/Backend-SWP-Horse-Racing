@@ -8,6 +8,7 @@ import {
   Put,
   UseGuards,
   Query,
+  Request,
 } from '@nestjs/common';
 import { UsersService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -19,6 +20,7 @@ import { UpdateJockeyDto } from './dto/update-jockey-profile.dto';
 import { UpdateRefereeDto } from './dto/update-referee-profile.dto';
 import { UpdateHorseOwnerDto } from './dto/update-horse-owner-profile.dto';
 import { RoleEnum } from 'src/constants/roleEnum.enum';
+import { UpdatePasswordDto } from './dto/update-password.dto';
 
 @ApiTags('Users')
 @Controller('users')
@@ -47,6 +49,19 @@ export class UsersController {
   @ApiOperation({ summary: 'Get user by ID' })
   findOne(@Param('id') id: string) {
     return this.userService.findOneUser(id);
+  }
+
+  @Put('change-password') // <-- Đường dẫn phẳng, không cần /:id nữa
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Cập nhật đổi mật khẩu tài khoản' })
+  async changePassword(
+    @Body() dto: UpdatePasswordDto,
+    @Request() req, // <-- Lấy đối tượng request chứa thông tin user đã login
+  ): Promise<{ message: string }> {
+    // Passport gán thông tin giải mã Token vào req.user. Lấy id trực tiếp từ đây
+    const userId = req.user._id as string;
+    return await this.userService.updatePassword(userId, dto);
   }
 
   // @Patch(':id')
