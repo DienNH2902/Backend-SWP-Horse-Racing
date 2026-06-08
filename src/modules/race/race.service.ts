@@ -137,7 +137,7 @@ export class RaceService {
 
     if (race.status !== RaceStatusEnum.SCHEDULED) {
       throw new BadRequestException(
-        `Race phải ở trạng thái "scheduled" để confirm ready`,
+        `Race phải ở trạng thái "Scheduled" để confirm ready`,
       );
     }
 

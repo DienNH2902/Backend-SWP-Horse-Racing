@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { RefereeReportType } from 'src/constants/refereeReportType.enum';
+import { RefereeReportType } from '../../../constants/refereeReportType.enum';
 
 
 @Schema({ collection: 'referee_reports', versionKey: false, timestamps: { createdAt: 'createAt', updatedAt: false } })

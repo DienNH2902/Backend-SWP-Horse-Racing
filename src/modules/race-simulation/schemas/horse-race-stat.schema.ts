@@ -1,9 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+import { Types } from 'mongoose';
 
-@Schema({ collection: 'horse_race_stats', versionKey: false })
-export class HorseRaceStats extends Document {
-  @Prop({ type: Types.ObjectId, ref: 'Race', required: true, index: true })
+@Schema({ timestamps: true })
+export class HorseRaceStats {
+  _id: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: 'Race', required: true })
   raceId: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'Horse', required: true })
@@ -12,20 +14,20 @@ export class HorseRaceStats extends Document {
   @Prop({ type: Types.ObjectId, ref: 'JockeyProfile', required: true })
   jockeyId: Types.ObjectId;
 
-  @Prop({ type: Number, required: true })
+  @Prop({ required: true })
   totalLoad: number;
 
-  @Prop({ type: Number, required: true })
+  @Prop({ required: true })
   baseSpeed: number;
 
-  @Prop({ type: Number, required: true })
+  @Prop({ required: true })
   acceleration: number;
 
-  @Prop({ type: Number, required: true })
+  @Prop({ required: true })
   stamina: number;
 
   // snapshot winRate tại thời điểm race — phục vụ audit
-  @Prop({ type: Number, required: true })
+  @Prop({ required: true })
   totalWin: number;
 }
 

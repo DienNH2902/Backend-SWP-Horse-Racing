@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+import { Types } from 'mongoose';
 
 export enum RaceEventType {
   STUMBLE = 'stumble',
@@ -8,15 +8,17 @@ export enum RaceEventType {
   LEAD_CHANGE = 'lead_change',
 }
 
-@Schema({ collection: 'race_events', versionKey: false })
-export class RaceEvent extends Document {
-  @Prop({ type: Types.ObjectId, ref: 'Race', required: true, index: true })
+@Schema({ timestamps: true })
+export class RaceEvent {
+  _id: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: 'Race', required: true })
   raceId: Types.ObjectId;
 
-  @Prop({ type: Number, required: true })
+  @Prop({ required: true })
   tickNumber: number;
 
-  @Prop({ type: String, enum: RaceEventType, required: true })
+  @Prop({ required: true, enum: RaceEventType })
   eventType: RaceEventType;
 
   // Con ngựa chính của event (stumble/burst/overtake/lead_change)

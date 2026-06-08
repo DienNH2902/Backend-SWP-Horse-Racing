@@ -109,4 +109,17 @@ export class RaceController {
   getOne(@Param('id') id: string): Promise<ResponseRaceDto> {
     return this.service.getRaceById(id);
   }
+
+  @Patch(':id/confirm-ready')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleEnum.REFEREE)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'REFEREE xác nhận race để bắt đầu → status = "ready"' })
+  async confirmReady(
+    @Param('id') id: string,
+    @Request() req: any,
+  ) { 
+    const refereeId = req.user._id as string;
+    return await this.service.confirmReady(id, refereeId);
+  }
 }

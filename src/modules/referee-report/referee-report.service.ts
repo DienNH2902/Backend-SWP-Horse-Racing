@@ -8,7 +8,7 @@ import { Types } from 'mongoose';
 import { plainToInstance } from 'class-transformer';
 
 import { RefereeReportRepository } from './referee-report.repository';
-import { RefereeReportType } from 'src/constants/RefereeReportType.enum';
+import { RefereeReportType } from '../../constants/refereeReportType.enum';
 import {
   CreateEndReportDto,
   RefereeReportResponseDto,
