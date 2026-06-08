@@ -117,6 +117,17 @@ export class UsersRepository {
       .exec();
   }
 
+  async updatePassword(id: string, hashedPass: string): Promise<User | null> {
+    return await this.userModel
+      .findByIdAndUpdate(
+        id,
+        { $set: { password: hashedPass } },
+        { returnDocument: 'after' },
+      )
+      .lean()
+      .exec();
+  }
+
   async findUserByIdAndUpdate(
     id: string,
     updateData: UpdateQuery<User>,
