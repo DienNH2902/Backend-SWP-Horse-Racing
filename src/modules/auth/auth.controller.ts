@@ -5,7 +5,7 @@ import {
   Get,
   UseGuards,
   Request,
-  Response,
+  Res,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -22,6 +22,7 @@ import { RegisterRefereeDto } from '../user/dto/create-referee.dto';
 import { RegisterHorseOwnerDto } from '../user/dto/create-horse-owner.dto';
 import { ResponseUserDto } from '../user/dto/response-user.dto';
 import { AuthGuard } from '@nestjs/passport';
+import type { Response } from 'express';
 
 // type RegisterPayload = RegisterSpectatorDto &
 //   RegisterJockeyDto &
@@ -67,15 +68,17 @@ export class AuthController {
   // Đường dẫn Callback hứng dữ liệu trả về từ Google
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
-  async googleAuthRedirect(@Request() req, @Response() res: Response) {
+  async googleAuthRedirect(@Request() req, @Res() res: Response) {
     // Gửi data sang service xử lý check DB / Tạo tài khoản và nhận lại JWT token nội bộ
     const token = await this.authService.loginWithGoogle(req.user);
 
     // TRƯỜNG HỢP 1: Khi chưa có FrontEnd -> Trả thẳng chuỗi JWT về màn hình dưới dạng JSON để test
-    return (res as any).status(200).json({ access_token: token });
+    // return (res as any).status(200).json({ access_token: token });
 
     // TRƯỜNG HỢP 2: Sau này có FrontEnd, hãy comment dòng TRƯỜNG HỢP 1 lại và mở comment dòng dưới này ra
-    // return res.redirect(`http://localhost:5173/oauth-success?token=${token}`);
+    return res.redirect(
+      `https://api.horse-racing.io.vn/oauth-success?token=${token}`,
+    );
   }
 
   @Post('register/spectator')
