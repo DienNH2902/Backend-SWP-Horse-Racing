@@ -15,6 +15,7 @@ import { UpdateRefereeDto } from './dto/update-referee-profile.dto';
 import { UpdateJockeyDto } from './dto/update-jockey-profile.dto';
 import { RoleEnum } from 'src/constants/roleEnum.enum';
 import { UpdatePasswordDto } from './dto/update-password.dto';
+import { JockeyStatusEnum } from 'src/constants/jockeyStatusEnum.enum';
 
 @Injectable()
 export class UsersService {
@@ -46,8 +47,19 @@ export class UsersService {
     return users.map((u) => this.toResponse(u));
   }
 
-  async findAllUsersByRole(role: RoleEnum): Promise<ResponseUserDto[]> {
-    const users = await this.userRepository.findAllUsersByRole(role);
+  // async findAllUsersByRole(role: RoleEnum): Promise<ResponseUserDto[]> {
+  //   const users = await this.userRepository.findAllUsersByRole(role);
+  //   return users.map((u) => this.toResponse(u));
+  // }
+
+  async findAllUsersByRole(
+    role: RoleEnum,
+    jockeyStatus?: JockeyStatusEnum,
+  ): Promise<ResponseUserDto[]> {
+    const users = await this.userRepository.findAllUsersByRole(
+      role,
+      jockeyStatus,
+    );
     return users.map((u) => this.toResponse(u));
   }
 
