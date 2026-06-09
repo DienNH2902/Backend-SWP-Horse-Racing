@@ -76,7 +76,9 @@ export class AuthController {
     // return (res as any).status(200).json({ access_token: token });
 
     // TRƯỜNG HỢP 2: Sau này có FrontEnd, hãy comment dòng TRƯỜNG HỢP 1 lại và mở comment dòng dưới này ra
-    return res.redirect(`http://localhost:5173/oauth-success?token=${token}`);
+    return res.redirect(
+      `https://api.horse-racing.io.vn/oauth-success?token=${token}`,
+    );
   }
 
   @Post('register/spectator')
