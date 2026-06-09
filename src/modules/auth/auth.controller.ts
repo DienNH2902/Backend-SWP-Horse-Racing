@@ -77,7 +77,7 @@ export class AuthController {
 
     // TRƯỜNG HỢP 2: Sau này có FrontEnd, hãy comment dòng TRƯỜNG HỢP 1 lại và mở comment dòng dưới này ra
     return res.redirect(
-      `https://api.horse-racing.io.vn/oauth-success?token=${token}`,
+      `https://goldenhoof-fe.vercel.app//oauth-success?token=${token}`,
     );
   }
 
