@@ -9,6 +9,7 @@ import { UpdateJockeyProfileDto } from './dto/update-jockey-profile.dto';
 import { UpdateHorseOwnerProfileDto } from './dto/update-horse-owner-profile.dto';
 import { UpdateRefereeProfileDto } from './dto/update-referee-profile.dto';
 import { RoleEnum } from 'src/constants/roleEnum.enum';
+import { JockeyStatusEnum } from 'src/constants/jockeyStatusEnum.enum';
 
 @Injectable()
 export class UsersRepository {
@@ -54,17 +55,28 @@ export class UsersRepository {
   //     .exec();
   // }
 
-  async findAllUsersByRole(role: RoleEnum): Promise<User[]> {
+  async findAllUsersByRole(
+    role: RoleEnum,
+    jockeyStatus?: JockeyStatusEnum,
+  ): Promise<User[]> {
     const query = this.userModel.find({ role }).select('-password -__v');
 
-    // Kỹ thuật Dynamic Populate: Chỉ đi chợ lấy đúng thứ mình cần
     switch (role) {
-      case RoleEnum.JOCKEY:
+      case RoleEnum.JOCKEY: {
+        // Tạo object filter cho bảng populate phụ
+        const matchFilter: any = {};
+        if (jockeyStatus) {
+          matchFilter.jockeyStatus = jockeyStatus; // Lọc chính xác trạng thái từ enum
+        }
+
         query.populate({
           path: 'jockeyProfile',
+          match: matchFilter as Record<string, unknown>, // <-- Mongoose sẽ chỉ lọc các profile khớp điều kiện này
           populate: { path: 'licenses' },
         });
         break;
+      }
+
       case RoleEnum.REFEREE:
         query.populate('refereeProfile');
         break;
@@ -79,7 +91,15 @@ export class UsersRepository {
         break;
     }
 
-    return await query.lean({ virtuals: true }).exec();
+    const results = await query.lean({ virtuals: true }).exec();
+
+    // Vì sử dụng `match` trong populate, những User có role Jockey nhưng profile không khớp điều kiện
+    // sẽ bị gán `jockeyProfile: null`. Bạn cần lọc bỏ những phần tử này trước khi trả về dữ liệu.
+    if (role === RoleEnum.JOCKEY && jockeyStatus) {
+      return results.filter((user: any) => user.jockeyProfile !== null);
+    }
+
+    return results;
   }
 
   async totalHorseOwned(ownerId: string) {
@@ -113,6 +133,17 @@ export class UsersRepository {
     return await this.userModel
       .findOne({ email })
       .select('+password')
+      .lean()
+      .exec();
+  }
+
+  async updatePassword(id: string, hashedPass: string): Promise<User | null> {
+    return await this.userModel
+      .findByIdAndUpdate(
+        id,
+        { $set: { password: hashedPass } },
+        { returnDocument: 'after' },
+      )
       .lean()
       .exec();
   }

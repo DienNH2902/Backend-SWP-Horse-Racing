@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Tournament, TournamentDocument } from './schemas/tournament.schema';
+import { TournamentStatusEnum } from 'src/constants/tournamentStatusEnum.enum';
 
 @Injectable()
 export class TournamentRepository {
@@ -16,14 +17,27 @@ export class TournamentRepository {
     return await new this.tournamentModel(tournament).save();
   }
 
-  async findAllTournament(): Promise<TournamentDocument[]> {
-    return await this.tournamentModel.find().sort({ startDate: 1 }).exec();
+  // async findAllTournament(): Promise<TournamentDocument[]> {
+  //   return await this.tournamentModel.find().sort({ startDate: 1 }).exec();
+  // }
+
+  async findAllTournament(filter: {
+    status?: TournamentStatusEnum;
+  }): Promise<TournamentDocument[]> {
+    const query: any = {};
+
+    if (filter.status) {
+      query.status = filter.status;
+    }
+
+    // Luôn giữ sắp xếp theo ngày bắt đầu tăng dần
+    return await this.tournamentModel.find(query).sort({ startDate: 1 }).exec();
   }
 
   async findTournamentById(id: string): Promise<TournamentDocument | null> {
     return await this.tournamentModel.findById(id).exec();
   }
-  
+
   async findById(id: string): Promise<Tournament | null> {
     return this.tournamentModel
       .findById(id)

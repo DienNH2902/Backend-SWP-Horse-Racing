@@ -16,6 +16,7 @@ import { RaceModule } from './modules/race/race.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { RaceSimulationModule } from './modules/race-simulation/race-simulation.module';
 import { RefereeReportModule } from './modules/referee-report/referee-report.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { RefereeReportModule } from './modules/referee-report/referee-report.mod
       }),
       inject: [ConfigService],
     }),
+    ScheduleModule.forRoot(),
     UserModule,
     AuthModule,
     JockeyLicenseModule,

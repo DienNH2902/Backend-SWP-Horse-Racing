@@ -12,6 +12,9 @@ export class ResponseTournamentDto {
   description: string;
 
   @Expose()
+  imageUrl: string;
+
+  @Expose()
   @Transform(({ value }) => {
     if (value instanceof Date && !isNaN(value.getTime())) {
       const day = String(value.getDate()).padStart(2, '0');
@@ -52,4 +55,7 @@ export class ResponseTournamentDto {
 
   @Expose()
   entryFee: number;
+
+  @Expose()
+  availableSlot: number;
 }

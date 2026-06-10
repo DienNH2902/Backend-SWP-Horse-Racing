@@ -3,14 +3,14 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { JockeyInvitationRepository } from '../modules/invitation/invitation.repository';
 
 /**
- * Cron job tự động expire các invitation PENDING quá 7 ngày.
- * Cần cài: npm i @nestjs/schedule
+ * Cron job tự động expire các invitation PENDING quá 2 ngày.
+ * Cần cài: yarn add @nestjs/schedule
  * Thêm ScheduleModule.forRoot() vào AppModule.
  */
 @Injectable()
 export class InvitationExpiryTask {
   private readonly logger = new Logger(InvitationExpiryTask.name);
-  private readonly EXPIRY_DAYS = 7;
+  private readonly EXPIRY_DAYS = 2;
 
   constructor(private readonly repo: JockeyInvitationRepository) {}
 

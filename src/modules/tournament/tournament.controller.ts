@@ -8,6 +8,7 @@ import {
   Param,
   UseGuards,
   Request,
+  Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { TournamentService } from './tournament.service';
@@ -19,6 +20,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RoleEnum } from 'src/constants/roleEnum.enum';
+import { GetTournamentsQueryDto } from './dto/get-tournament-status-query.dto';
 
 @ApiTags('Tournaments')
 @Controller('tournaments')
@@ -39,21 +41,27 @@ export class TournamentController {
   @Get()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Lấy danh sách tất cả các giải đấu công khai' })
-  async getAll(): Promise<ResponseTournamentDto[]> {
-    return await this.tournamentService.getAllTournament();
+  // @ApiOperation({ summary: 'Lấy danh sách tất cả các giải đấu công khai' })
+  // async getAll(): Promise<ResponseTournamentDto[]> {
+  //   return await this.tournamentService.getAllTournament();
+  // }
+  @ApiOperation({
+    summary: 'Lấy danh sách tất cả giải đấu (Có thể lọc theo trạng thái)',
+  })
+  async getAllTournament(@Query() query: GetTournamentsQueryDto) {
+    return await this.tournamentService.getAllTournament(query);
   }
 
-  @Get('my-tournaments')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({
-    summary: 'Lấy danh sách các giải đấu tôi đã tham gia (Yêu cầu đăng nhập)',
-  })
-  async findTournamentsByUser(@Request() req: any) {
-    const userId = req.user._id as string;
-    return await this.tournamentService.findTournamentsByUser(userId);
-  }
+  // @Get('my-tournaments')
+  // @UseGuards(JwtAuthGuard)
+  // @ApiBearerAuth()
+  // @ApiOperation({
+  //   summary: 'Lấy danh sách các giải đấu tôi đã tham gia (Yêu cầu đăng nhập)',
+  // })
+  // async findTournamentsByUser(@Request() req: any) {
+  //   const userId = req.user._id as string;
+  //   return await this.tournamentService.findTournamentsByUser(userId);
+  // }
 
   @Get(':id')
   @ApiOperation({ summary: 'Lấy thông tin chi tiết một giải đấu theo ID' })
@@ -61,24 +69,24 @@ export class TournamentController {
     return await this.tournamentService.getOneTournament(id);
   }
 
-  @Get(':id/participants')
-  @ApiOperation({
-    summary:
-      'Lấy danh sách tất cả người dùng tham gia một giải đấu cụ thể (Public)',
-  })
-  async findUsersByTournament(@Param('id') tournamentId: string) {
-    return await this.tournamentService.findUsersByTournament(tournamentId);
-  }
+  // @Get(':id/participants')
+  // @ApiOperation({
+  //   summary:
+  //     'Lấy danh sách tất cả người dùng tham gia một giải đấu cụ thể (Public)',
+  // })
+  // async findUsersByTournament(@Param('id') tournamentId: string) {
+  //   return await this.tournamentService.findUsersByTournament(tournamentId);
+  // }
 
-  @Post(':id/join')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Đăng ký tham gia giải đấu (Yêu cầu đăng nhập)' })
-  async joinTournament(@Param('id') tournamentId: string, @Request() req: any) {
-    // Lấy userId tự động từ token đã giải mã nằm trong túi áo của Request
-    const userId = req.user._id as string;
-    return await this.tournamentService.joinTournament(userId, tournamentId);
-  }
+  // @Post(':id/join')
+  // @UseGuards(JwtAuthGuard)
+  // @ApiBearerAuth()
+  // @ApiOperation({ summary: 'Đăng ký tham gia giải đấu (Yêu cầu đăng nhập)' })
+  // async joinTournament(@Param('id') tournamentId: string, @Request() req: any) {
+  //   // Lấy userId tự động từ token đã giải mã nằm trong túi áo của Request
+  //   const userId = req.user._id as string;
+  //   return await this.tournamentService.joinTournament(userId, tournamentId);
+  // }
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)

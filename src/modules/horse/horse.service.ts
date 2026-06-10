@@ -72,7 +72,9 @@ export class HorseService {
       );
     }
 
-    const updated = await this.horseRepository.findHorseByIdAndUpdate(id, dto);
+    const updated = await this.horseRepository.findHorseByIdAndUpdate(id, {
+      ...dto,
+    });
     return this.toResponse(updated);
   }
 

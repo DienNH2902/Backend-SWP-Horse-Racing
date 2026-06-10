@@ -8,17 +8,25 @@ import {
   Put,
   UseGuards,
   Query,
+  Request,
 } from '@nestjs/common';
 import { UsersService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ResponseUserDto } from './dto/response-user.dto';
 import { UpdateJockeyDto } from './dto/update-jockey-profile.dto';
 import { UpdateRefereeDto } from './dto/update-referee-profile.dto';
 import { UpdateHorseOwnerDto } from './dto/update-horse-owner-profile.dto';
 import { RoleEnum } from 'src/constants/roleEnum.enum';
+import { UpdatePasswordDto } from './dto/update-password.dto';
+import { JockeyStatusEnum } from 'src/constants/jockeyStatusEnum.enum';
 
 @ApiTags('Users')
 @Controller('users')
@@ -39,14 +47,37 @@ export class UsersController {
 
   @Get('role')
   @ApiOperation({ summary: 'Get all users by role' })
-  findAllJockeys(@Query('role') role: RoleEnum) {
-    return this.userService.findAllUsersByRole(role);
+  @ApiQuery({
+    name: 'jockeyStatus',
+    enum: JockeyStatusEnum,
+    required: false, // <-- Khai báo tường minh trường này KHÔNG bắt buộc
+    description:
+      'Trạng thái hoạt động của Jockey (Chỉ có tác dụng khi role là Jockey)',
+  })
+  findAllJockeys(
+    @Query('role') role: RoleEnum,
+    @Query('jockeyStatus') jockeyStatus?: JockeyStatusEnum,
+  ) {
+    return this.userService.findAllUsersByRole(role, jockeyStatus);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get user by ID' })
   findOne(@Param('id') id: string) {
     return this.userService.findOneUser(id);
+  }
+
+  @Put('change-password') // <-- Đường dẫn phẳng, không cần /:id nữa
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Cập nhật đổi mật khẩu tài khoản' })
+  async changePassword(
+    @Body() dto: UpdatePasswordDto,
+    @Request() req, // <-- Lấy đối tượng request chứa thông tin user đã login
+  ): Promise<{ message: string }> {
+    // Passport gán thông tin giải mã Token vào req.user. Lấy id trực tiếp từ đây
+    const userId = req.user._id as string;
+    return await this.userService.updatePassword(userId, dto);
   }
 
   // @Patch(':id')

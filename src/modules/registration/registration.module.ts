@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import {
   RegistrationController,
@@ -53,7 +53,7 @@ import { PaymentModule } from '../payment/payment.module';
       { name: Notification.name, schema: NotificationSchema },
     ]),
     JockeyInvitationModule,
-    TournamentModule,
+    forwardRef(() => TournamentModule),
     PaymentModule,
     NotificationModule,
   ],

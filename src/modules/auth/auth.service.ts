@@ -37,6 +37,11 @@ interface JwtPayload {
   sub: string;
   fullName: string;
   email: string;
+  phoneNumber: string;
+  avatar: string;
+  address: string;
+  dateOfBirth: Date;
+  status: string;
   role: string;
   gender: number;
 }
@@ -143,6 +148,11 @@ export class AuthService {
       sub: user._id.toString(),
       fullName: user.fullName,
       email: user.email,
+      phoneNumber: user.phoneNumber,
+      address: user.address,
+      avatar: user.avatar,
+      dateOfBirth: user.dateOfBirth,
+      status: user.status,
       role: user.role,
       gender: user.gender,
     };
@@ -226,6 +236,11 @@ export class AuthService {
       fullName: user.fullName,
       email: user.email,
       role: user.role,
+      phoneNumber: user.phoneNumber,
+      address: user.address,
+      avatar: user.avatar,
+      dateOfBirth: user.dateOfBirth,
+      status: user.status,
       gender: user.gender || 0, // Fallback giá trị mặc định nếu user mới tạo chưa có giới tính
     };
 

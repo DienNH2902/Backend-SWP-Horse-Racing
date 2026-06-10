@@ -1,5 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsNumber, Min, IsDate } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsNumber,
+  Min,
+  IsDate,
+  IsOptional,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class CreateTournamentDto {
@@ -14,6 +21,15 @@ export class CreateTournamentDto {
   @IsString()
   @IsNotEmpty()
   description: string;
+
+  @ApiProperty({
+    example: 'https://example.com/images/tournament-banner.jpg',
+    required: false,
+    description: 'Đường dẫn ảnh banner hoặc logo của giải đấu',
+  })
+  @IsString()
+  @IsOptional()
+  imageUrl?: string;
 
   @ApiProperty({
     example: '06/01/2026',
