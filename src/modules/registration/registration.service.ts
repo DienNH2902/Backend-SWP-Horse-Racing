@@ -63,7 +63,7 @@ export class RegistrationService {
     requesterId: string,
   ): Promise<ResponseRegistrationDto> {
     // 1. Verify invitation tồn tại và status = ACCEPTED
-    const invitation = await this.invitationRepository.findById(
+    const invitation = await this.invitationRepository.findByIdNoPopulate(
       dto.jockeyInvitationId,
     );
     if (!invitation) {

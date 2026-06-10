@@ -196,7 +196,7 @@ export class JockeyInvitationService {
     contract?: ResponseContractDto;
   }> {
     const invitation =
-      await this.jockeyInvitationRepository.findByIdForContract(invitationId);
+      await this.jockeyInvitationRepository.findByIdNoPopulate(invitationId);
 
     if (!invitation) {
       throw new NotFoundException('Không tìm thấy lời mời');
