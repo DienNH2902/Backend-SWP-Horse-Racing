@@ -1,7 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsDate,
-  IsEmail,
   IsEnum,
   IsNotEmpty,
   IsOptional,
@@ -16,10 +15,10 @@ export class UpdateUserDto {
   @IsNotEmpty()
   fullName: string;
 
-  @ApiProperty({ example: 'user@example.com' })
-  @IsEmail()
-  @IsNotEmpty()
-  email: string;
+  // @ApiProperty({ example: 'user@example.com' })
+  // @IsOptional()
+  // @IsEmail({}, { message: 'Email không đúng định dạng' })
+  // email: string;
 
   @ApiProperty({ example: '0901234567' })
   @IsOptional()
