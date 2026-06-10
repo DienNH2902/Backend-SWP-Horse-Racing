@@ -214,6 +214,20 @@ export class JockeyInvitationService {
       );
     }
 
+    if (dto.status === JockeyInvitationEnum.ACCEPTED) {
+      const hasContract =
+        await this.contractRepository.findActiveContractByJockeyAndTournament(
+          invitation.tournamentId.toString(),
+          jockeyId,
+        );
+
+      if (hasContract) {
+        throw new ConflictException(
+          'Bạn đã có một hợp đồng đang hoạt động (ACTIVE) trong giải đấu này rồi, không thể chấp nhận thêm lời mời khác',
+        );
+      }
+    }
+
     // Cập nhật status invitation
     const updated = await this.jockeyInvitationRepository.updateStatus(
       invitationId,
