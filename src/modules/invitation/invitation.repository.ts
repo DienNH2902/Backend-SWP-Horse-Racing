@@ -27,7 +27,7 @@ export class JockeyInvitationRepository {
   }
 
   // Cũng là lấy 1 thư mời nhưng không populate để cho contract chỉ lưu String ObjectId, không lưu object
-  async findByIdForContract(id: string): Promise<JockeyInvitation | null> {
+  async findByIdNoPopulate(id: string): Promise<JockeyInvitation | null> {
     return this.jockeyInvitationModel.findById(id).lean().exec();
   }
 
