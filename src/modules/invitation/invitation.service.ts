@@ -196,7 +196,7 @@ export class JockeyInvitationService {
     contract?: ResponseContractDto;
   }> {
     const invitation =
-      await this.jockeyInvitationRepository.findByIdForContract(invitationId);
+      await this.jockeyInvitationRepository.findByIdNoPopulate(invitationId);
 
     if (!invitation) {
       throw new NotFoundException('Không tìm thấy lời mời');
@@ -212,6 +212,20 @@ export class JockeyInvitationService {
       throw new ConflictException(
         `Lời mời này đã ở trạng thái "${invitation.status}", không thể phản hồi`,
       );
+    }
+
+    if (dto.status === JockeyInvitationEnum.ACCEPTED) {
+      const hasContract =
+        await this.contractRepository.findActiveContractByJockeyAndTournament(
+          invitation.tournamentId.toString(),
+          jockeyId,
+        );
+
+      if (hasContract) {
+        throw new ConflictException(
+          'Bạn đã có một hợp đồng đang hoạt động (ACTIVE) trong giải đấu này rồi, không thể chấp nhận thêm lời mời khác',
+        );
+      }
     }
 
     // Cập nhật status invitation

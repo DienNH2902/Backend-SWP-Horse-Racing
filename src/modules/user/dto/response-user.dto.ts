@@ -219,6 +219,38 @@ export class ResponseUserDto {
   @Transform(({ obj }) => obj._id?.toString())
   _id: string;
 
+  @Expose()
+  @Transform(({ obj }) => {
+    // Ép kiểu chữ để tránh lỗi sai sót về hoa/thường trong DB (Jockey vs jockey)
+    const formattedRole = obj.role?.toLowerCase() as string;
+
+    if (formattedRole === 'jockey') {
+      return (
+        obj.jockeyProfile?._id?.toString() || obj.jockeyProfile?.id?.toString()
+      );
+    }
+    if (formattedRole === 'referee') {
+      return (
+        obj.refereeProfile?._id?.toString() ||
+        obj.refereeProfile?.id?.toString()
+      );
+    }
+    if (formattedRole === 'horse owner' || formattedRole === 'horseowner') {
+      return (
+        obj.horseOwnerProfile?._id?.toString() ||
+        obj.horseOwnerProfile?.id?.toString()
+      );
+    }
+    if (formattedRole === 'spectator') {
+      return (
+        obj.spectatorProfile?._id?.toString() ||
+        obj.spectatorProfile?.id?.toString()
+      );
+    }
+    return undefined;
+  })
+  profileId: string;
+
   @Expose() fullName: string;
   @Expose() email: string;
   @Expose() phoneNumber: string;
