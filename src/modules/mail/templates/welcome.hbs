@@ -6,7 +6,7 @@
     <style>
       body {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background-color: #121212;
+        background-color: #0b1513;
         margin: 0;
         padding: 0;
         -webkit-font-smoothing: antialiased;
@@ -14,83 +14,88 @@
       .wrapper {
         width: 100%;
         table-layout: fixed;
-        background-color: #121212;
+        background-color: #0b1513;
         padding-top: 40px;
         padding-bottom: 40px;
       }
       .container {
         max-width: 600px;
-        background-color: #1a1a1a;
+        background-color: #05231e;
         margin: 0 auto;
-        border-radius: 8px;
-        border: 1px solid #333333;
+        border-radius: 12px;
+        border: 1px solid #0d463d;
         overflow: hidden;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
       }
       .header {
-        background: linear-gradient(135deg, #2c2516 0%, #1a1a1a 100%);
+        background: linear-gradient(135deg, #031c18 0%, #05231e 100%);
         padding: 40px 20px;
         text-align: center;
-        border-bottom: 2px solid #d4af37;
+        border-bottom: 2px solid #5fe1cc;
       }
       .logo {
         font-size: 28px;
         font-weight: bold;
-        color: #d4af37;
+        color: #ffffff;
         text-transform: uppercase;
         letter-spacing: 2px;
         margin: 0;
       }
+      .logo span {
+        color: #5fe1cc;
+      }
       .content {
         padding: 40px 30px;
-        color: #ffffff;
+        color: #e2f1ee;
         line-height: 1.6;
       }
       h1 {
-        color: #d4af37;
-        font-size: 22px;
+        color: #5fe1cc;
+        font-size: 24px;
         margin-top: 0;
         margin-bottom: 20px;
       }
       p {
-        color: #cccccc;
+        color: #c0d7d3;
         font-size: 16px;
         margin-bottom: 25px;
       }
       .highlight {
-        color: #f39c12;
+        color: #e2f8f4;
+        background-color: #0d463d;
+        padding: 2px 8px;
+        border-radius: 4px;
         font-weight: bold;
       }
       .btn-container {
         text-align: center;
-        margin-top: 30px;
-        margin-bottom: 30px;
+        margin-top: 35px;
+        margin-bottom: 35px;
       }
       .btn {
-        background-color: #d4af37;
-        color: #121212 !important;
+        background-color: #5fe1cc;
+        color: #05231e !important;
         text-decoration: none;
-        padding: 12px 35px;
+        padding: 14px 40px;
         font-weight: bold;
-        border-radius: 4px;
+        border-radius: 6px;
         font-size: 16px;
         display: inline-block;
-        transition: background-color 0.3s ease;
-        box-shadow: 0 4px 10px rgba(212, 175, 55, 0.3);
+        box-shadow: 0 4px 15px rgba(95, 225, 204, 0.3);
       }
       .footer {
-        background-color: #111111;
-        padding: 20px;
+        background-color: #031815;
+        padding: 25px;
         text-align: center;
-        border-top: 1px solid #222222;
+        border-top: 1px solid #0d463d;
       }
       .footer p {
-        color: #666666;
+        color: #52736e;
         font-size: 12px;
         margin: 5px 0;
       }
       .footer a {
-        color: #d4af37;
+        color: #5fe1cc;
         text-decoration: none;
       }
     </style>
@@ -99,7 +104,7 @@
     <div class='wrapper'>
       <div class='container'>
         <div class='header'>
-          <div class='logo'>⚜️ GoldenHoof ⚜️</div>
+          <div class='logo'>Golden<span>Hoof</span></div>
         </div>
 
         <div class='content'>
@@ -107,30 +112,29 @@
           <p>Chào mừng bạn đã gia nhập cộng đồng
             <span class='highlight'>GoldenHoof</span>. Tài khoản của bạn liên
             kết với email
-            <span style='color: #FFFFFF; font-weight: 500;'>{{email}}</span>
-            đã được thiết lập thành công thông qua cổng xác thực Google.</p>
+            <span style='color: #ffffff; font-weight: bold;'>{{email}}</span>
+            đã được thiết lập thành công thông qua cổng xác thực Google.
+          </p>
 
           <p>Từ bây giờ, bạn đã có toàn quyền truy cập vào hệ thống, quản lý
             thông tin giải đấu, theo dõi các lượt đua kịch tính và trải nghiệm
             những tính năng cao cấp nhất dành riêng cho thành viên.</p>
 
           <div class='btn-container'>
-            <a href='https://goldenhoof.com/dashboard' class='btn'>Khám phá ứng
+            <a href='https://goldenhoof-fe.vercel.app/home' class='btn'>Khám phá ứng
               dụng ngay</a>
           </div>
 
           <p>Nếu bạn không thực hiện yêu cầu đăng ký này, xin vui lòng bỏ qua
             email hoặc liên hệ với đội ngũ hỗ trợ kỹ thuật của chúng tôi.</p>
 
-          <p>Trân trọng,<br /><strong style='color: #D4AF37;'>Đội ngũ vận hành
+          <p>Trân trọng,<br /><strong style='color: #5fe1cc;'>Đội ngũ vận hành
               GoldenHoof</strong></p>
         </div>
 
         <div class='footer'>
           <p>© 2026 GoldenHoof, Inc. All rights reserved.</p>
           <p>Hệ thống gửi thư tự động, vui lòng không phản hồi lại email này.</p>
-          <p>Bạn cần trợ giúp?
-            <a href='https://goldenhoof.com/support'>Truy cập trung tâm hỗ trợ</a></p>
         </div>
       </div>
     </div>
