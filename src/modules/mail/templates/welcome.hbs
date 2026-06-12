@@ -6,7 +6,6 @@
     <style>
       body {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background-color: #0b1513;
         margin: 0;
         padding: 0;
         -webkit-font-smoothing: antialiased;
@@ -14,35 +13,48 @@
       .wrapper {
         width: 100%;
         table-layout: fixed;
+        /* Sử dụng url tĩnh từ VPS cho ảnh nền spectator-dashboard-bg */
+        background-image: url('https://api.horse-racing.io.vn/static/golden-hoof/golden-hoof-1781274705609-562665985.png');
         background-color: #0b1513;
+        background-position: center center;
+        background-size: cover;
+        background-repeat: no-repeat;
         padding-top: 40px;
         padding-bottom: 40px;
       }
       .container {
         max-width: 600px;
-        background-color: #05231e;
+        background-color: rgba(5, 35, 30, 0.92);
         margin: 0 auto;
         border-radius: 12px;
         border: 1px solid #0d463d;
         overflow: hidden;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7);
       }
       .header {
-        background: linear-gradient(135deg, #031c18 0%, #05231e 100%);
-        padding: 40px 20px;
-        text-align: center;
+        background: linear-gradient(
+          135deg,
+          rgba(3, 28, 24, 0.95) 0%,
+          rgba(5, 37, 32, 0.95) 100%
+        );
+        padding: 30px 20px;
+        position: relative;
         border-bottom: 2px solid #5fe1cc;
       }
-      .logo {
-        font-size: 28px;
-        font-weight: bold;
-        color: #ffffff;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-        margin: 0;
+      /* Định vị goldenhoof-logo nằm trên góc trái */
+      .top-left-logo {
+        position: absolute;
+        top: 15px;
+        left: 20px;
+        height: 35px;
+        width: auto;
       }
-      .logo span {
-        color: #5fe1cc;
+      /* Căn giữa navbar-logo thay thế phần chữ text */
+      .center-navbar-logo {
+        display: block;
+        margin: 15px auto 0 auto;
+        max-width: 240px;
+        height: auto;
       }
       .content {
         padding: 40px 30px;
@@ -84,7 +96,7 @@
         box-shadow: 0 4px 15px rgba(95, 225, 204, 0.3);
       }
       .footer {
-        background-color: #031815;
+        background-color: rgba(3, 24, 21, 0.95);
         padding: 25px;
         text-align: center;
         border-top: 1px solid #0d463d;
@@ -94,17 +106,24 @@
         font-size: 12px;
         margin: 5px 0;
       }
-      .footer a {
-        color: #5fe1cc;
-        text-decoration: none;
-      }
     </style>
   </head>
   <body>
     <div class='wrapper'>
       <div class='container'>
         <div class='header'>
-          <div class='logo'>Golden<span>Hoof</span></div>
+          <!-- Logo móng ngựa thu nhỏ góc trái lấy từ VPS -->
+          <img
+            src='https://api.horse-racing.io.vn/static/golden-hoof/golden-hoof-1781274671312-793513914.png'
+            alt='GoldenHoof Icon'
+            class='top-left-logo'
+          />
+          <!-- Logo chữ nghệ thuật căn chính giữa lấy từ VPS -->
+          <img
+            src='https://api.horse-racing.io.vn/static/golden-hoof/golden-hoof-1781274700944-226816114.png'
+            alt='GoldenHoof'
+            class='center-navbar-logo'
+          />
         </div>
 
         <div class='content'>
@@ -117,12 +136,12 @@
           </p>
 
           <p>Từ bây giờ, bạn đã có toàn quyền truy cập vào hệ thống, quản lý
-            thông tin giải đấu, theo dõi các lượt đua kịch tính và trải nghiệm
+            thông tin cá nhân, theo dõi các lượt đua kịch tính và trải nghiệm
             những tính năng cao cấp nhất dành riêng cho thành viên.</p>
 
           <div class='btn-container'>
-            <a href='https://goldenhoof-fe.vercel.app/home' class='btn'>Khám phá ứng
-              dụng ngay</a>
+            <a href='https://goldenhoof-fe.vercel.app/home' class='btn'>Khám phá
+              ứng dụng ngay</a>
           </div>
 
           <p>Nếu bạn không thực hiện yêu cầu đăng ký này, xin vui lòng bỏ qua
