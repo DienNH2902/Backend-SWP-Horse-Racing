@@ -15,6 +15,9 @@ import { UploadModule } from './modules/upload/upload.module';
 import { RaceModule } from './modules/race/race.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { MailerModule } from '@nestjs-modules/mailer';
+import { HandlebarsAdapter } from 'node_modules/@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
+import { join } from 'path';
 
 @Module({
   imports: [
@@ -28,6 +31,35 @@ import { ScheduleModule } from '@nestjs/schedule';
       useFactory: (configService: ConfigService) => ({
         uri: configService.get<string>('MONGODB_URI'),
       }),
+      inject: [ConfigService],
+    }),
+    MailerModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        transport: {
+          host: 'smtp.gmail.com',
+          port: 465,
+          // ignoreTLS: true,
+          secure: true,
+          auth: {
+            user: configService.get<string>('MAIL_USER'),
+            pass: configService.get<string>('PASS_USER'),
+          },
+        },
+        defaults: {
+          from: '"GoldenHoof" <noreply@goldenhoof.com>',
+        },
+        // preview: true,
+        template: {
+          // dir: process.cwd() + '/template/',
+          dir: join(__dirname, 'modules/mail/templates'),
+          adapter: new HandlebarsAdapter(),
+          options: {
+            strict: true,
+          },
+        },
+      }),
+
       inject: [ConfigService],
     }),
     ScheduleModule.forRoot(),
