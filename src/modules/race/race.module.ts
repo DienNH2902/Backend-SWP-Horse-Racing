@@ -1,4 +1,4 @@
-import { Module,forwardRef  } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { RaceController } from './race.controller';
 import { RaceService } from './race.service';
@@ -11,29 +11,36 @@ import { RaceConditionModule } from './race-condition/race-condition.module';
 import { RefereeReportModule } from '../referee-report/referee-report.module';
 import { TournamentRepository } from '../tournament/tournament.repository';
 import { RegistrationRepository } from '../registration/registration.repository';
-import { Registration, RegistrationSchema } from '../registration/schemas/registration.schema'
+import { Registration, RegistrationSchema } from '../registration/schemas/registration.schema';
+import { Transaction, TransactionSchema } from '../payment/schemas/transaction.schema';
+import { TransactionRepository } from '../payment/transaction.repository';
+import { Notification, NotificationSchema } from '../notification/schemas/notification.schema';
+import { NotificationRepository } from '../notification/notification.repository';
+import { HorseOwnerProfile, HorseOwnerProfileSchema } from '../user/schemas/horse-owner-profile.schema';
 
 @Module({
   imports: [
-    
     MongooseModule.forFeature([
       { name: Race.name, schema: RaceSchema },
       { name: Tournament.name, schema: TournamentSchema },
       { name: Registration.name, schema: RegistrationSchema },
-      
+      { name: Transaction.name, schema: TransactionSchema },
+      { name: Notification.name, schema: NotificationSchema },
+      { name: HorseOwnerProfile.name, schema: HorseOwnerProfileSchema },
     ]),
     RaceCourseModule,
     RaceConditionModule,
     forwardRef(() => RefereeReportModule),
-
   ],
   controllers: [RaceController],
   providers: [
-    RaceService, 
+    RaceService,
     RaceAssignService,
-    RaceRepository, 
+    RaceRepository,
     TournamentRepository,
-    RegistrationRepository
+    RegistrationRepository,
+    TransactionRepository,
+    NotificationRepository,
   ],
   exports: [RaceService, RaceRepository],
 })
