@@ -64,6 +64,8 @@ jobs:
           VNP_HASH_SECRET=${{ secrets.VNP_HASH_SECRET }}
           VNP_URL=${{ vars.VNP_URL }}
           VNP_RETURN_URL=${{ vars.VNP_RETURN_URL }}
+          MAIL_USER=${{ vars.MAIL_USER }}
+          PASS_USER=${{ secrets.PASS_USER }}
           EOF
 
           echo ">>> Khởi tạo .env thành công."
