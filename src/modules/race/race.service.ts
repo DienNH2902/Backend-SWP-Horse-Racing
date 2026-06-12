@@ -9,6 +9,7 @@ import {
 import { plainToInstance } from 'class-transformer';
 import { RaceRepository } from './race.repository';
 import { TournamentRepository } from '../tournament/tournament.repository'; 
+import { RegistrationRepository } from '../registration/registration.repository';
 import { RaceStatusEnum } from '../../constants/raceStatus.enum';
 import { CreateRaceBatchDto, ResponseRaceDto } from './dto';
 import { RefereeReportService } from '../referee-report/referee-report.service';
@@ -20,6 +21,8 @@ export class RaceService {
     private readonly tournamentRepository: TournamentRepository,
     @Inject(forwardRef(() => RefereeReportService))
     private readonly refereeReportService: RefereeReportService,
+    private readonly registrationRepository: RegistrationRepository,
+
   ) {}
 
   private toResponse(data: any): ResponseRaceDto {
@@ -110,7 +113,6 @@ export class RaceService {
   }
 
 
-  // Xem race theo tournament 
   async getRacesByTournament(tournamentId: string): Promise<ResponseRaceDto[]> {
     const tournament = await this.tournamentRepository.findById(tournamentId);
     if (!tournament) throw new NotFoundException('Không tìm thấy giải đấu');
@@ -122,7 +124,13 @@ export class RaceService {
   async getRaceById(id: string): Promise<ResponseRaceDto> {
     const race = await this.raceRepository.findById(id);
     if (!race) throw new NotFoundException('Không tìm thấy race');
-    return this.toResponse(race);
+
+    const horses = await this.registrationRepository.findHorsesByRaceId(id);
+
+    const filledSlots = horses.length;
+    const totalSlots = (race as any).tournamentId?.horsesPerRace  ?? null;
+
+    return this.toResponse({ ...race, horses, filledSlots, totalSlots });
   }
 
 

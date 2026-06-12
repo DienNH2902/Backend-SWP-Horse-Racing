@@ -227,5 +227,16 @@ export class RegistrationRepository {
     jockeyProfile: doc.jockeyInvitationId?.jockeyId,
     gateNumber: doc.gateNumber,
   }));
-}
+  }
+
+    async findHorsesByRaceId(raceId: string): Promise<any[]> {
+    return this.registrationModel
+      .find({
+        raceId: new Types.ObjectId(raceId),
+        status: RegistrationStatusEnum.CONFIRMED,
+      })
+      .populate('horseId', 'name') 
+      .lean()
+      .exec();
+  }
 }
