@@ -1,0 +1,142 @@
+<html>
+  <head>
+    <meta charset='utf-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>Chào mừng đến với GoldenHoof</title>
+    <style>
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #0b1513;
+        margin: 0;
+        padding: 0;
+        -webkit-font-smoothing: antialiased;
+      }
+      .wrapper {
+        width: 100%;
+        table-layout: fixed;
+        background-color: #0b1513;
+        padding-top: 40px;
+        padding-bottom: 40px;
+      }
+      .container {
+        max-width: 600px;
+        background-color: #05231e;
+        margin: 0 auto;
+        border-radius: 12px;
+        border: 1px solid #0d463d;
+        overflow: hidden;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+      }
+      .header {
+        background: linear-gradient(135deg, #031c18 0%, #05231e 100%);
+        padding: 40px 20px;
+        text-align: center;
+        border-bottom: 2px solid #5fe1cc;
+      }
+      .logo {
+        font-size: 28px;
+        font-weight: bold;
+        color: #ffffff;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin: 0;
+      }
+      .logo span {
+        color: #5fe1cc;
+      }
+      .content {
+        padding: 40px 30px;
+        color: #e2f1ee;
+        line-height: 1.6;
+      }
+      h1 {
+        color: #5fe1cc;
+        font-size: 24px;
+        margin-top: 0;
+        margin-bottom: 20px;
+      }
+      p {
+        color: #c0d7d3;
+        font-size: 16px;
+        margin-bottom: 25px;
+      }
+      .highlight {
+        color: #e2f8f4;
+        background-color: #0d463d;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-weight: bold;
+      }
+      .btn-container {
+        text-align: center;
+        margin-top: 35px;
+        margin-bottom: 35px;
+      }
+      .btn {
+        background-color: #5fe1cc;
+        color: #05231e !important;
+        text-decoration: none;
+        padding: 14px 40px;
+        font-weight: bold;
+        border-radius: 6px;
+        font-size: 16px;
+        display: inline-block;
+        box-shadow: 0 4px 15px rgba(95, 225, 204, 0.3);
+      }
+      .footer {
+        background-color: #031815;
+        padding: 25px;
+        text-align: center;
+        border-top: 1px solid #0d463d;
+      }
+      .footer p {
+        color: #52736e;
+        font-size: 12px;
+        margin: 5px 0;
+      }
+      .footer a {
+        color: #5fe1cc;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class='wrapper'>
+      <div class='container'>
+        <div class='header'>
+          <div class='logo'>Golden<span>Hoof</span></div>
+        </div>
+
+        <div class='content'>
+          <h1>Xin chào, {{name}}!</h1>
+          <p>Chào mừng bạn đã gia nhập cộng đồng
+            <span class='highlight'>GoldenHoof</span>. Tài khoản của bạn liên
+            kết với email
+            <span style='color: #ffffff; font-weight: bold;'>{{email}}</span>
+            đã được thiết lập thành công thông qua cổng xác thực Google.
+          </p>
+
+          <p>Từ bây giờ, bạn đã có toàn quyền truy cập vào hệ thống, quản lý
+            thông tin giải đấu, theo dõi các lượt đua kịch tính và trải nghiệm
+            những tính năng cao cấp nhất dành riêng cho thành viên.</p>
+
+          <div class='btn-container'>
+            <a href='https://goldenhoof-fe.vercel.app/home' class='btn'>Khám phá ứng
+              dụng ngay</a>
+          </div>
+
+          <p>Nếu bạn không thực hiện yêu cầu đăng ký này, xin vui lòng bỏ qua
+            email hoặc liên hệ với đội ngũ hỗ trợ kỹ thuật của chúng tôi.</p>
+
+          <p>Trân trọng,<br /><strong style='color: #5fe1cc;'>Đội ngũ vận hành
+              GoldenHoof</strong></p>
+        </div>
+
+        <div class='footer'>
+          <p>© 2026 GoldenHoof, Inc. All rights reserved.</p>
+          <p>Hệ thống gửi thư tự động, vui lòng không phản hồi lại email này.</p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

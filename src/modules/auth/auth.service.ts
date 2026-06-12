@@ -2,6 +2,7 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
@@ -26,6 +27,7 @@ import { ConfigService } from '@nestjs/config';
 import { StringValue } from 'ms';
 import { ResponseUserDto } from '../user/dto/response-user.dto';
 import { plainToInstance } from 'class-transformer';
+import { MailService } from '../mail/mail.service';
 
 type RegisterPayload =
   | RegisterSpectatorDto
@@ -56,6 +58,7 @@ interface GoogleUserPayload {
 export class AuthService {
   constructor(
     private readonly userRepository: UsersRepository,
+    private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     @InjectModel(JockeyProfile.name) private jockeyModel: Model<JockeyProfile>,
@@ -130,6 +133,15 @@ export class AuthService {
         break;
       }
     }
+
+    this.mailService
+      .sendWelcomeEmail(savedUser.email, savedUser.fullName)
+      .catch((err) => {
+        console.error(
+          `[AuthService] Thất bại khi gửi email chào mừng đến ${savedUser.email}:`,
+          err,
+        );
+      });
 
     return { message: 'Đăng ký tài khoản thành công!' };
   }
@@ -226,8 +238,22 @@ export class AuthService {
       // Lưu User gốc vào MongoDB thông qua Repository
       user = await this.userRepository.createUser(userPayload);
 
+      if (!user) {
+        throw new InternalServerErrorException(
+          'Không thể khởi tạo tài khoản hệ thống',
+        );
+      }
+
       // Tạo Profile phụ tương ứng (Spectator) để đồng bộ cấu trúc hệ thống
       await this.spectatorModel.create({ userId: user._id });
+
+      const { email, fullName } = user;
+      this.mailService.sendWelcomeEmail(email, fullName).catch((err) => {
+        console.error(
+          `[AuthService] Thất bại khi gửi email Google Welcome đến ${email}:`,
+          err,
+        );
+      });
     }
 
     // 3. Đóng gói payload theo đúng cấu trúc định dạng JwtPayload của hệ thống bạn
