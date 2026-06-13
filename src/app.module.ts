@@ -37,17 +37,18 @@ import { join } from 'path';
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
         transport: {
-          host: 'smtp.gmail.com',
+          host: 'smtp.resend.com',
           port: 465,
           // ignoreTLS: true,
           secure: true,
           auth: {
-            user: configService.get<string>('MAIL_USER'),
+            user: 'resend',
+            // user: configService.get<string>('MAIL_USER'),
             pass: configService.get<string>('PASS_USER'),
           },
         },
         defaults: {
-          from: '"GoldenHoof" <noreply@goldenhoof.com>',
+          from: `"GoldenHoof" <${configService.get<string>('MAIL_USER')}>`,
         },
         // preview: true,
         template: {
