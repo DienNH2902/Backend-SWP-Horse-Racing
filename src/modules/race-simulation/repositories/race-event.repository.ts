@@ -30,4 +30,10 @@ export class RaceEventRepository {
       .lean()
       .exec();
   }
+
+    async deleteByRaceId(raceId: string): Promise<void> {
+    await this.raceEventModel
+      .deleteMany({ raceId: new Types.ObjectId(raceId) })
+      .exec();
+  }
 }

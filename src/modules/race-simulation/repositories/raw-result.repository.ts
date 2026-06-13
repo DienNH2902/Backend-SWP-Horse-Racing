@@ -70,4 +70,10 @@ export class RawResultRepository {
       )
       .exec();
   }
+
+    async deleteByRaceId(raceId: string): Promise<void> {
+    await this.rawResultModel
+      .deleteMany({ raceId: new Types.ObjectId(raceId) })
+      .exec();
+  }
 }

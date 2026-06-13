@@ -22,7 +22,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RoleEnum } from 'src/constants/roleEnum.enum';
-import { CreateRaceBatchDto, ResponseRaceDto } from './dto';
+import { CreateRaceBatchDto, ResponseRaceDto, AssignRaceCourseDto } from './dto';
 import {
   AssignRefereeDto,
   BulkAssignHorsesDto,
@@ -110,16 +110,30 @@ export class RaceController {
     return this.service.getRaceById(id);
   }
 
-  @Patch(':id/confirm-ready')
+  @Patch(':raceId/assign-race-course')
+  @UseGuards(RolesGuard)
+  @Roles(RoleEnum.ADMIN)
+  @ApiOperation({ summary: 'Admin gán đường đua vào Race' })
+  @ApiParam({ name: 'raceId', description: 'Race ID' })
+  assignRaceCourse(
+    @Param('raceId') raceId: string,
+    @Body() dto: AssignRaceCourseDto,
+  ): Promise<ResponseRaceDto> {
+    return this.service.assignRaceCourse(raceId, dto.raceCourseId);
+  }
+
+  @Patch(':raceId/confirm-ready')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleEnum.REFEREE)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'REFEREE xác nhận race để bắt đầu → status = "ready"' })
+  @ApiOperation({ summary: 'REFEREE xác nhận race để bắt đầu → status = "Ready"' })
   async confirmReady(
-    @Param('id') id: string,
+    @Param('raceId') id: string,
     @Request() req: any,
   ) { 
     const refereeId = req.user._id as string;
     return await this.service.confirmReady(id, refereeId);
   }
+
+
 }

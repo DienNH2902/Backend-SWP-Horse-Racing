@@ -5,11 +5,13 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  ForbiddenException
 } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { RaceRepository } from './race.repository';
 import { TournamentRepository } from '../tournament/tournament.repository'; 
 import { RegistrationRepository } from '../registration/registration.repository';
+import { RaceCourseRepository } from './race-course/race-course.repository';
 import { RaceStatusEnum } from '../../constants/raceStatus.enum';
 import { CreateRaceBatchDto, ResponseRaceDto } from './dto';
 import { RefereeReportService } from '../referee-report/referee-report.service';
@@ -22,6 +24,7 @@ export class RaceService {
     @Inject(forwardRef(() => RefereeReportService))
     private readonly refereeReportService: RefereeReportService,
     private readonly registrationRepository: RegistrationRepository,
+    private readonly raceCourseRepository: RaceCourseRepository,
 
   ) {}
 
@@ -143,6 +146,16 @@ export class RaceService {
     const race = await this.raceRepository.findById(raceId);
     if (!race) throw new NotFoundException('Không tìm thấy race');
 
+    if (!race.refereeId) {
+      throw new BadRequestException('Race chưa được gán Referee');
+    }
+
+    const assignedRefereeId = (race.refereeId as any)._id.toString();
+
+    if (assignedRefereeId !== refereeId) {
+      throw new ForbiddenException('Bạn không phải Referee được gán cho race này');
+    }
+
     if (race.status !== RaceStatusEnum.SCHEDULED) {
       throw new BadRequestException(
         `Race phải ở trạng thái "Scheduled" để confirm ready`,
@@ -152,6 +165,22 @@ export class RaceService {
     await this.raceRepository.updateStatus(raceId, RaceStatusEnum.READY);
     await this.refereeReportService.createStartReport(raceId, refereeId);
 
-    return { message: 'Race đã sẵn sàng. Start report đã được tạo.' };
+    return { message: 'Race đã sẵn sàng. Report đã được tạo.' };
+  }
+
+  async assignRaceCourse(
+    raceId: string,
+    raceCourseId: string,
+  ): Promise<ResponseRaceDto> {
+    // Verify race tồn tại
+    const race = await this.raceRepository.findById(raceId);
+    if (!race) throw new NotFoundException('Không tìm thấy race');
+
+    // Verify raceCourse tồn tại
+    const course = await this.raceCourseRepository.findById(raceCourseId);
+    if (!course) throw new NotFoundException('Không tìm thấy đường đua');
+
+    const updated = await this.raceRepository.assignRaceCourse(raceId, raceCourseId);
+    return this.toResponse(updated);
   }
 }

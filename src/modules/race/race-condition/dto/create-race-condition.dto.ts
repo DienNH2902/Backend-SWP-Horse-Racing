@@ -16,7 +16,7 @@ export class CreateRaceConditionDto {
   @IsEnum(TrackConditionEnum)
   trackCondition: TrackConditionEnum;
  
-  @ApiProperty({ example: 12, description: 'Tốc độ gió (km/h)' })
+  @ApiProperty({ example: 3, description: 'Tốc độ gió (km/h)' })
   @IsNumber()
   @Min(0)
   windSpeed: number;

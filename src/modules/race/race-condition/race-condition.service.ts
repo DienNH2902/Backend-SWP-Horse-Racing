@@ -2,9 +2,11 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  ForbiddenException
 } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { RaceConditionRepository } from './race-condition.repository';
+import { RaceRepository } from '../race.repository';
 import {
   CreateRaceConditionDto,
   UpdateRaceConditionDto,
@@ -15,6 +17,7 @@ import {
 export class RaceConditionService {
   constructor(
     private readonly raceConditionRepository: RaceConditionRepository,
+    private readonly raceRepository: RaceRepository,
   ) {}
 
   private toResponse(data: any): ResponseRaceConditionDto {
@@ -23,32 +26,32 @@ export class RaceConditionService {
     });
   }
 
-  /**
-   * Referee điền thông tin điều kiện trước khi race bắt đầu
-   * Mỗi race chỉ có 1 condition (unique raceId)
-   */
-  async create(dto: CreateRaceConditionDto): Promise<ResponseRaceConditionDto> {
-    // Kiểm tra qua Repository, không gọi trực tiếp Model
-    const existing = await this.raceConditionRepository.findByRaceId(dto.raceId);
-    if (existing) {
-      throw new ConflictException(
-        'Race này đã có thông tin điều kiện, dùng API cập nhật thay vì tạo mới',
+  async create(
+    dto: CreateRaceConditionDto,
+    refereeId: string,           
+  ): Promise<ResponseRaceConditionDto> {
+    const race = await this.raceRepository.findById(dto.raceId);
+    if (!race) throw new NotFoundException('Không tìm thấy race');
+
+    if (!race.refereeId || race.refereeId.toString() !== refereeId) {
+      throw new ForbiddenException(
+        'Bạn không phải referee được gán cho race này',
       );
     }
 
-    // Giao việc tạo mới cho Repository
+    const existing = await this.raceConditionRepository.findByRaceId(dto.raceId);
+    if (existing) {
+      throw new ConflictException('Race này đã có thông tin điều kiện');
+    }
+
     const condition = await this.raceConditionRepository.create(dto);
     return this.toResponse(condition.toObject());
   }
 
-  /**
-   * Referee cập nhật nếu điều kiện thay đổi trước khi race bắt đầu
-   */
   async update(
     raceId: string,
     dto: UpdateRaceConditionDto,
   ): Promise<ResponseRaceConditionDto> {
-    // Giao việc cập nhật cho Repository (đã xử lý sẵn ObjectId và $set)
     const updated = await this.raceConditionRepository.updateByRaceId(raceId, dto);
     
     if (!updated) {

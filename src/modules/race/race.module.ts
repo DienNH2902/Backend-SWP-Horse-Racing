@@ -17,7 +17,8 @@ import { TransactionRepository } from '../payment/transaction.repository';
 import { Notification, NotificationSchema } from '../notification/schemas/notification.schema';
 import { NotificationRepository } from '../notification/notification.repository';
 import { HorseOwnerProfile, HorseOwnerProfileSchema } from '../user/schemas/horse-owner-profile.schema';
-
+import { RaceCourse, RaceCourseSchema } from './race-course/schemas/race-course.schema';
+import { RaceCourseRepository } from './race-course/race-course.repository';
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -27,6 +28,7 @@ import { HorseOwnerProfile, HorseOwnerProfileSchema } from '../user/schemas/hors
       { name: Transaction.name, schema: TransactionSchema },
       { name: Notification.name, schema: NotificationSchema },
       { name: HorseOwnerProfile.name, schema: HorseOwnerProfileSchema },
+      { name: RaceCourse.name, schema: RaceCourseSchema },
     ]),
     RaceCourseModule,
     RaceConditionModule,
@@ -41,6 +43,7 @@ import { HorseOwnerProfile, HorseOwnerProfileSchema } from '../user/schemas/hors
     RegistrationRepository,
     TransactionRepository,
     NotificationRepository,
+    RaceCourseRepository
   ],
   exports: [RaceService, RaceRepository],
 })

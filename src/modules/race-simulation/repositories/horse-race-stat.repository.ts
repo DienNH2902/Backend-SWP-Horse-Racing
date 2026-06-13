@@ -31,4 +31,10 @@ export class HorseRaceStatsRepository {
       .lean()
       .exec();
   }
+
+    async deleteByRaceId(raceId: string): Promise<void> {
+      await this.statsModel
+        .deleteMany({ raceId: new Types.ObjectId(raceId) })
+        .exec();
+    }
 }
