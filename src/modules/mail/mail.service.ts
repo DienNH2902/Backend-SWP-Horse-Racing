@@ -34,15 +34,15 @@ export class MailService {
     });
   }
 
-  // async sendVerificationEmail(to: string, name: string, otpCode: string) {
-  //   return this.sendMail(
-  //     to,
-  //     'Mã xác thực đăng ký tài khoản PolyGo',
-  //     'verify-email',
-  //     {
-  //       name,
-  //       otpCode,
-  //     },
-  //   );
-  // }
+  async sendForgotPasswordEmail(to: string, name: string, otpCode: string) {
+    return this.sendMail(
+      to,
+      'Mã xác thực khôi phục mật khẩu tài khoản GoldenHoof',
+      'forgot-password',
+      {
+        name,
+        otpCode,
+      },
+    );
+  }
 }

@@ -18,6 +18,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from 'node_modules/@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { join } from 'path';
+import { OtpModule } from './modules/otp/otp.module';
 
 @Module({
   imports: [
@@ -66,6 +67,7 @@ import { join } from 'path';
     ScheduleModule.forRoot(),
     UserModule,
     AuthModule,
+    OtpModule,
     JockeyLicenseModule,
     TournamentModule,
     HorseModule,
