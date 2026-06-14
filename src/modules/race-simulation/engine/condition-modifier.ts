@@ -1,36 +1,49 @@
-type Weather = 'sunny' | 'cloudy' | 'rainy';
-type TrackType = 'dirt' | 'turf' | 'synthetic';
-type TrackCondition = 'dry' | 'wet' | 'muddy';
+import { WeatherEnum, TrackConditionEnum } from '../../race/race-condition/schemas/race-condition.schema';
+import { TrackTypeEnum } from '../../race/race-course/schemas/race-course.schema';
 
-// trackType × trackCondition → base modifier
-const TRACK_MODIFIER_TABLE: Record<TrackType, Record<TrackCondition, number>> =
-  {
-    dirt:      { dry: 1.0, wet: 0.9,  muddy: 0.78 },
-    turf:      { dry: 1.0, wet: 0.93, muddy: 0.85 },
-    synthetic: { dry: 1.0, wet: 0.97, muddy: 0.93 },
-  };
 
-const WEATHER_MODIFIER: Record<Weather, number> = {
-  sunny:  1.0,
-  cloudy: 0.97,
-  rainy:  0.88,
+const WEATHER_MODIFIER: Record<WeatherEnum, number> = {
+  [WeatherEnum.SUNNY]:  1.00,
+  [WeatherEnum.CLOUDY]: 0.97,
+  [WeatherEnum.RAINY]:  0.88,
+  [WeatherEnum.WINDY]:  0.95,
+};
+
+const TRACK_MODIFIER_TABLE: Record<TrackTypeEnum, Record<TrackConditionEnum, number>> = {
+  [TrackTypeEnum.DIRT]: {
+    [TrackConditionEnum.GOOD]:  1.00,
+    [TrackConditionEnum.SOFT]:  0.90,
+    [TrackConditionEnum.HEAVY]: 0.83,
+    [TrackConditionEnum.MUDDY]: 0.78,
+  },
+  [TrackTypeEnum.TURF]: {
+    [TrackConditionEnum.GOOD]:  1.00,
+    [TrackConditionEnum.SOFT]:  0.93,
+    [TrackConditionEnum.HEAVY]: 0.88,
+    [TrackConditionEnum.MUDDY]: 0.85,
+  },
+  [TrackTypeEnum.SYNTHETIC]: {
+    [TrackConditionEnum.GOOD]:  1.00,
+    [TrackConditionEnum.SOFT]:  0.97,
+    [TrackConditionEnum.HEAVY]: 0.95,
+    [TrackConditionEnum.MUDDY]: 0.93,
+  },
 };
 
 function calcWindModifier(windSpeed: number): number {
-  if (windSpeed <= 5)  return 1.0;
+  if (windSpeed <= 5)  return 1.00;
   if (windSpeed <= 10) return 0.97;
   return 0.94;
 }
 
 function calcTrackModifier(
-  trackType: TrackType,
-  trackCondition: TrackCondition,
+  trackType: TrackTypeEnum,
+  trackCondition: TrackConditionEnum,
   horseWeight: number,
 ): number {
   const base = TRACK_MODIFIER_TABLE[trackType]?.[trackCondition] ?? 1.0;
 
-  // Riêng muddy: trừ thêm weightBonus
-  if (trackCondition === 'muddy') {
+  if (trackCondition === TrackConditionEnum.MUDDY) {
     const weightBonus = (horseWeight / 1000) * 0.1;
     return base - weightBonus;
   }
@@ -53,11 +66,11 @@ export function calcConditionModifier(
   raceCourse: RaceCourseInput,
   horseWeight: number,
 ): number {
-  const weatherMod = WEATHER_MODIFIER[condition.weather as Weather] ?? 1.0;
-  const windMod = calcWindModifier(condition.windSpeed);
-  const trackMod = calcTrackModifier(
-    raceCourse.trackType as TrackType,
-    condition.trackCondition as TrackCondition,
+  const weatherMod = WEATHER_MODIFIER[condition.weather as WeatherEnum] ?? 1.0;
+  const windMod    = calcWindModifier(condition.windSpeed);
+  const trackMod   = calcTrackModifier(
+    raceCourse.trackType as TrackTypeEnum,
+    condition.trackCondition as TrackConditionEnum,
     horseWeight,
   );
 

@@ -4,9 +4,9 @@ import { Document } from 'mongoose';
 export type RaceCourseDocument = RaceCourse & Document;
 
 export enum TrackTypeEnum {
-  DIRT = 'dirt',
-  TURF = 'turf',
-  SYNTHETIC = 'synthetic',
+  DIRT = 'Dirt',
+  TURF = 'Turf',
+  SYNTHETIC = 'Synthetic',
 }
 
 @Schema({ timestamps: true })

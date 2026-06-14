@@ -200,22 +200,22 @@ export class RegistrationRepository {
     }));
     await this.registrationModel.bulkWrite(ops);
   }
-  async findConfirmedWithDetails(raceId: string): Promise<any[]> {
+async findConfirmedWithDetails(raceId: string): Promise<any[]> {
   const docs = await this.registrationModel
     .find({
       raceId: new Types.ObjectId(raceId),
-      status: RegistrationStatusEnum.CONFIRMED, 
+      status: RegistrationStatusEnum.CONFIRMED,
     })
     .populate({
       path: 'horseId',
-      select: 'weight height winRate totalWin',
+      select: 'weight height winRate totalWin name',
     })
     .populate({
       path: 'jockeyInvitationId',
       select: 'jockeyId',
       populate: {
         path: 'jockeyId',
-        select: 'weight',
+        select: 'weight height userId',
       },
     })
     .lean()
@@ -227,7 +227,7 @@ export class RegistrationRepository {
     jockeyProfile: doc.jockeyInvitationId?.jockeyId,
     gateNumber: doc.gateNumber,
   }));
-  }
+}
 
     async findHorsesByRaceId(raceId: string): Promise<any[]> {
     return this.registrationModel
