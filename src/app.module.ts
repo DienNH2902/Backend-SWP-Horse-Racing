@@ -17,6 +17,10 @@ import { PaymentModule } from './modules/payment/payment.module';
 import { RaceSimulationModule } from './modules/race-simulation/race-simulation.module';
 import { RefereeReportModule } from './modules/referee-report/referee-report.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { MailerModule } from '@nestjs-modules/mailer';
+import { HandlebarsAdapter } from 'node_modules/@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
+import { join } from 'path';
+import { OtpModule } from './modules/otp/otp.module';
 
 @Module({
   imports: [
@@ -32,9 +36,40 @@ import { ScheduleModule } from '@nestjs/schedule';
       }),
       inject: [ConfigService],
     }),
+    MailerModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        transport: {
+          host: 'smtp.resend.com',
+          port: 465,
+          // ignoreTLS: true,
+          secure: true,
+          auth: {
+            user: 'resend',
+            // user: configService.get<string>('MAIL_USER'),
+            pass: configService.get<string>('PASS_USER'),
+          },
+        },
+        defaults: {
+          from: `"GoldenHoof" <${configService.get<string>('MAIL_USER')}>`,
+        },
+        // preview: true,
+        template: {
+          // dir: process.cwd() + '/template/',
+          dir: join(__dirname, 'modules/mail/templates'),
+          adapter: new HandlebarsAdapter(),
+          options: {
+            strict: true,
+          },
+        },
+      }),
+
+      inject: [ConfigService],
+    }),
     ScheduleModule.forRoot(),
     UserModule,
     AuthModule,
+    OtpModule,
     JockeyLicenseModule,
     TournamentModule,
     HorseModule,
