@@ -254,6 +254,15 @@ export class AuthService {
           err,
         );
       });
+
+      this.mailService
+        .sendGeneratedPasswordEmail(email, fullName, randomPassword)
+        .catch((err) => {
+          console.error(
+            `[AuthService] Thất bại khi gửi thông báo cấp mật khẩu Google cho ${email}:`,
+            err,
+          );
+        });
     }
 
     // 3. Đóng gói payload theo đúng cấu trúc định dạng JwtPayload của hệ thống bạn
