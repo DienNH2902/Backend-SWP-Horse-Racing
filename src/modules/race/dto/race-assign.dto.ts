@@ -49,3 +49,10 @@ export class BulkAssignResultDto {
   @Expose()
   gateAssignments: GateAssignmentDto[];
 }
+
+export class AssignRaceCourseDto {
+  @ApiProperty({ example: '6650a1b2c3d4e5f6a7b8c9d0' })
+  @IsMongoId()
+  @IsNotEmpty()
+  raceCourseId: string;
+}

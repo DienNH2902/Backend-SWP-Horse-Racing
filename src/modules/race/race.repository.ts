@@ -195,4 +195,31 @@ export class RaceRepository {
       .lean()
       .exec() as Promise<Race[]>;
   }
+
+ 
+async updateStatus(raceId: string, status: RaceStatusEnum): Promise<void> {
+  await this.raceModel
+    .findByIdAndUpdate(
+      new Types.ObjectId(raceId),
+      {
+        status,
+        ...(status === RaceStatusEnum.SIMULATED && { simulatedAt: new Date() }),
+      },
+    )
+    .exec();
+}
+  async assignRaceCourse(
+    raceId: string,
+    raceCourseId: string,
+  ): Promise<Race | null> {
+    return this.raceModel
+      .findByIdAndUpdate(
+        raceId,
+        { $set: { raceCourseId: new Types.ObjectId(raceCourseId) } },
+        { returnDocument: 'after' },
+      )
+      .populate('tournamentId refereeId raceCourseId')
+      .lean()
+      .exec() as Promise<Race | null>;
+  }
 }

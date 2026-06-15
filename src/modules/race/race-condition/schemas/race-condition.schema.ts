@@ -4,17 +4,17 @@ import { Document, Types } from 'mongoose';
 export type RaceConditionDocument = RaceCondition & Document;
 
 export enum WeatherEnum {
-  SUNNY = 'sunny',
-  CLOUDY = 'cloudy',
-  RAINY = 'rainy',
-  WINDY = 'windy',
+  SUNNY = 'Sunny',
+  CLOUDY = 'Cloudy',
+  RAINY = 'Rainy',
+  WINDY = 'Windy',
 }
 
 export enum TrackConditionEnum {
-  GOOD = 'good',       // lý tưởng
-  SOFT = 'soft',       // hơi ướt
-  HEAVY = 'heavy',     // ướt nhiều, nặng
-  MUDDY = 'muddy',     // bùn
+  GOOD = 'Good',       // lý tưởng
+  SOFT = 'Soft',       // hơi ướt
+  HEAVY = 'Heavy',     // ướt nhiều, nặng
+  MUDDY = 'Muddy',     // bùn
 }
 
 @Schema({ timestamps: true })

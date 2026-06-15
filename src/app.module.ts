@@ -14,6 +14,8 @@ import { NotificationModule } from './modules/notification/notification.module';
 import { UploadModule } from './modules/upload/upload.module';
 import { RaceModule } from './modules/race/race.module';
 import { PaymentModule } from './modules/payment/payment.module';
+import { RaceSimulationModule } from './modules/race-simulation/race-simulation.module';
+import { RefereeReportModule } from './modules/referee-report/referee-report.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from 'node_modules/@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
@@ -78,6 +80,8 @@ import { OtpModule } from './modules/otp/otp.module';
     RaceModule,
     PaymentModule,
     UploadModule,
+    RaceSimulationModule,
+    RefereeReportModule,
   ],
   controllers: [AppController],
   providers: [AppService],

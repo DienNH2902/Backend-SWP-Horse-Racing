@@ -6,6 +6,7 @@ import {
   Param,
   Body,
   UseGuards,
+  Request
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -31,24 +32,17 @@ import {
 export class RaceConditionController {
   constructor(private readonly service: RaceConditionService) {}
 
-  /**
-   * Referee điền thông tin điều kiện trước khi race bắt đầu
-   * Nếu đã có sẵn course phù hợp thì chọn, không cần điền lại
-   */
   @Post()
   @Roles(RoleEnum.REFEREE)
-  @ApiOperation({
-    summary: 'Referee tạo thông tin điều kiện cho race (weather, trackCondition, windSpeed)',
-  })
+  @ApiOperation({ summary: 'Referee tạo điều kiện race' })
   create(
     @Body() dto: CreateRaceConditionDto,
-  ): Promise<ResponseRaceConditionDto> {
-    return this.service.create(dto);
+    @Request() req: any,
+  ) {
+    const refereeId = req.user.sub as string;
+    return this.service.create(dto, refereeId);  
   }
 
-  /**
-   * Referee cập nhật nếu điều kiện thay đổi
-   */
   @Patch(':raceId')
   @Roles(RoleEnum.REFEREE)
   @ApiOperation({ summary: 'Referee cập nhật điều kiện race (nếu thời tiết thay đổi)' })
@@ -60,9 +54,7 @@ export class RaceConditionController {
     return this.service.update(raceId, dto);
   }
 
-  /**
-   * Xem điều kiện của race — referee / admin đều xem được
-   */
+
   @Get(':raceId')
   @Roles(RoleEnum.REFEREE, RoleEnum.ADMIN)
   @ApiOperation({ summary: 'Xem thông tin điều kiện của một race' })

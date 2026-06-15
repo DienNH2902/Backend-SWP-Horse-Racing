@@ -1,20 +1,31 @@
 import {
+  forwardRef,
+  Inject ,
   Injectable,
   NotFoundException,
   BadRequestException,
   ConflictException,
+  ForbiddenException
 } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { RaceRepository } from './race.repository';
 import { TournamentRepository } from '../tournament/tournament.repository'; 
+import { RegistrationRepository } from '../registration/registration.repository';
+import { RaceCourseRepository } from './race-course/race-course.repository';
 import { RaceStatusEnum } from '../../constants/raceStatus.enum';
 import { CreateRaceBatchDto, ResponseRaceDto } from './dto';
+import { RefereeReportService } from '../referee-report/referee-report.service';
 
 @Injectable()
 export class RaceService {
   constructor(
     private readonly raceRepository: RaceRepository,
     private readonly tournamentRepository: TournamentRepository,
+    @Inject(forwardRef(() => RefereeReportService))
+    private readonly refereeReportService: RefereeReportService,
+    private readonly registrationRepository: RegistrationRepository,
+    private readonly raceCourseRepository: RaceCourseRepository,
+
   ) {}
 
   private toResponse(data: any): ResponseRaceDto {
@@ -105,7 +116,6 @@ export class RaceService {
   }
 
 
-  // Xem race theo tournament 
   async getRacesByTournament(tournamentId: string): Promise<ResponseRaceDto[]> {
     const tournament = await this.tournamentRepository.findById(tournamentId);
     if (!tournament) throw new NotFoundException('Không tìm thấy giải đấu');
@@ -117,12 +127,60 @@ export class RaceService {
   async getRaceById(id: string): Promise<ResponseRaceDto> {
     const race = await this.raceRepository.findById(id);
     if (!race) throw new NotFoundException('Không tìm thấy race');
-    return this.toResponse(race);
+
+    const horses = await this.registrationRepository.findHorsesByRaceId(id);
+
+    const filledSlots = horses.length;
+    const totalSlots = (race as any).tournamentId?.horsesPerRace  ?? null;
+
+    return this.toResponse({ ...race, horses, filledSlots, totalSlots });
   }
 
 
   async getRacesByReferee(refereeId: string): Promise<ResponseRaceDto[]> {
     const races = await this.raceRepository.findByReferee(refereeId);
     return races.map((r) => this.toResponse(r));
+  }
+
+  async confirmReady(raceId: string, refereeId: string) {
+    const race = await this.raceRepository.findById(raceId);
+    if (!race) throw new NotFoundException('Không tìm thấy race');
+
+    if (!race.refereeId) {
+      throw new BadRequestException('Race chưa được gán Referee');
+    }
+
+    const assignedRefereeId = (race.refereeId as any)._id.toString();
+
+    if (assignedRefereeId !== refereeId) {
+      throw new ForbiddenException('Bạn không phải Referee được gán cho race này');
+    }
+
+    if (race.status !== RaceStatusEnum.SCHEDULED) {
+      throw new BadRequestException(
+        `Race phải ở trạng thái "Scheduled" để confirm ready`,
+      );
+    }
+
+    await this.raceRepository.updateStatus(raceId, RaceStatusEnum.READY);
+    await this.refereeReportService.createStartReport(raceId, refereeId);
+
+    return { message: 'Race đã sẵn sàng. Report đã được tạo.' };
+  }
+
+  async assignRaceCourse(
+    raceId: string,
+    raceCourseId: string,
+  ): Promise<ResponseRaceDto> {
+    // Verify race tồn tại
+    const race = await this.raceRepository.findById(raceId);
+    if (!race) throw new NotFoundException('Không tìm thấy race');
+
+    // Verify raceCourse tồn tại
+    const course = await this.raceCourseRepository.findById(raceCourseId);
+    if (!course) throw new NotFoundException('Không tìm thấy đường đua');
+
+    const updated = await this.raceRepository.assignRaceCourse(raceId, raceCourseId);
+    return this.toResponse(updated);
   }
 }

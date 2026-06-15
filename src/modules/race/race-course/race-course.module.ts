@@ -13,6 +13,6 @@ import { RaceCourse, RaceCourseSchema } from './schemas/race-course.schema';
   ],
   controllers: [RaceCourseController],
   providers: [RaceCourseService, RaceCourseRepository],
-  exports: [RaceCourseService],
+  exports: [RaceCourseService, RaceCourseRepository ],
 })
 export class RaceCourseModule {}
