@@ -45,4 +45,20 @@ export class MailService {
       },
     );
   }
+
+  async sendGeneratedPasswordEmail(
+    email: string,
+    name: string,
+    passwordString: string,
+  ): Promise<void> {
+    await this.mailerService.sendMail({
+      to: email,
+      subject: '[GoldenHoof] Thông báo cấp mật khẩu tài khoản thành viên',
+      template: './receive-password', // Tên file template chứa mã HTML phía trên của bạn
+      context: {
+        name: name,
+        password: passwordString, // Truyền trực tiếp chuỗi mật khẩu thô chưa băm ra mail
+      },
+    });
+  }
 }
