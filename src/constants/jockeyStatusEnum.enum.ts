@@ -2,6 +2,7 @@ export enum JockeyStatusEnum {
   PENDING_APPROVAL = 'Pending_Approval', // Vừa đăng ký, chờ admin duyệt chứng chỉ/hồ sơ
   REJECTED = 'Rejected', // Hồ sơ/chứng chỉ không hợp lệ, bị admin từ chối
   AVAILABLE = 'Available', // Đã duyệt, sức khỏe tốt, sẵn sàng nhận lịch thi đấu
+  CONTRACTED = 'Contracted', // Đã ký hợp đồng, vẫn có thể nhận lời mời cho các giải khác
   BUSY = 'Busy', // Đang tham gia một giải đấu/trận đua cụ thể, không thể xếp lịch thêm
   RESTING = 'Resting', // Đang trong giai đoạn nghỉ ngơi (xin nghỉ phép, nghỉ giữa các mùa giải)
   INJURED = 'Injured', // Bị chấn thương (được cập nhật sau trận đấu hoặc do jockey báo cáo)

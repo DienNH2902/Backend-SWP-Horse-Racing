@@ -31,6 +31,8 @@ import { NotificationTypeEnum } from 'src/constants/notificationTypeEnum.enum';
 import { NotificationTitleEnum } from 'src/constants/notificationTitleEnum.enum';
 import { TransactionTypeEnum } from 'src/constants/transactionType.enum';
 import { TransactionTitleEnum } from 'src/constants/transactionTitleEnum.enum';
+import { HorseRepository } from '../horse/horse.repository';
+import { HorseStatusEnum } from 'src/constants/horseStatusEnum.enum';
 
 @Injectable()
 export class RegistrationService {
@@ -41,6 +43,7 @@ export class RegistrationService {
     private readonly tournamentRepository: TournamentRepository,
     private readonly transactionRepository: TransactionRepository,
     private readonly notificationRepository: NotificationRepository,
+    private readonly horseRepository: HorseRepository,
 
     @InjectModel(HorseOwnerProfile.name)
     private readonly horseOwnerProfileModel: Model<HorseOwnerProfileDocument>,
@@ -139,6 +142,11 @@ export class RegistrationService {
       registeredAt: new Date(),
     });
 
+    await this.horseRepository.updateHorseStatus(
+      this.resolveId(invitation.horseId),
+      HorseStatusEnum.REGISTERED,
+    );
+
     return this.toResponse(registration);
   }
 
@@ -213,6 +221,11 @@ export class RegistrationService {
         'Số dư tài khoản không đủ tại thời điểm duyệt',
       );
 
+      await this.horseRepository.updateHorseStatus(
+        this.resolveId(reg.horseId),
+        HorseStatusEnum.IDLE,
+      );
+
       await this.notificationRepository.create({
         userId: new Types.ObjectId(ownerIdStr),
         type: NotificationTypeEnum.BALANCE_NOT_ENOUGH,
@@ -254,6 +267,11 @@ export class RegistrationService {
       content: `Đăng ký tham gia giải đấu đã được duyệt. Ô chuồng: ${dto.gateNumber}. Phí ${reg.entryFee} đã được trừ.`,
       isRead: false,
     });
+
+    await this.horseRepository.updateHorseStatus(
+      this.resolveId(reg.horseId),
+      HorseStatusEnum.REGISTERED,
+    );
 
     return this.toResponse(updated);
   }
@@ -300,6 +318,11 @@ export class RegistrationService {
     const updated = await this.registrationRepository.updateStatusToRejected(
       id,
       dto.reason,
+    );
+
+    await this.horseRepository.updateHorseStatus(
+      this.resolveId(reg.horseId),
+      HorseStatusEnum.IDLE,
     );
 
     const ownerIdStr = this.resolveId(reg.ownerId);
