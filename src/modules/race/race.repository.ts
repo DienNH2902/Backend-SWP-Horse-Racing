@@ -222,4 +222,15 @@ async updateStatus(raceId: string, status: RaceStatusEnum): Promise<void> {
       .lean()
       .exec() as Promise<Race | null>;
   }
+
+  async findFinishedBefore(date: Date): Promise<Race[]> {
+  return this.raceModel
+    .find({
+      status: RaceStatusEnum.FINISHED,
+      updatedAt: { $lt: date },
+    })
+    .select('_id')
+    .lean()
+    .exec() as Promise<Race[]>;
+}
 }
