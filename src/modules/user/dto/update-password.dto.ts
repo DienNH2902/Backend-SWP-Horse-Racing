@@ -1,4 +1,3 @@
-// src/modules/users/dto/update-password.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, MinLength, NotEquals } from 'class-validator';
 

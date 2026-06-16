@@ -9,6 +9,7 @@ import {
   UseGuards,
   Query,
   Request,
+  Patch,
 } from '@nestjs/common';
 import { UsersService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -16,6 +17,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import {
   ApiBearerAuth,
   ApiOperation,
+  ApiParam,
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
@@ -27,6 +29,9 @@ import { UpdateHorseOwnerDto } from './dto/update-horse-owner-profile.dto';
 import { RoleEnum } from 'src/constants/roleEnum.enum';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { JockeyStatusEnum } from 'src/constants/jockeyStatusEnum.enum';
+import { UpdateAccountStatusDto } from './dto/update-account-status.dto';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 @ApiTags('Users')
 @Controller('users')
@@ -132,6 +137,21 @@ export class UsersController {
     @Body() dto: UpdateHorseOwnerDto,
   ): Promise<ResponseUserDto> {
     return await this.userService.updateHorseOwner(id, dto);
+  }
+
+  @Patch(':id/status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleEnum.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'ADMIN cập nhật trạng thái hoạt động của tài khoản',
+  })
+  @ApiParam({ name: 'id', description: 'ID của tài khoản cần cập nhật' })
+  async updateAccountStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateAccountStatusDto,
+  ): Promise<ResponseUserDto> {
+    return await this.userService.updateAccountStatus(id, dto.accountStatus);
   }
 
   @Delete(':id')
