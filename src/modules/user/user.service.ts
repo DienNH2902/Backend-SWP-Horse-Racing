@@ -16,6 +16,7 @@ import { UpdateJockeyDto } from './dto/update-jockey-profile.dto';
 import { RoleEnum } from 'src/constants/roleEnum.enum';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { JockeyStatusEnum } from 'src/constants/jockeyStatusEnum.enum';
+import { AccountStatusEnum } from 'src/constants/accountStatusEnum.enum';
 
 @Injectable()
 export class UsersService {
@@ -160,6 +161,18 @@ export class UsersService {
 
     const fullUser = await this.userRepository.findOneUser({ _id: id });
     return this.toResponse(fullUser);
+  }
+
+  async updateAccountStatus(
+    id: string,
+    accountStatus: AccountStatusEnum,
+  ): Promise<ResponseUserDto> {
+    const user = await this.userRepository.updateAccountStatus(
+      id,
+      accountStatus,
+    );
+
+    return this.toResponse(user);
   }
 
   async updatePassword(
