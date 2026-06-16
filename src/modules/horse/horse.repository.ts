@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, QueryFilter, Types, UpdateQuery } from 'mongoose';
 import { Horse, HorseDocument } from './schemas/horse.schema';
+import { HorseStatusEnum } from 'src/constants/horseStatusEnum.enum';
 
 @Injectable()
 export class HorseRepository {
@@ -30,6 +31,20 @@ export class HorseRepository {
     return await this.horseModel
       .findOne(filter)
       .populate('userId')
+      .lean()
+      .exec();
+  }
+
+  async updateHorseStatus(
+    id: string,
+    horseStatus: HorseStatusEnum,
+  ): Promise<Horse | null> {
+    return await this.horseModel
+      .findByIdAndUpdate(
+        id,
+        { $set: { horseStatus } },
+        { returnDocument: 'after' },
+      )
       .lean()
       .exec();
   }

@@ -40,6 +40,7 @@ import {
   TransactionSchema,
 } from '../payment/schemas/transaction.schema';
 import { PaymentModule } from '../payment/payment.module';
+import { HorseModule } from '../horse/horse.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { PaymentModule } from '../payment/payment.module';
     forwardRef(() => TournamentModule),
     PaymentModule,
     NotificationModule,
+    HorseModule,
   ],
   controllers: [
     RegistrationController,
