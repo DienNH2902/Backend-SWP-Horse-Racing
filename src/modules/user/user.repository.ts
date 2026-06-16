@@ -10,6 +10,7 @@ import { UpdateHorseOwnerProfileDto } from './dto/update-horse-owner-profile.dto
 import { UpdateRefereeProfileDto } from './dto/update-referee-profile.dto';
 import { RoleEnum } from 'src/constants/roleEnum.enum';
 import { JockeyStatusEnum } from 'src/constants/jockeyStatusEnum.enum';
+import { AccountStatusEnum } from 'src/constants/accountStatusEnum.enum';
 
 @Injectable()
 export class UsersRepository {
@@ -142,6 +143,20 @@ export class UsersRepository {
       .findByIdAndUpdate(
         id,
         { $set: { password: hashedPass } },
+        { returnDocument: 'after' },
+      )
+      .lean()
+      .exec();
+  }
+
+  async updateAccountStatus(
+    id: string,
+    accountStatus: AccountStatusEnum,
+  ): Promise<User | null> {
+    return await this.userModel
+      .findByIdAndUpdate(
+        id,
+        { $set: { status: accountStatus } },
         { returnDocument: 'after' },
       )
       .lean()
