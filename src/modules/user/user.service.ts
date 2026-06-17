@@ -70,6 +70,13 @@ export class UsersService {
     return this.toResponse(user);
   }
 
+  async searchUsersByName(fullName: string): Promise<ResponseUserDto[]> {
+    const users = await this.userRepository.searchUsersByFullName(
+      fullName || '',
+    );
+    return users.map((u) => this.toResponse(u));
+  }
+
   // async updateUser(id: string, dto: UpdateUserDto): Promise<ResponseUserDto> {
   //   const updated = await this.userRepository.findUserByIdAndUpdate(id, dto);
   //   if (!updated) throw new NotFoundException('User not found');
