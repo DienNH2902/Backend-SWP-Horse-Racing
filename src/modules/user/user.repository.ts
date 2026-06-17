@@ -208,6 +208,28 @@ export class UsersRepository {
       .exec();
   }
 
+  async searchUsersByFullName(fullName: string): Promise<User[]> {
+    const searchFilter = fullName
+      ? { fullName: { $regex: fullName, $options: 'i' } }
+      : {};
+
+    return await this.userModel
+      .find(searchFilter)
+      .select('-password -__v')
+      .populate({
+        path: 'jockeyProfile',
+        populate: { path: 'licenses' },
+      })
+      .populate('spectatorProfile')
+      .populate('refereeProfile')
+      .populate({
+        path: 'horseOwnerProfile',
+        populate: { path: 'totalHorsesOwned' },
+      })
+      .lean({ virtuals: true })
+      .exec();
+  }
+
   async deleteUser(id: string): Promise<User | null> {
     return this.userModel.findByIdAndDelete(id).exec();
   }
