@@ -116,11 +116,17 @@ export class RaceService {
   }
 
 
-  async getRacesByTournament(tournamentId: string): Promise<ResponseRaceDto[]> {
+  async getRacesByTournament(
+    tournamentId: string,
+    status?: RaceStatusEnum,
+  ): Promise<ResponseRaceDto[]> {
     const tournament = await this.tournamentRepository.findById(tournamentId);
     if (!tournament) throw new NotFoundException('Không tìm thấy giải đấu');
 
-    const races = await this.raceRepository.findByTournament(tournamentId);
+    const races = await this.raceRepository.findByTournamentAndStatus(
+      tournamentId,
+      status,
+    );
     return races.map((r) => this.toResponse(r));
   }
 
