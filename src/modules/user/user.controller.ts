@@ -32,6 +32,7 @@ import { JockeyStatusEnum } from 'src/constants/jockeyStatusEnum.enum';
 import { UpdateAccountStatusDto } from './dto/update-account-status.dto';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { SearchUserDto } from './dto/search-user.dto';
 
 @ApiTags('Users')
 @Controller('users')
@@ -59,11 +60,19 @@ export class UsersController {
     description:
       'Trạng thái hoạt động của Jockey (Chỉ có tác dụng khi role là Jockey)',
   })
-  findAllJockeys(
+  findAllUsersByRole(
     @Query('role') role: RoleEnum,
     @Query('jockeyStatus') jockeyStatus?: JockeyStatusEnum,
   ) {
     return this.userService.findAllUsersByRole(role, jockeyStatus);
+  }
+
+  @Get('search/by-name')
+  @ApiOperation({ summary: 'Tìm kiếm người dùng theo họ và tên (fullName)' })
+  async searchByName(
+    @Query() query: SearchUserDto,
+  ): Promise<ResponseUserDto[]> {
+    return await this.userService.searchUsersByName(query.fullName as string);
   }
 
   @Get(':id')
