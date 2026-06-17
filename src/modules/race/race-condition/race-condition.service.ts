@@ -2,7 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
-  ForbiddenException
+  ForbiddenException,
 } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { RaceConditionRepository } from './race-condition.repository';
@@ -28,18 +28,24 @@ export class RaceConditionService {
 
   async create(
     dto: CreateRaceConditionDto,
-    refereeId: string,           
+    refereeId: string,
   ): Promise<ResponseRaceConditionDto> {
     const race = await this.raceRepository.findById(dto.raceId);
     if (!race) throw new NotFoundException('Không tìm thấy race');
 
-    if (!race.refereeId || race.refereeId.toString() !== refereeId) {
+    const dbRefereeId = race.refereeId?._id
+      ? race.refereeId._id
+      : race.refereeId;
+
+    if (!dbRefereeId || String(dbRefereeId) !== String(refereeId)) {
       throw new ForbiddenException(
         'Bạn không phải referee được gán cho race này',
       );
     }
 
-    const existing = await this.raceConditionRepository.findByRaceId(dto.raceId);
+    const existing = await this.raceConditionRepository.findByRaceId(
+      dto.raceId,
+    );
     if (existing) {
       throw new ConflictException('Race này đã có thông tin điều kiện');
     }
@@ -52,22 +58,25 @@ export class RaceConditionService {
     raceId: string,
     dto: UpdateRaceConditionDto,
   ): Promise<ResponseRaceConditionDto> {
-    const updated = await this.raceConditionRepository.updateByRaceId(raceId, dto);
-    
+    const updated = await this.raceConditionRepository.updateByRaceId(
+      raceId,
+      dto,
+    );
+
     if (!updated) {
       throw new NotFoundException('Không tìm thấy điều kiện của race này');
     }
-    
+
     return this.toResponse(updated);
   }
 
   async findByRaceId(raceId: string): Promise<ResponseRaceConditionDto> {
     const condition = await this.raceConditionRepository.findByRaceId(raceId);
-    
+
     if (!condition) {
       throw new NotFoundException('Race này chưa có thông tin điều kiện');
     }
-    
+
     return this.toResponse(condition);
   }
 }

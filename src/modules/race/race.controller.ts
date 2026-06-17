@@ -7,7 +7,7 @@ import {
   Body,
   UseGuards,
   Query,
-  Request
+  Request,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -22,7 +22,11 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RoleEnum } from 'src/constants/roleEnum.enum';
-import { CreateRaceBatchDto, ResponseRaceDto, AssignRaceCourseDto } from './dto';
+import {
+  CreateRaceBatchDto,
+  ResponseRaceDto,
+  AssignRaceCourseDto,
+} from './dto';
 import {
   AssignRefereeDto,
   BulkAssignHorsesDto,
@@ -42,7 +46,9 @@ export class RaceController {
   @Post('batch')
   @UseGuards(RolesGuard)
   @Roles(RoleEnum.ADMIN)
-  @ApiOperation({ summary: 'Admin tạo nhiều race vòng 1 cùng lúc cho một tournament' })
+  @ApiOperation({
+    summary: 'Admin tạo nhiều race vòng 1 cùng lúc cho một tournament',
+  })
   createBatch(@Body() dto: CreateRaceBatchDto): Promise<ResponseRaceDto[]> {
     return this.service.createRacesBatch(dto);
   }
@@ -50,7 +56,10 @@ export class RaceController {
   @Post(':tournamentId/round2')
   @UseGuards(RolesGuard)
   @Roles(RoleEnum.ADMIN)
-  @ApiOperation({ summary: 'Tạo race chung kết (vòng 2) — chỉ khả dụng khi toàn bộ vòng 1 đã kết thúc' })
+  @ApiOperation({
+    summary:
+      'Tạo race chung kết (vòng 2) — chỉ khả dụng khi toàn bộ vòng 1 đã kết thúc',
+  })
   @ApiParam({ name: 'tournamentId', description: 'Tournament ID' })
   @ApiQuery({ name: 'startTime', example: '2026-07-20T08:00:00.000Z' })
   @ApiQuery({ name: 'date', example: '2026-07-20' })
@@ -89,7 +98,9 @@ export class RaceController {
   @Get('my-races')
   @UseGuards(RolesGuard)
   @Roles(RoleEnum.REFEREE)
-  @ApiOperation({ summary: 'Referee xem danh sách race được assigned cho mình' })
+  @ApiOperation({
+    summary: 'Referee xem danh sách race được assigned cho mình',
+  })
   getMyRaces(@Request() req: any): Promise<ResponseRaceDto[]> {
     return this.service.getRacesByReferee(req.user._id as string);
   }
@@ -126,14 +137,11 @@ export class RaceController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleEnum.REFEREE)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'REFEREE xác nhận race để bắt đầu → status = "Ready"' })
-  async confirmReady(
-    @Param('raceId') id: string,
-    @Request() req: any,
-  ) { 
+  @ApiOperation({
+    summary: 'REFEREE xác nhận race để bắt đầu → status = "Ready"',
+  })
+  async confirmReady(@Param('raceId') id: string, @Request() req: any) {
     const refereeId = req.user._id as string;
     return await this.service.confirmReady(id, refereeId);
   }
-
-
 }
