@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 import { RaceBroadcastGateway } from './gateway/race-broadcast.gateway';
 import { WsJwtGuard } from './gateway/ws-jwt.guard';
@@ -11,12 +12,16 @@ import { RaceModule } from '../race/race.module';
 
 @Module({
   imports: [
-    JwtModule.register({
-      secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: '1d' },
+    // Dùng registerAsync để đọc JWT_SECRET đúng từ ConfigService
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'),
+      }),
+      inject: [ConfigService],
     }),
-    RaceSimulationModule, // export: RaceTickRepo, RaceEventRepo, RawResultRepo
-    RaceModule,           // export: RaceRepository
+    RaceSimulationModule,
+    RaceModule,
   ],
   controllers: [RaceBroadcastController],
   providers: [

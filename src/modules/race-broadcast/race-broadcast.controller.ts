@@ -21,29 +21,23 @@ import { RoleEnum } from 'src/constants/roleEnum.enum';
 
 @ApiTags('Race Broadcast')
 @Controller('race-broadcast')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 export class RaceBroadcastController {
   constructor(private readonly broadcastService: RaceBroadcastService) {}
 
-  // ── POST /:raceId/start ───────────────────────────────────────────────────
+  // ── REFEREE: Live broadcast ───────────────────────────────────────────────
   @Post(':raceId/start')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(RolesGuard)
   @Roles(RoleEnum.REFEREE)
-  @ApiBearerAuth()
   @ApiOperation({
-    summary: 'REFEREE bắt đầu broadcast race realtime qua WebSocket',
+    summary: 'REFEREE bắt đầu broadcast live race qua WebSocket',
     description:
       'Race phải ở trạng thái "Simulated". ' +
-      'Server push tick mỗi 500ms xuống tất cả client đang xem race. ' +
-      'fromTick=0 mặc định (broadcast từ đầu). ' +
-      'Dùng fromTick > 0 để resume nếu server crash giữa chừng.',
+      'fromTick=0 mặc định. Dùng fromTick > 0 để resume nếu crash.',
   })
-  @ApiParam({ name: 'raceId', description: 'Race ID' })
-  @ApiQuery({
-    name: 'fromTick',
-    required: false,
-    description: 'Resume từ tick N (mặc định 0)',
-    example: 0,
-  })
+  @ApiParam({ name: 'raceId' })
+  @ApiQuery({ name: 'fromTick', required: false, example: 0 })
   async startBroadcast(
     @Param('raceId') raceId: string,
     @Query('fromTick') fromTick?: string,
@@ -52,14 +46,23 @@ export class RaceBroadcastController {
     return await this.broadcastService.startBroadcast(raceId, startFrom);
   }
 
-  // ── GET /:raceId/status ───────────────────────────────────────────────────
-  @Get(':raceId/status')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  // ── ALL ROLES: Replay sau khi race kết thúc ───────────────────────────────
+  @Post(':raceId/replay')
   @ApiOperation({
-    summary: 'Kiểm tra race có đang broadcast không',
+    summary: 'Xem lại race đã kết thúc (tất cả role)',
+    description:
+      'Race phải ở trạng thái "Finished" hoặc "Ongoing". ' +
+      'Tạo 1 broadcast session riêng để replay — không ảnh hưởng live.',
   })
-  @ApiParam({ name: 'raceId', description: 'Race ID' })
+  @ApiParam({ name: 'raceId' })
+  async replayBroadcast(@Param('raceId') raceId: string) {
+    return await this.broadcastService.startReplay(raceId);
+  }
+
+  // ── Check status ──────────────────────────────────────────────────────────
+  @Get(':raceId/status')
+  @ApiOperation({ summary: 'Kiểm tra race có đang broadcast không' })
+  @ApiParam({ name: 'raceId' })
   getBroadcastStatus(@Param('raceId') raceId: string) {
     return {
       raceId,
