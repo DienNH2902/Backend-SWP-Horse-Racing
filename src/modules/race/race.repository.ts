@@ -222,4 +222,33 @@ async updateStatus(raceId: string, status: RaceStatusEnum): Promise<void> {
       .lean()
       .exec() as Promise<Race | null>;
   }
+
+  async findFinishedBefore(date: Date): Promise<Race[]> {
+  return this.raceModel
+    .find({
+      status: RaceStatusEnum.FINISHED,
+      updatedAt: { $lt: date },
+    })
+    .select('_id')
+    .lean()
+    .exec() as Promise<Race[]>;
+}
+
+
+async findByTournamentAndStatus(
+  tournamentId: string,
+  status?: RaceStatusEnum,
+): Promise<Race[]> {
+  const filter: any = {
+    tournamentId: new Types.ObjectId(tournamentId),
+  };
+  if (status) filter.status = status;
+
+  return this.raceModel
+    .find(filter)
+    .populate('tournamentId refereeId raceCourseId')
+    .sort({ raceOrder: 1 })
+    .lean()
+    .exec() as Promise<Race[]>;
+}
 }

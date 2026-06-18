@@ -27,6 +27,7 @@ import {
   ResponseRaceDto,
   AssignRaceCourseDto,
 } from './dto';
+import { RaceStatusEnum } from 'src/constants/raceStatus.enum';
 import {
   AssignRefereeDto,
   BulkAssignHorsesDto,
@@ -106,12 +107,19 @@ export class RaceController {
   }
 
   @Get('tournament/:tournamentId')
-  @ApiOperation({ summary: 'Xem toàn bộ race của một tournament' })
-  @ApiParam({ name: 'tournamentId', description: 'Tournament ID' })
+  @ApiOperation({ summary: 'Xem toàn bộ race của một tournament, lọc theo status' })
+  @ApiParam({ name: 'tournamentId' })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: RaceStatusEnum,
+    description: 'Lọc theo status: Scheduled | Ready | Simulated | Ongoing | Finished | Cancelled',
+  })
   getByTournament(
     @Param('tournamentId') tournamentId: string,
+    @Query('status') status?: RaceStatusEnum,
   ): Promise<ResponseRaceDto[]> {
-    return this.service.getRacesByTournament(tournamentId);
+    return this.service.getRacesByTournament(tournamentId, status);
   }
 
   @Get(':id')

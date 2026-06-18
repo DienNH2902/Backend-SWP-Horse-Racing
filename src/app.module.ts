@@ -21,6 +21,7 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from 'node_modules/@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { join } from 'path';
 import { OtpModule } from './modules/otp/otp.module';
+import { RaceBroadcastModule } from './modules/race-broadcast/race-broadcast.module';
 
 @Module({
   imports: [
@@ -82,6 +83,7 @@ import { OtpModule } from './modules/otp/otp.module';
     UploadModule,
     RaceSimulationModule,
     RefereeReportModule,
+    RaceBroadcastModule,
   ],
   controllers: [AppController],
   providers: [AppService],
