@@ -33,6 +33,7 @@ import { TransactionTypeEnum } from 'src/constants/transactionType.enum';
 import { TransactionTitleEnum } from 'src/constants/transactionTitleEnum.enum';
 import { HorseRepository } from '../horse/horse.repository';
 import { HorseStatusEnum } from 'src/constants/horseStatusEnum.enum';
+import { TournamentStatusEnum } from 'src/constants/tournamentStatusEnum.enum';
 
 @Injectable()
 export class RegistrationService {
@@ -103,6 +104,13 @@ export class RegistrationService {
     if (!tournament) {
       throw new NotFoundException('Không tìm thấy giải đấu');
     }
+    // KIỂM TRA ĐIỀU KIỆN: Trạng thái giải đấu phải là 'Registration'
+    if (tournament.status !== TournamentStatusEnum.REGISTRATION) {
+      throw new BadRequestException(
+        `Giải đấu hiện đang ở trạng thái [${tournament.status}]. Hệ thống chỉ cho phép đăng ký khi giải đấu ở trạng thái [Registration].`,
+      );
+    }
+
     const entryFee = tournament.entryFee;
 
     // 4. Check balance >= entryFee

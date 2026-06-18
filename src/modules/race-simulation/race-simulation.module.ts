@@ -9,18 +9,14 @@ import {
   HorseRaceStatsSchema,
 } from './schemas/horse-race-stat.schema';
 
-// Repositories (owned by this module)
 import { RaceTickRepository } from './repositories/race-tick.repository';
 import { RaceEventRepository } from './repositories/race-event.repository';
 import { HorseRaceStatsRepository } from './repositories/horse-race-stat.repository';
 import { RawResultRepository } from './repositories/raw-result.repository';
 
-// Service + Controller
 import { RaceSimulationService } from './race-simulation.service';
 import { RaceSimulationController } from './race-simulation.controller';
 
-// External modules cần import để lấy Repositories
-// Đảm bảo các module này export Repository tương ứng
 import { RaceModule } from '../race/race.module';
 import { RaceCourseModule } from '../race/race-course/race-course.module';
 import { RaceConditionModule } from '../race/race-condition/race-condition.module';
@@ -37,8 +33,7 @@ import { RawResult, RawResultSchema } from './schemas/raw-result.schema';
       { name: RawResult.name,      schema: RawResultSchema      },
     ]),
 
-    // Import để inject Repository từ module khác
-    RaceModule,
+      RaceModule,
     RaceCourseModule,
     RaceConditionModule,
     RegistrationModule,
@@ -55,6 +50,7 @@ import { RawResult, RawResultSchema } from './schemas/raw-result.schema';
     RaceSimulationService,
     RaceTickRepository,
     RaceEventRepository,
+    RawResultRepository
   ],
 })
 export class RaceSimulationModule {}

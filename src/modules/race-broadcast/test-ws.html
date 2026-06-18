@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Race Broadcast Test</title>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: monospace; background: #1a1a2e; color: #eee; padding: 20px; }
+    h2 { color: #e94560; margin-bottom: 16px; }
+
+    .row { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+
+    input, button {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #444;
+      font-family: monospace;
+      font-size: 13px;
+    }
+    input { background: #16213e; color: #eee; flex: 1; min-width: 200px; }
+    button {
+      background: #e94560;
+      color: white;
+      border: none;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    button:hover { background: #c73652; }
+    button.green { background: #2ecc71; }
+    button.green:hover { background: #27ae60; }
+    button.gray { background: #555; }
+    button.gray:hover { background: #444; }
+
+    .status {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      display: inline-block;
+      margin-bottom: 16px;
+    }
+    .status.connected { background: #2ecc71; color: #000; }
+    .status.disconnected { background: #e74c3c; color: #fff; }
+
+    /* Track */
+    #track {
+      background: #16213e;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+      min-height: 200px;
+    }
+    .lane {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+      gap: 8px;
+    }
+    .lane-label {
+      width: 70px;
+      font-size: 11px;
+      color: #aaa;
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .lane-track {
+      flex: 1;
+      background: #0f3460;
+      border-radius: 4px;
+      height: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .horse {
+      position: absolute;
+      top: 2px;
+      width: 28px;
+      height: 20px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      transition: left 0.45s linear;
+      left: 0%;
+    }
+    .lane-progress {
+      width: 48px;
+      font-size: 11px;
+      color: #aaa;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    /* Log */
+    #log {
+      background: #0d0d1a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 10px;
+      height: 240px;
+      overflow-y: auto;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .log-tick    { color: #888; }
+    .log-event   { color: #f39c12; font-weight: bold; }
+    .log-finish  { color: #2ecc71; font-weight: bold; }
+    .log-system  { color: #3498db; }
+    .log-error   { color: #e74c3c; }
+    .log-snap    { color: #9b59b6; }
+
+    /* Result */
+    #result-table {
+      display: none;
+      background: #16213e;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 12px;
+    }
+    #result-table h3 { color: #2ecc71; margin-bottom: 8px; }
+    .result-row {
+      display: flex;
+      gap: 12px;
+      padding: 4px 0;
+      border-bottom: 1px solid #222;
+      font-size: 13px;
+    }
+    .rank-1 { color: #f1c40f; }
+    .rank-2 { color: #bdc3c7; }
+    .rank-3 { color: #e67e22; }
+
+    #tick-counter {
+      color: #aaa;
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+
+<h2>🏇 Race Broadcast Test</h2>
+
+<!-- Config -->
+<div class="row">
+  <input id="inp-token"  placeholder="JWT Token (không cần Bearer)" />
+  <input id="inp-host"   placeholder="Host (mặc định localhost:9000)" value="localhost:9000" style="max-width:220px" />
+</div>
+<div class="row">
+  <input id="inp-race"   placeholder="Race ID" />
+  <button onclick="connect()"    class="green">Connect WS</button>
+  <button onclick="disconnect()" class="gray">Disconnect</button>
+</div>
+<div class="row">
+  <button onclick="joinRace()">Join Race</button>
+  <button onclick="leaveRace()" class="gray">Leave Race</button>
+</div>
+
+<div id="conn-status" class="status disconnected">● Disconnected</div>
+
+<!-- Track visualization -->
+<div id="track">
+  <div id="tick-counter">Tick: — / —</div>
+  <div id="lanes"></div>
+</div>
+
+<!-- Log -->
+<div id="log"></div>
+
+<!-- Result -->
+<div id="result-table">
+  <h3>🏆 Kết quả đua</h3>
+  <div id="result-rows"></div>
+</div>
+
+<script>
+  let socket = null;
+  let horses = {};       // horseId → { lane, color, name }
+  let maxTick = 0;
+  let currentTick = 0;
+
+  const COLORS = [
+    '#e74c3c','#3498db','#2ecc71','#f39c12',
+    '#9b59b6','#1abc9c','#e67e22','#e91e63'
+  ];
+  const EMOJIS = ['🐴','🐎','🦄','🐴','🐎','🦄','🐴','🐎'];
+
+  // ── Logging ───────────────────────────────────────────────────────────────
+  function log(msg, cls = '') {
+    const el = document.getElementById('log');
+    const line = document.createElement('div');
+    if (cls) line.className = cls;
+    line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    el.appendChild(line);
+    el.scrollTop = el.scrollHeight;
+  }
+
+  // ── Track setup ───────────────────────────────────────────────────────────
+  function initTrack(horseList) {
+    const lanes = document.getElementById('lanes');
+    lanes.innerHTML = '';
+    horses = {};
+
+    horseList.forEach((h, i) => {
+      const color = COLORS[i % COLORS.length];
+      const emoji = EMOJIS[i % EMOJIS.length];
+      horses[h.horseId] = { lane: h.lane, color, emoji, index: i };
+
+      const row = document.createElement('div');
+      row.className = 'lane';
+      row.innerHTML = `
+        <div class="lane-label">Lane ${h.lane}</div>
+        <div class="lane-track" id="track-${h.horseId}">
+          <div class="horse" id="horse-${h.horseId}"
+               style="background:${color}">${emoji}</div>
+        </div>
+        <div class="lane-progress" id="prog-${h.horseId}">0%</div>
+      `;
+      lanes.appendChild(row);
+    });
+  }
+
+  function updateHorse(horseId, progress, instant = false) {
+    const el = document.getElementById(`horse-${horseId}`);
+    const prog = document.getElementById(`prog-${horseId}`);
+    if (!el) return;
+
+    // progress 0→1, track width - horse width = ~calc
+    // left% = progress × (100% - horse_width_percent)
+    const pct = Math.min(progress * 96, 96);
+    if (instant) el.style.transition = 'none';
+    else el.style.transition = 'left 0.45s linear';
+    el.style.left = pct + '%';
+    if (prog) prog.textContent = (progress * 100).toFixed(1) + '%';
+  }
+
+  // ── Connect ───────────────────────────────────────────────────────────────
+  function connect() {
+    if (socket?.connected) { log('Đã connected rồi', 'log-system'); return; }
+
+    const token = document.getElementById('inp-token').value.trim();
+    const host  = document.getElementById('inp-host').value.trim() || 'localhost:9000';
+
+    if (!token) { log('⚠️ Nhập JWT token trước', 'log-error'); return; }
+
+    log(`Connecting to ws://${host}/race ...`, 'log-system');
+
+socket = io(`http://${host}/race`, {
+  auth: { token: `Bearer ${token}` },
+  transports: ['polling', 'websocket'], 
+});
+
+    socket.on('connect', () => {
+      document.getElementById('conn-status').className = 'status connected';
+      document.getElementById('conn-status').textContent = '● Connected: ' + socket.id;
+      log('✅ Connected: ' + socket.id, 'log-system');
+    });
+
+    socket.on('disconnect', () => {
+      document.getElementById('conn-status').className = 'status disconnected';
+      document.getElementById('conn-status').textContent = '● Disconnected';
+      log('❌ Disconnected', 'log-error');
+    });
+
+    socket.on('connect_error', (err) => {
+      log('❌ Connect error: ' + err.message, 'log-error');
+    });
+
+    // ── Events ───────────────────────────────────────────────────────────
+    socket.on('joined', (data) => {
+      log('🏇 Joined race: ' + data.raceId, 'log-system');
+    });
+
+    // Catch-up: join giữa chừng
+    socket.on('race_snapshot', (data) => {
+      log(`📸 Catch-up snapshot tick=${data.tickNumber} (${data.horses.length} ngựa)`, 'log-snap');
+      if (!Object.keys(horses).length) {
+        initTrack(data.horses);
+      }
+      // Teleport ngay, không animate
+      data.horses.forEach(h => updateHorse(h.horseId, h.progress, true));
+      currentTick = data.tickNumber;
+      document.getElementById('tick-counter').textContent =
+        `Tick: ${currentTick} (catch-up)`;
+    });
+
+    // Tick frame mỗi 500ms
+    socket.on('race_tick', (frame) => {
+      currentTick = frame.tickNumber;
+      if (maxTick < currentTick) maxTick = currentTick;
+
+      // Init track lần đầu từ tick 0
+      if (frame.tickNumber === 0 && frame.horses.length) {
+        initTrack(frame.horses);
+        document.getElementById('result-table').style.display = 'none';
+      }
+
+      frame.horses.forEach(h => updateHorse(h.horseId, h.progress));
+
+      document.getElementById('tick-counter').textContent =
+        `Tick: ${currentTick} / ~${maxTick}`;
+
+      // Log thưa hơn (mỗi 10 tick) để không spam
+      if (frame.tickNumber % 10 === 0) {
+        log(`⏱ Tick ${frame.tickNumber}`, 'log-tick');
+      }
+    });
+
+    // Event (stumble/burst/overtake/lead_change)
+    socket.on('race_event', (event) => {
+      const icons = {
+        stumble: '💥', burst: '⚡',
+        overtake: '🔄', lead_change: '🚩'
+      };
+      const icon = icons[event.eventType] || '❓';
+      log(
+        `${icon} [${event.eventType.toUpperCase()}] tick=${event.tickNumber} ` +
+        `horse=${event.primaryHorseId.slice(-6)}` +
+        (event.secondaryHorseId ? ` vs ${event.secondaryHorseId.slice(-6)}` : ''),
+        'log-event'
+      );
+    });
+
+    // Kết thúc
+    socket.on('race_finished', (data) => {
+      log('🏆 RACE FINISHED! Kết quả:', 'log-finish');
+
+      const medals = ['🥇','🥈','🥉'];
+      data.results.forEach(r => {
+        const medal = medals[r.rawRank - 1] || `#${r.rawRank}`;
+        log(`  ${medal} Rank ${r.rawRank}: ${r.horseId.slice(-8)}`, 'log-finish');
+      });
+
+      // Hiện bảng kết quả
+      const table = document.getElementById('result-table');
+      const rows  = document.getElementById('result-rows');
+      table.style.display = 'block';
+      rows.innerHTML = '';
+      data.results.forEach(r => {
+        const cls = r.rawRank <= 3 ? `rank-${r.rawRank}` : '';
+        const medal = medals[r.rawRank - 1] || '';
+        const row = document.createElement('div');
+        row.className = `result-row ${cls}`;
+        row.innerHTML = `
+          <span style="width:30px">${medal}</span>
+          <span style="width:24px">#${r.rawRank}</span>
+          <span>${r.horseId.slice(-12)}</span>
+          <span style="color:#aaa">${new Date(r.finishedTime).toLocaleTimeString()}</span>
+        `;
+        rows.appendChild(row);
+      });
+
+      document.getElementById('tick-counter').textContent =
+        `Tick: ${currentTick} — FINISHED ✅`;
+    });
+  }
+
+  function disconnect() {
+    socket?.disconnect();
+    socket = null;
+  }
+
+  function joinRace() {
+    if (!socket?.connected) { log('⚠️ Connect trước', 'log-error'); return; }
+    const raceId = document.getElementById('inp-race').value.trim();
+    if (!raceId) { log('⚠️ Nhập Race ID', 'log-error'); return; }
+    log(`Joining race ${raceId}...`, 'log-system');
+    socket.emit('join_race', { raceId });
+  }
+
+  function leaveRace() {
+    if (!socket?.connected) return;
+    const raceId = document.getElementById('inp-race').value.trim();
+    socket.emit('leave_race', { raceId });
+    log('Left race ' + raceId, 'log-system');
+  }
+</script>
+</body>
+</html>

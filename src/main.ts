@@ -17,6 +17,9 @@ async function bootstrap() {
       'http://localhost:5173',
       'https://horse-racing.io.vn', // Điền domain chính thức của Frontend vào đây
       'https://goldenhoof-fe.vercel.app',
+      'null',
+      'http://localhost:5500',      // ← Live Server port mặc định
+      'http://127.0.0.1:5500',
     ],
 
     // 2. Cho phép các phương thức HTTP nào được quyền tác động vào BE
