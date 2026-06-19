@@ -24,35 +24,42 @@ export class StreakService {
     const today = this.getStartOfDay(new Date());
     let streak = await this.streakRepository.findByUserId(userId);
 
-    // Trường hợp 1: User chưa từng có dữ liệu streak (Đăng nhập lần đầu hệ thống có tính năng này)
+    // Trường hợp 1: User chưa từng có dữ liệu streak
     if (!streak) {
-      const newStreak = await this.streakRepository.createStreak({
-        userId: userId,
-        fullName,
-        email,
-        currentStreak: 1,
-        longestStreak: 1,
-        lastLoginDate: today,
-      } as any);
+      try {
+        const newStreak = await this.streakRepository.createStreak({
+          userId: userId,
+          fullName,
+          email,
+          currentStreak: 1,
+          longestStreak: 1,
+          lastLoginDate: today,
+        } as any);
 
-      return this.toResponseDto(newStreak, true);
+        return this.toResponseDto(newStreak, true);
+      } catch (error: any) {
+        // Nếu dính lỗi ghi trùng lặp bản ghi do 2 request chạy song song
+        if (error.code === 11000) {
+          // Lấy lại bản ghi vừa được tạo bởi request song song kia
+          streak = await this.streakRepository.findByUserId(userId);
+        } else {
+          throw error;
+        }
+      }
     }
 
-    const lastLogin = this.getStartOfDay(streak.lastLoginDate);
-
-    // Tính toán khoảng cách ngày (đơn vị: mili-giây đổi ra ngày)
+    // Nếu không dính lỗi hoặc nhảy vào khối catch lấy được streak cũ
+    const lastLogin = this.getStartOfDay(streak!.lastLoginDate); // Thêm dấu ! ở đây phòng trường hợp TS báo lỗi null
     const diffTime = today.getTime() - lastLogin.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-    let updatedCurrentStreak = streak.currentStreak;
-    let updatedLongestStreak = streak.longestStreak;
+    let updatedCurrentStreak = streak!.currentStreak;
+    let updatedLongestStreak = streak!.longestStreak;
     let isRewardAvailable = false;
 
     if (diffDays === 0) {
-      // Trường hợp 2: Hôm nay đã đăng nhập rồi, không tăng streak nữa
       isRewardAvailable = false;
     } else if (diffDays === 1) {
-      // Trường hợp 3: Đăng nhập liên tiếp (cách hôm qua đúng 1 ngày)
       updatedCurrentStreak += 1;
       isRewardAvailable = true;
 
@@ -60,21 +67,17 @@ export class StreakService {
         updatedLongestStreak = updatedCurrentStreak;
       }
     } else {
-      // Trường hợp 4: Bị đứt chuỗi (quá 1 ngày không đăng nhập)
       updatedCurrentStreak = 1;
       isRewardAvailable = true;
     }
 
-    // Cập nhật lại vào cơ sở dữ liệu nếu có sự thay đổi ngày đăng nhập mới
-    if (diffDays > 0) {
-      streak = await this.streakRepository.updateStreak(userId, {
-        fullName,
-        email,
-        currentStreak: updatedCurrentStreak,
-        longestStreak: updatedLongestStreak,
-        lastLoginDate: today,
-      });
-    }
+    streak = await this.streakRepository.updateStreak(userId, {
+      fullName,
+      email,
+      currentStreak: updatedCurrentStreak,
+      longestStreak: updatedLongestStreak,
+      lastLoginDate: today,
+    });
 
     if (!streak) {
       throw new Error('Không thể cập nhật hoặc ghi nhận chuỗi đăng nhập.');
@@ -83,9 +86,7 @@ export class StreakService {
     return this.toResponseDto(streak, isRewardAvailable);
   }
 
-  /**
-   * Lấy trạng thái Streak hiện tại của user (Xem thông tin)
-   */
+  // Lấy trạng thái Streak hiện tại của user (Xem thông tin)
   async getStreak(userId: string): Promise<ResponseStreakDto> {
     const streak = await this.streakRepository.findByUserId(userId);
     if (!streak) {
