@@ -45,6 +45,24 @@ export class TournamentRepository {
       .exec() as Promise<Tournament | null>;
   }
 
+  async findOverlappingTournament(
+    startDate: Date,
+    endDate: Date,
+    excludeId?: string, // Dùng cho trường hợp update nếu cần
+  ): Promise<TournamentDocument | null> {
+    const query: any = {
+      startDate: { $lte: endDate },
+      endDate: { $gte: startDate },
+    };
+
+    // Nếu là cập nhật giải đấu, loại trừ chính nó ra để không tự check trùng với mình
+    if (excludeId) {
+      query._id = { $ne: excludeId };
+    }
+
+    return await this.tournamentModel.findOne(query).exec();
+  }
+
   async updateTournament(
     id: string,
     updateData: Partial<Tournament>,

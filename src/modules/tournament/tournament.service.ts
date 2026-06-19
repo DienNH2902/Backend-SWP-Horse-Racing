@@ -91,20 +91,37 @@ export class TournamentService {
     return availableSlot > 0 ? availableSlot : 0;
   }
 
+  private startOfDay(date: Date): Date {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+
+  private endOfDay(date: Date): Date {
+    const d = new Date(date);
+    d.setHours(23, 59, 59, 999);
+    return d;
+  }
+
   async createTournament(
     dto: CreateTournamentDto,
   ): Promise<ResponseTournamentDto> {
-    const start = new Date(dto.startDate);
-    const end = new Date(dto.endDate);
-
-    //Không cần validate ở đây vì đã validate ở createDto
-    // if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-    //   throw new BadRequestException('Định dạng ngày tháng không hợp lệ');
-    // }
+    // Chuẩn hóa khoảng thời gian về mốc ngày (bỏ giờ)
+    const start = this.startOfDay(new Date(dto.startDate));
+    const end = this.endOfDay(new Date(dto.endDate));
 
     if (start >= end) {
       throw new BadRequestException(
         'Ngày bắt đầu giải đấu phải trước ngày kết thúc',
+      );
+    }
+
+    // Kiểm tra trùng lịch với các giải đấu khác
+    const overlapping =
+      await this.tournamentRepository.findOverlappingTournament(start, end);
+    if (overlapping) {
+      throw new BadRequestException(
+        'Thời gian của giải đấu bị trùng lặp với một giải đấu khác đã tồn tại',
       );
     }
 
@@ -236,15 +253,34 @@ export class TournamentService {
 
     const updateData: any = { ...dto };
 
-    if (dto.startDate) updateData.startDate = new Date(dto.startDate);
-    if (dto.endDate) updateData.endDate = new Date(dto.endDate);
+    // Xác định mốc thời gian sau khi update (nếu không truyền thì giữ nguyên cũ)
+    const start = dto.startDate
+      ? this.startOfDay(new Date(dto.startDate))
+      : this.startOfDay(tournament.startDate);
 
-    if (
-      updateData.startDate &&
-      updateData.endDate &&
-      updateData.startDate >= updateData.endDate
-    ) {
+    const end = dto.endDate
+      ? this.endOfDay(new Date(dto.endDate))
+      : this.endOfDay(tournament.endDate);
+
+    if (start >= end) {
       throw new BadRequestException('Ngày bắt đầu phải trước ngày kết thúc');
+    }
+
+    // Nếu có thay đổi về thời gian, kiểm tra trùng lặp lịch (loại trừ chính giải đấu này)
+    if (dto.startDate || dto.endDate) {
+      const overlapping =
+        await this.tournamentRepository.findOverlappingTournament(
+          start,
+          end,
+          id,
+        );
+      if (overlapping) {
+        throw new BadRequestException(
+          'Thời gian cập nhật bị trùng lặp với một giải đấu khác đã tồn tại',
+        );
+      }
+      updateData.startDate = start;
+      updateData.endDate = end;
     }
 
     const updated = await this.tournamentRepository.updateTournament(
