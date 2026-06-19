@@ -28,10 +28,12 @@ import {
 } from '../user/schemas/horse-owner-profile.schema';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { MailModule } from '../mail/mail.module';
+import { StreakModule } from '../streak/streak.module';
 
 @Module({
   imports: [
     UserModule,
+    StreakModule,
     MailModule, // Đưa UserModule vào để lấy được UsersRepository phục vụ nghiệp vụ
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
