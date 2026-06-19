@@ -158,6 +158,12 @@ export class AuthService {
     if (!isMatch)
       throw new UnauthorizedException('Email hoặc mật khẩu không chính xác');
 
+    if (user.status === AccountStatusEnum.BANNED) {
+      throw new UnauthorizedException(
+        'Tài khoản của bạn đã bị khóa, không thể đăng nhập',
+      );
+    }
+
     const payload: JwtPayload = {
       sub: user._id.toString(),
       fullName: user.fullName,
@@ -267,6 +273,13 @@ export class AuthService {
             err,
           );
         });
+    }
+
+    // Bước này đảm bảo chặn đứng cả tài khoản cũ bị BAN lẫn tài khoản mới (nếu trạng thái khởi tạo bị thay đổi ngầm)
+    if (user.status === AccountStatusEnum.BANNED) {
+      throw new UnauthorizedException(
+        'Tài khoản Google của bạn đã bị khóa, không thể đăng nhập vào hệ thống',
+      );
     }
 
     // 3. Đóng gói payload theo đúng cấu trúc định dạng JwtPayload của hệ thống bạn
