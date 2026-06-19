@@ -28,7 +28,10 @@ export class StreakRepository {
       .findOneAndUpdate(
         { userId: new Types.ObjectId(userId) },
         { $set: updateData },
-        { new: true },
+        {
+          returnDocument: 'after',
+          upsert: true, // Nếu không tìm thấy userId, tự động insert bản ghi mới dựa trên query và set dữ liệu
+        },
       )
       .exec();
   }
