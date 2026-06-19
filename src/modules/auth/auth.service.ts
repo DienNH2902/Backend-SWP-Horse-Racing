@@ -28,6 +28,7 @@ import { StringValue } from 'ms';
 import { ResponseUserDto } from '../user/dto/response-user.dto';
 import { plainToInstance } from 'class-transformer';
 import { MailService } from '../mail/mail.service';
+import { StreakService } from '../streak/streak.service';
 
 type RegisterPayload =
   | RegisterSpectatorDto
@@ -59,6 +60,7 @@ export class AuthService {
   constructor(
     private readonly userRepository: UsersRepository,
     private readonly mailService: MailService,
+    private readonly streakService: StreakService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     @InjectModel(JockeyProfile.name) private jockeyModel: Model<JockeyProfile>,
@@ -156,6 +158,12 @@ export class AuthService {
     if (!isMatch)
       throw new UnauthorizedException('Email hoặc mật khẩu không chính xác');
 
+    if (user.status === AccountStatusEnum.BANNED) {
+      throw new UnauthorizedException(
+        'Tài khoản của bạn đã bị khóa, không thể đăng nhập',
+      );
+    }
+
     const payload: JwtPayload = {
       sub: user._id.toString(),
       fullName: user.fullName,
@@ -168,6 +176,8 @@ export class AuthService {
       role: user.role,
       gender: user.gender,
     };
+
+    await this.streakService.trackLoginStreak(user._id.toString());
 
     return this.generateToken(payload);
   }
@@ -265,6 +275,13 @@ export class AuthService {
         });
     }
 
+    // Bước này đảm bảo chặn đứng cả tài khoản cũ bị BAN lẫn tài khoản mới (nếu trạng thái khởi tạo bị thay đổi ngầm)
+    if (user.status === AccountStatusEnum.BANNED) {
+      throw new UnauthorizedException(
+        'Tài khoản Google của bạn đã bị khóa, không thể đăng nhập vào hệ thống',
+      );
+    }
+
     // 3. Đóng gói payload theo đúng cấu trúc định dạng JwtPayload của hệ thống bạn
     const payload: JwtPayload = {
       sub: user._id.toString(),
@@ -278,6 +295,8 @@ export class AuthService {
       status: user.status,
       gender: user.gender || 0, // Fallback giá trị mặc định nếu user mới tạo chưa có giới tính
     };
+
+    await this.streakService.trackLoginStreak(user._id.toString());
 
     // 4. Ký và trả về chuỗi JWT token chuẩn của hệ thống
     return this.generateToken(payload);

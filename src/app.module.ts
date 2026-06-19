@@ -22,6 +22,7 @@ import { HandlebarsAdapter } from 'node_modules/@nestjs-modules/mailer/dist/adap
 import { join } from 'path';
 import { OtpModule } from './modules/otp/otp.module';
 import { RaceBroadcastModule } from './modules/race-broadcast/race-broadcast.module';
+import { StreakModule } from './modules/streak/streak.module';
 
 @Module({
   imports: [
@@ -84,6 +85,7 @@ import { RaceBroadcastModule } from './modules/race-broadcast/race-broadcast.mod
     RaceSimulationModule,
     RefereeReportModule,
     RaceBroadcastModule,
+    StreakModule,
   ],
   controllers: [AppController],
   providers: [AppService],
