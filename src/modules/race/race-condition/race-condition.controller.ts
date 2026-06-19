@@ -6,7 +6,7 @@ import {
   Param,
   Body,
   UseGuards,
-  Request
+  Request,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -35,17 +35,16 @@ export class RaceConditionController {
   @Post()
   @Roles(RoleEnum.REFEREE)
   @ApiOperation({ summary: 'Referee tạo điều kiện race' })
-  create(
-    @Body() dto: CreateRaceConditionDto,
-    @Request() req: any,
-  ) {
-    const refereeId = req.user.sub as string;
-    return this.service.create(dto, refereeId);  
+  create(@Body() dto: CreateRaceConditionDto, @Request() req: any) {
+    const refereeId = req.user._id as string;
+    return this.service.create(dto, refereeId);
   }
 
   @Patch(':raceId')
   @Roles(RoleEnum.REFEREE)
-  @ApiOperation({ summary: 'Referee cập nhật điều kiện race (nếu thời tiết thay đổi)' })
+  @ApiOperation({
+    summary: 'Referee cập nhật điều kiện race (nếu thời tiết thay đổi)',
+  })
   @ApiParam({ name: 'raceId', description: 'Race ID' })
   update(
     @Param('raceId') raceId: string,
@@ -54,14 +53,11 @@ export class RaceConditionController {
     return this.service.update(raceId, dto);
   }
 
-
   @Get(':raceId')
   @Roles(RoleEnum.REFEREE, RoleEnum.ADMIN)
   @ApiOperation({ summary: 'Xem thông tin điều kiện của một race' })
   @ApiParam({ name: 'raceId', description: 'Race ID' })
-  findOne(
-    @Param('raceId') raceId: string,
-  ): Promise<ResponseRaceConditionDto> {
+  findOne(@Param('raceId') raceId: string): Promise<ResponseRaceConditionDto> {
     return this.service.findByRaceId(raceId);
   }
 }

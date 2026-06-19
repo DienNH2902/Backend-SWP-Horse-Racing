@@ -27,6 +27,7 @@ import {
   RejectRegistrationDto,
   ResponseRegistrationDto,
 } from './dto';
+import { RegistrationStatusEnum } from 'src/constants/registrationStatus.enum';
 
 // HorseOwner routes
 
@@ -98,7 +99,7 @@ export class AdminRegistrationController {
   @ApiQuery({
     name: 'status',
     required: false,
-    enum: ['Waitlisted', 'Pending', 'Confirmed', 'Rejected'],
+    enum: RegistrationStatusEnum,
   })
   @ApiQuery({ name: 'tournamentId', required: false })
   getAll(

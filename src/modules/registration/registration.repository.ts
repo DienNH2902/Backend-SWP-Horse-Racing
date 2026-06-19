@@ -69,6 +69,23 @@ export class RegistrationRepository {
       .exec();
   }
 
+  async findConfirmedParticipantsByTournament(
+    tournamentId: string,
+  ): Promise<any[]> {
+    return this.registrationModel
+      .find({
+        tournamentId: new Types.ObjectId(tournamentId),
+        status: RegistrationStatusEnum.CONFIRMED, // Chỉ lấy các đơn đã duyệt thành công
+      })
+      .populate({
+        path: 'jockeyId',
+        select: 'fullName avatar', // Chọn các trường cần thiết của Jockey
+      })
+      .populate('horseId', 'name weight height winRate totalWin') // Lấy thông tin ngựa
+      .lean()
+      .exec();
+  }
+
   async updateById(
     id: string,
     update: UpdateQuery<Registration>,
@@ -200,42 +217,42 @@ export class RegistrationRepository {
     }));
     await this.registrationModel.bulkWrite(ops);
   }
-async findConfirmedWithDetails(raceId: string): Promise<any[]> {
-  const docs = await this.registrationModel
-    .find({
-      raceId: new Types.ObjectId(raceId),
-      status: RegistrationStatusEnum.CONFIRMED,
-    })
-    .populate({
-      path: 'horseId',
-      select: 'weight height winRate totalWin name',
-    })
-    .populate({
-      path: 'jockeyInvitationId',
-      select: 'jockeyId',
-      populate: {
-        path: 'jockeyId',
-        select: 'weight height userId',
-      },
-    })
-    .lean()
-    .exec();
+  async findConfirmedWithDetails(raceId: string): Promise<any[]> {
+    const docs = await this.registrationModel
+      .find({
+        raceId: new Types.ObjectId(raceId),
+        status: RegistrationStatusEnum.CONFIRMED,
+      })
+      .populate({
+        path: 'horseId',
+        select: 'weight height winRate totalWin name',
+      })
+      .populate({
+        path: 'jockeyInvitationId',
+        select: 'jockeyId',
+        populate: {
+          path: 'jockeyId',
+          select: 'weight height userId',
+        },
+      })
+      .lean()
+      .exec();
 
-  return docs.map((doc: any) => ({
-    ...doc,
-    horse: doc.horseId,
-    jockeyProfile: doc.jockeyInvitationId?.jockeyId,
-    gateNumber: doc.gateNumber,
-  }));
-}
+    return docs.map((doc: any) => ({
+      ...doc,
+      horse: doc.horseId,
+      jockeyProfile: doc.jockeyInvitationId?.jockeyId,
+      gateNumber: doc.gateNumber,
+    }));
+  }
 
-    async findHorsesByRaceId(raceId: string): Promise<any[]> {
+  async findHorsesByRaceId(raceId: string): Promise<any[]> {
     return this.registrationModel
       .find({
         raceId: new Types.ObjectId(raceId),
         status: RegistrationStatusEnum.CONFIRMED,
       })
-      .populate('horseId', 'name') 
+      .populate('horseId', 'name')
       .lean()
       .exec();
   }

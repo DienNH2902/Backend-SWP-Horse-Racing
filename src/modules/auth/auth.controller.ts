@@ -69,16 +69,27 @@ export class AuthController {
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   async googleAuthRedirect(@Request() req, @Res() res: Response) {
-    // Gửi data sang service xử lý check DB / Tạo tài khoản và nhận lại JWT token nội bộ
-    const token = await this.authService.loginWithGoogle(req.user);
+    try {
+      // Gửi data sang service xử lý check DB / Tạo tài khoản và nhận lại JWT token nội bộ
+      const token = await this.authService.loginWithGoogle(req.user);
 
-    // TRƯỜNG HỢP 1: Khi chưa có FrontEnd -> Trả thẳng chuỗi JWT về màn hình dưới dạng JSON để test
-    // return (res as any).status(200).json({ access_token: token });
+      // Nếu thành công, chuyển hướng đến trang xử lý token thành công
+      return res.redirect(
+        `https://goldenhoof-fe.vercel.app/oauth-success?token=${token}`,
+      );
+    } catch (error) {
+      // Mặc định lấy message lỗi từ Exception, nếu không có thì dùng câu thông báo chung
+      const errorMessage =
+        (error as { message?: string })?.message || 'Đăng nhập Google thất bại';
 
-    // TRƯỜNG HỢP 2: Sau này có FrontEnd, hãy comment dòng TRƯỜNG HỢP 1 lại và mở comment dòng dưới này ra
-    return res.redirect(
-      `https://goldenhoof-fe.vercel.app/oauth-success?token=${token}`,
-    );
+      // Mã hóa chuỗi để truyền an toàn trên URL thanh địa chỉ
+      const encodedMessage = encodeURIComponent(errorMessage);
+
+      // Điều hướng trực tiếp quay trở lại trang login của FE kèm theo message lỗi
+      return res.redirect(
+        `https://goldenhoof-fe.vercel.app/login?error=${encodedMessage}`,
+      );
+    }
   }
 
   @Post('register/spectator')

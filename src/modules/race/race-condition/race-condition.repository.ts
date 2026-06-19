@@ -1,8 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { RaceCondition, RaceConditionDocument } from './schemas/race-condition.schema';
-import { CreateRaceConditionDto, UpdateRaceConditionDto } from './dto'; 
+import {
+  RaceCondition,
+  RaceConditionDocument,
+} from './schemas/race-condition.schema';
+import { CreateRaceConditionDto, UpdateRaceConditionDto } from './dto';
 
 @Injectable()
 export class RaceConditionRepository {

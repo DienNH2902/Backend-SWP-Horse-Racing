@@ -10,7 +10,12 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import { TournamentService } from './tournament.service';
 import { CreateTournamentDto } from './dto/create-tournament.dto';
 import { UpdateTournamentDto } from './dto/update-tournament.dto';
@@ -36,6 +41,19 @@ export class TournamentController {
     @Body() dto: CreateTournamentDto,
   ): Promise<ResponseTournamentDto> {
     return await this.tournamentService.createTournament(dto);
+  }
+
+  @Get(':id/participants')
+  @ApiOperation({ summary: 'Xem danh sách nài ngựa và ngựa tham gia giải đấu' })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description:
+      'ID của giải đấu (Tournament ID) cần xem danh sách người tham gia',
+    example: '6a291c8a3636b7316d90c34f',
+  })
+  async getParticipants(@Param('id') id: string) {
+    return this.tournamentService.getTournamentParticipants(id);
   }
 
   @Get()
