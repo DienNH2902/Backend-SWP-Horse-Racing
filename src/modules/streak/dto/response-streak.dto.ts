@@ -6,6 +6,12 @@ export class ResponseStreakDto {
   userId: string;
 
   @Expose()
+  fullName: string;
+
+  @Expose()
+  email: string;
+
+  @Expose()
   currentStreak: number;
 
   @Expose()

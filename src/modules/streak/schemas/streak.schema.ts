@@ -8,6 +8,12 @@ export class Streak {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true, unique: true })
   userId: Types.ObjectId;
 
+  @Prop({ type: String, required: true })
+  fullName: string;
+
+  @Prop({ type: String, required: true })
+  email: string;
+
   @Prop({ type: Number, default: 0 })
   currentStreak: number;
 
