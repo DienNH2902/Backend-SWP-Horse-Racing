@@ -16,14 +16,20 @@ export class StreakService {
   }
 
   // Logic xử lý điểm danh/đăng nhập mỗi ngày để cập nhật Streak
-  async trackLoginStreak(userId: string): Promise<ResponseStreakDto> {
+  async trackLoginStreak(
+    userId: string,
+    fullName: string,
+    email: string,
+  ): Promise<ResponseStreakDto> {
     const today = this.getStartOfDay(new Date());
     let streak = await this.streakRepository.findByUserId(userId);
 
     // Trường hợp 1: User chưa từng có dữ liệu streak (Đăng nhập lần đầu hệ thống có tính năng này)
     if (!streak) {
       const newStreak = await this.streakRepository.createStreak({
-        userId: userId, // Tự động ép kiểu trong DB sang ObjectId
+        userId: userId,
+        fullName,
+        email,
         currentStreak: 1,
         longestStreak: 1,
         lastLoginDate: today,
@@ -62,6 +68,8 @@ export class StreakService {
     // Cập nhật lại vào cơ sở dữ liệu nếu có sự thay đổi ngày đăng nhập mới
     if (diffDays > 0) {
       streak = await this.streakRepository.updateStreak(userId, {
+        fullName,
+        email,
         currentStreak: updatedCurrentStreak,
         longestStreak: updatedLongestStreak,
         lastLoginDate: today,
@@ -100,6 +108,8 @@ export class StreakService {
 
     return {
       userId: streak.userId.toString(),
+      fullName: streak.fullName,
+      email: streak.email,
       currentStreak: currentStreakShow,
       longestStreak: streak.longestStreak,
       lastLoginDate: streak.lastLoginDate,
