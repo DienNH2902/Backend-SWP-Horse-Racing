@@ -28,6 +28,7 @@ import { StringValue } from 'ms';
 import { ResponseUserDto } from '../user/dto/response-user.dto';
 import { plainToInstance } from 'class-transformer';
 import { MailService } from '../mail/mail.service';
+import { StreakService } from '../streak/streak.service';
 
 type RegisterPayload =
   | RegisterSpectatorDto
@@ -59,6 +60,7 @@ export class AuthService {
   constructor(
     private readonly userRepository: UsersRepository,
     private readonly mailService: MailService,
+    private readonly streakService: StreakService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     @InjectModel(JockeyProfile.name) private jockeyModel: Model<JockeyProfile>,
@@ -169,6 +171,8 @@ export class AuthService {
       gender: user.gender,
     };
 
+    await this.streakService.trackLoginStreak(user._id.toString());
+
     return this.generateToken(payload);
   }
 
@@ -278,6 +282,8 @@ export class AuthService {
       status: user.status,
       gender: user.gender || 0, // Fallback giá trị mặc định nếu user mới tạo chưa có giới tính
     };
+
+    await this.streakService.trackLoginStreak(user._id.toString());
 
     // 4. Ký và trả về chuỗi JWT token chuẩn của hệ thống
     return this.generateToken(payload);
