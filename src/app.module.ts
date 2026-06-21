@@ -23,6 +23,7 @@ import { join } from 'path';
 import { OtpModule } from './modules/otp/otp.module';
 import { RaceBroadcastModule } from './modules/race-broadcast/race-broadcast.module';
 import { StreakModule } from './modules/streak/streak.module';
+import { RewardModule } from './modules/reward/reward.module';
 
 @Module({
   imports: [
@@ -86,6 +87,7 @@ import { StreakModule } from './modules/streak/streak.module';
     RefereeReportModule,
     RaceBroadcastModule,
     StreakModule,
+    RewardModule,
   ],
   controllers: [AppController],
   providers: [AppService],
