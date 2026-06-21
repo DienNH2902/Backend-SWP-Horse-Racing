@@ -25,9 +25,13 @@ export class StreakService {
     let updatedCurrentStreak = 1;
     let updatedLongestStreak = 1;
     let isRewardAvailable = true;
+    let shouldRewardPoints = false;
 
-    // Nếu đã từng tồn tại dữ liệu trước đó, tiến hành tính toán lại chỉ số chuỗi
-    if (streak) {
+    // Trường hợp 1: Tài khoản mới hoàn toàn, chưa từng có dữ liệu chuỗi đăng nhập
+    if (!streak) {
+      shouldRewardPoints = true;
+    } else {
+      // Trường hợp 2: Đã tồn tại dữ liệu trước đó, tiến hành tính toán lại chỉ số chuỗi
       const lastLogin = this.getStartOfDay(streak.lastLoginDate);
       const diffTime = today.getTime() - lastLogin.getTime();
       const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
@@ -36,24 +40,31 @@ export class StreakService {
       updatedLongestStreak = streak.longestStreak;
 
       if (diffDays === 0) {
-        // Hôm nay đăng nhập rồi, giữ nguyên dữ liệu cũ
+        // Trùng ngày đăng nhập cũ, giữ nguyên dữ liệu, không cộng điểm hằng ngày
         isRewardAvailable = false;
+        shouldRewardPoints = false;
       } else if (diffDays === 1) {
-        // Đăng nhập liên tiếp ngày kế tiếp
+        // Đăng nhập liên tiếp vào ngày kế tiếp thành công
         updatedCurrentStreak += 1;
         isRewardAvailable = true;
+        shouldRewardPoints = true;
         if (updatedCurrentStreak > updatedLongestStreak) {
           updatedLongestStreak = updatedCurrentStreak;
         }
       } else {
-        // Bị đứt chuỗi, reset về 1
+        // Bị đứt chuỗi (diffDays > 1), reset chuỗi về ngày đầu tiên
         updatedCurrentStreak = 1;
         isRewardAvailable = true;
+        shouldRewardPoints = true;
       }
     }
 
-    // Nếu có diffDays > 0 hoặc chưa có bản ghi (streak === null), tiến hành đẩy xuống DB xử lý Upsert nguyên khối
-    // Trường hợp diffDays === 0 dữ liệu không đổi nhưng vẫn upsert để đồng bộ fullName/email nếu có thay đổi
+    // Xử lý cộng điểm vào Hồ sơ Spectator nếu thỏa mãn điều kiện sang ngày mới
+    if (shouldRewardPoints) {
+      await this.streakRepository.rewardDailyPoints(userId, 10);
+    }
+
+    // Tiến hành đẩy xuống DB xử lý cập nhật trạng thái chuỗi đăng nhập
     const updatedStreak = await this.streakRepository.updateStreak(userId, {
       fullName,
       email,
