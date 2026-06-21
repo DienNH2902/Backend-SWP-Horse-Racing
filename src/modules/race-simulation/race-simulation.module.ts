@@ -22,7 +22,7 @@ import { RaceCourseModule } from '../race/race-course/race-course.module';
 import { RaceConditionModule } from '../race/race-condition/race-condition.module';
 import { RegistrationModule } from '../registration/registration.module';
 
-import { RawResult, RawResultSchema } from './schemas/raw-result.schema';
+import { RawResult, RawResultSchema } from '../raw-result/schemas/raw-result.schema';
 
 @Module({
   imports: [

@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { RawResult, RawResultStatus } from '../schemas/raw-result.schema';
+import { RawResult } from '../../raw-result/schemas/raw-result.schema';
+import { RawResultStatus } from 'src/constants/rawResultStatus.enum';
 
 export interface CreateRawResultDto {
   raceId: Types.ObjectId;

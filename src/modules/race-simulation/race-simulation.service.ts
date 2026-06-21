@@ -18,7 +18,7 @@ import { RaceConditionRepository } from '../race/race-condition/race-condition.r
 import { RegistrationRepository } from '../registration/registration.repository';
 
 import { RaceStatusEnum } from 'src/constants/raceStatus.enum';
-import { RawResultStatus } from './schemas/raw-result.schema';
+import { RawResultStatus } from '../../constants/rawResultStatus.enum';
 
 import { calcHorseRaceStats } from './engine/stats-calculator';
 import { calcConditionModifier } from './engine/condition-modifier';
