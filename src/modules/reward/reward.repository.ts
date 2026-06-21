@@ -36,6 +36,19 @@ export class RewardRepository {
     return await this.rewardModel.findById(new Types.ObjectId(id)).exec();
   }
 
+  async updateReward(
+    id: string,
+    updateData: Partial<Reward>,
+  ): Promise<RewardDocument | null> {
+    return await this.rewardModel
+      .findByIdAndUpdate(
+        new Types.ObjectId(id),
+        { $set: updateData },
+        { returnDocument: 'after' }, // Trả về tài liệu sau khi đã update thành công
+      )
+      .exec();
+  }
+
   async findClaimedRecord(
     userId: string,
     rewardId: string,
