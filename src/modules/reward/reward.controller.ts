@@ -6,6 +6,7 @@ import {
   Request,
   UseGuards,
   Body,
+  Put,
 } from '@nestjs/common';
 import { RewardService } from './reward.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -52,6 +53,18 @@ export class RewardController {
   @ApiResponse({ status: 20, type: ResponseRewardDto })
   async findOne(@Param('id') id: string): Promise<ResponseRewardDto> {
     return await this.rewardService.findOneReward(id);
+  }
+
+  @Put(':id')
+  @ApiOperation({
+    summary: 'Chỉnh sửa / Cập nhật cấu hình phần thưởng theo ID (Admin)',
+  })
+  @ApiResponse({ status: 200, type: ResponseRewardDto })
+  async update(
+    @Param('id') id: string,
+    @Body() dto: Partial<CreateRewardDto>,
+  ): Promise<ResponseRewardDto> {
+    return await this.rewardService.updateReward(id, dto);
   }
 
   // API xử lý gộp cho cả hành động Bấm Nhận (Milestone) hoặc Bấm Mua (Shop)

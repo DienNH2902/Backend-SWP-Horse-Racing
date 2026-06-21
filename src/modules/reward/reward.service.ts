@@ -42,6 +42,31 @@ export class RewardService {
     return this.toResponse(reward);
   }
 
+  async updateReward(
+    id: string,
+    dto: Partial<CreateRewardDto>,
+  ): Promise<ResponseRewardDto> {
+    // 1. Kiểm tra phần thưởng có tồn tại trong hệ thống hay không
+    const reward = await this.rewardRepository.findRewardById(id);
+    if (!reward)
+      throw new NotFoundException('Không tìm thấy phần thưởng để cập nhật');
+
+    // 2. Nếu có đổi tên (title), kiểm tra xem tên mới có bị trùng với bản ghi khác không
+    if (dto.title && dto.title !== reward.title) {
+      const existing = await this.rewardRepository.findOneReward({
+        title: dto.title,
+      });
+      if (existing)
+        throw new ConflictException(
+          'Tên phần thưởng này đã tồn tại trên hệ thống',
+        );
+    }
+
+    // 3. Tiến hành cập nhật
+    const updatedReward = await this.rewardRepository.updateReward(id, dto);
+    return this.toResponse(updatedReward);
+  }
+
   // 1. Trả về Dashboard danh sách toàn bộ quà kèm trạng thái cá nhân hóa của User
   async getRewardsDashboard(userId: string) {
     const allRewards = await this.rewardRepository.findAllRewards();
