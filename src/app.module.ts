@@ -24,6 +24,7 @@ import { OtpModule } from './modules/otp/otp.module';
 import { RaceBroadcastModule } from './modules/race-broadcast/race-broadcast.module';
 import { StreakModule } from './modules/streak/streak.module';
 import { RewardModule } from './modules/reward/reward.module';
+import { RawResultModule } from './modules/raw-result/raw-result.module';
 
 @Module({
   imports: [
@@ -88,6 +89,7 @@ import { RewardModule } from './modules/reward/reward.module';
     RaceBroadcastModule,
     StreakModule,
     RewardModule,
+    RawResultModule,
   ],
   controllers: [AppController],
   providers: [AppService],
