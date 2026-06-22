@@ -152,11 +152,20 @@ export class RewardService {
     // Ghi nhận lịch sử đã nhận quà thành công vào DB
     await this.rewardRepository.createClaimRecord(userId, rewardId);
 
-    // Áp dụng hiệu ứng/phần quà trực tiếp lên tài khoản người chơi tại BE
+    // Áp dụng hiệu ứng/phần quà trực tiếp lên tài khoản người chơi
     if (reward.rewardType === RewardType.POINTS) {
-      const addedPoints = parseInt(reward.rewardValue, 10);
-      if (!isNaN(addedPoints)) {
+      // Loại bỏ các ký tự không phải số (ví dụ đề phòng chuỗi "1000 points" hoặc "1000")
+      const cleanValue = reward.rewardValue.replace(/[^\d]/g, '');
+      const addedPoints = parseInt(cleanValue, 10);
+
+      //Nếu addedPoints là 1 số và lớn hơn 0
+      if (!isNaN(addedPoints) && addedPoints > 0) {
         await this.rewardRepository.bonusPoints(userId, addedPoints);
+      } else {
+        // Dự phòng nếu chuỗi không chứa số thuần túy (ví dụ: "50%") thì xử lý logic riêng hoặc bỏ qua
+        console.warn(
+          `[RewardService] Không thể convert rewardValue dạng số cho phần thưởng: ${reward.title}`,
+        );
       }
     }
 
