@@ -251,4 +251,12 @@ async findByTournamentAndStatus(
     .lean()
     .exec() as Promise<Race[]>;
 }
+
+async findOneRace(filter: Record<string, any>): Promise<Race | null> {
+  return this.raceModel
+    .findOne(filter)
+    .populate('tournamentId refereeId raceCourseId')
+    .lean()
+    .exec() as Promise<Race | null>;
+}
 }
