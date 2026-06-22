@@ -12,6 +12,7 @@ import {
   ClaimedReward,
   ClaimedRewardSchema,
 } from './schemas/claimedReward.schema';
+import { PointsTransactionModule } from '../points-transaction/points-transaction.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import {
       { name: ClaimedReward.name, schema: ClaimedRewardSchema },
       { name: SpectatorProfile.name, schema: SpectatorProfileSchema },
     ]),
+    PointsTransactionModule,
   ],
   controllers: [RewardController],
   providers: [RewardService, RewardRepository],
