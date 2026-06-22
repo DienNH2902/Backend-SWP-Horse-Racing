@@ -15,7 +15,7 @@ import { RaceModule } from '../race/race.module';
     MongooseModule.forFeature([
       { name: RefereeReport.name, schema: RefereeReportSchema },
     ]),
-    forwardRef(() => RaceModule), // forwardRef để tránh circular dependency
+    forwardRef(() => RaceModule), 
   ],
   controllers: [RefereeReportController],
   providers: [RefereeReportRepository, RefereeReportService],
