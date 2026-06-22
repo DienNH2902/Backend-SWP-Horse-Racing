@@ -10,10 +10,15 @@ import { RewardType } from 'src/constants/rewardTypeEnum.enum';
 import { CreateRewardDto } from './dto/create-reward.dto';
 import { ResponseRewardDto } from './dto/response-reward.dto';
 import { plainToInstance } from 'class-transformer';
+import { PointsTransactionType } from 'src/constants/pointsTransactionTypeEnum.enum';
+import { PointsTransactionService } from '../points-transaction/points-transaction.service';
 
 @Injectable()
 export class RewardService {
-  constructor(private readonly rewardRepository: RewardRepository) {}
+  constructor(
+    private readonly rewardRepository: RewardRepository,
+    private readonly pointsTransactionService: PointsTransactionService,
+  ) {}
 
   private toResponse(data: any) {
     return plainToInstance(ResponseRewardDto, data, {
@@ -129,24 +134,38 @@ export class RewardService {
         'Không tìm thấy hồ sơ Spectator của người dùng này.',
       );
 
+    let currentBalance = profile.pointBalance;
+
     // Phân nhánh kiểm tra điều kiện dựa trên thể loại quà
     if (reward.conditionType === RewardConditionType.MILESTONE) {
       if (profile.totalPoints < reward.requiredValue) {
         throw new BadRequestException(
-          `Chưa đạt mốc tổng điểm tích lũy yêu cầu (${reward.requiredValue} điểm).`,
+          `Chưa đạt mốc tổng điểm tích lũy yêu cầu.`,
         );
       }
     } else if (reward.conditionType === RewardConditionType.SHOP) {
       if (profile.pointBalance < reward.requiredValue) {
         throw new BadRequestException(
-          'Số dư điểm (pointBalance) của bạn không đủ để đổi vật phẩm này.',
+          'Số dư điểm không đủ để đổi vật phẩm này.',
         );
       }
-      // Đủ điểm mua -> Tiến hành trừ điểm ví pointBalance ngay lập tức
+
+      // 1. Tiến hành trừ điểm ví pointBalance ngay lập tức
       await this.rewardRepository.deductPointBalance(
         userId,
         reward.requiredValue,
       );
+      currentBalance -= reward.requiredValue;
+
+      // 2. Ghi nhận giao dịch SPEND (Trừ điểm do mua đồ trong SHOP)
+      await this.pointsTransactionService.logTransaction({
+        userId,
+        type: PointsTransactionType.SPEND,
+        amount: reward.requiredValue,
+        balanceAfter: currentBalance,
+        reason: `Mua vật phẩm: ${reward.title}`,
+        rewardId: rewardId,
+      });
     }
 
     // Ghi nhận lịch sử đã nhận quà thành công vào DB
@@ -154,15 +173,24 @@ export class RewardService {
 
     // Áp dụng hiệu ứng/phần quà trực tiếp lên tài khoản người chơi
     if (reward.rewardType === RewardType.POINTS) {
-      // Loại bỏ các ký tự không phải số (ví dụ đề phòng chuỗi "1000 points" hoặc "1000")
       const cleanValue = reward.rewardValue.replace(/[^\d]/g, '');
       const addedPoints = parseInt(cleanValue, 10);
 
-      //Nếu addedPoints là 1 số và lớn hơn 0
       if (!isNaN(addedPoints) && addedPoints > 0) {
+        // 1. Cộng điểm vào tài khoản
         await this.rewardRepository.bonusPoints(userId, addedPoints);
+        currentBalance += addedPoints;
+
+        // 2. Ghi nhận giao dịch EARN (Cộng điểm từ phần thưởng)
+        await this.pointsTransactionService.logTransaction({
+          userId,
+          type: PointsTransactionType.EARN,
+          amount: addedPoints,
+          balanceAfter: currentBalance,
+          reason: `Nhận điểm từ phần thưởng: ${reward.title}`,
+          rewardId: rewardId,
+        });
       } else {
-        // Dự phòng nếu chuỗi không chứa số thuần túy (ví dụ: "50%") thì xử lý logic riêng hoặc bỏ qua
         console.warn(
           `[RewardService] Không thể convert rewardValue dạng số cho phần thưởng: ${reward.title}`,
         );
