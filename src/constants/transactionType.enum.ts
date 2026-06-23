@@ -5,4 +5,5 @@ export enum TransactionTypeEnum {
   WITHDRAWAL = 'Withdrawal',
   REFUND = 'Refund',
   PENALTY = 'Penalty',
+  HOLD_BALANCE = 'Hold_balance',
 }

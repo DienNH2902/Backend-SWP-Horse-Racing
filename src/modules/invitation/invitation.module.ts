@@ -12,15 +12,26 @@ import { Contract, ContractSchema } from './schemas/contract.schema';
 import { HorseModule } from '../horse/horse.module';
 import { UserModule } from '../user/user.module';
 import { InvitationExpiryTask } from 'src/utils/expiry.task';
+import { NotificationModule } from '../notification/notification.module';
+import { PaymentModule } from '../payment/payment.module';
+import {
+  ContractBreach,
+  ContractBreachSchema,
+} from './schemas/contractBreach.schema';
+import { ContractBreachService } from './contractBreach.service';
+import { ContractBreachRepository } from './contractBreach.repository';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: JockeyInvitation.name, schema: JockeyInvitationSchema },
       { name: Contract.name, schema: ContractSchema },
+      { name: ContractBreach.name, schema: ContractBreachSchema },
     ]),
     HorseModule,
     UserModule,
+    NotificationModule,
+    PaymentModule,
   ],
   controllers: [JockeyInvitationController],
   providers: [
@@ -28,11 +39,14 @@ import { InvitationExpiryTask } from 'src/utils/expiry.task';
     JockeyInvitationRepository,
     ContractRepository,
     InvitationExpiryTask,
+    ContractBreachService,
+    ContractBreachRepository,
   ],
   exports: [
     JockeyInvitationService,
     JockeyInvitationRepository,
     ContractRepository,
+    ContractBreachService,
   ],
 })
 export class JockeyInvitationModule {}

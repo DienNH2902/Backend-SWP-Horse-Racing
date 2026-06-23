@@ -25,13 +25,18 @@ import {
   ResponseJockeyInvitationDto,
   ResponseContractDto,
 } from './dto';
+import { ContractBreachService } from './contractBreach.service';
+import { CreateContractBreachDto } from './dto/create-contract-breach.dto';
 
 @ApiTags('Jockey Invitations')
 @Controller('jockey-invitations')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class JockeyInvitationController {
-  constructor(private readonly service: JockeyInvitationService) {}
+  constructor(
+    private readonly service: JockeyInvitationService,
+    private readonly contractBreachService: ContractBreachService,
+  ) {}
 
   // HorseOwner gửi lời mời cho jockey tham gia tournament
   @Post()
@@ -112,5 +117,38 @@ export class JockeyInvitationController {
     @Request() req: any,
   ): Promise<ResponseContractDto> {
     return this.service.getContractByInvitation(id, req.user._id as string);
+  }
+
+  // ─── CÁC ROUTE PHỤC VỤ XỬ LÝ VI PHẠM VÀ HOÀN THÀNH HỢP ĐỒNG ───
+
+  // Admin xử lý vi phạm hợp đồng liên quan đến lời mời/hợp đồng này
+  @Post('contracts/report-breach')
+  @UseGuards(RolesGuard)
+  @Roles(RoleEnum.ADMIN)
+  @ApiOperation({
+    summary: 'Admin xử lý và lập biên bản vi phạm điều khoản hợp đồng',
+    description:
+      'Khấu trừ tiền phạt đền bù, trích thu 10% về ví hệ thống và hoàn trả số dư đóng băng hợp lệ.',
+  })
+  reportContractBreach(@Body() dto: CreateContractBreachDto) {
+    return this.contractBreachService.reportBreach(dto);
+  }
+
+  // Admin nghiệm thu và giải ngân hợp đồng sau khi giải đấu kết thúc tốt đẹp
+  @Patch('contracts/:contractId/complete')
+  @UseGuards(RolesGuard)
+  @Roles(RoleEnum.ADMIN)
+  @ApiOperation({
+    summary:
+      'Admin hoàn thành hợp đồng tốt đẹp (Giải ngân tiền công cho Jockey)',
+    description:
+      'Giải phóng toàn bộ số dư đóng băng, hoàn cọc đền bù và chuyển lương cho Jockey.',
+  })
+  @ApiParam({
+    name: 'contractId',
+    description: 'ID của hợp đồng cần nghiệm thu',
+  })
+  completeContract(@Param('contractId') contractId: string) {
+    return this.contractBreachService.completeContract(contractId);
   }
 }

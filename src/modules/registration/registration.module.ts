@@ -41,6 +41,10 @@ import {
 } from '../payment/schemas/transaction.schema';
 import { PaymentModule } from '../payment/payment.module';
 import { HorseModule } from '../horse/horse.module';
+import {
+  SystemWallet,
+  SystemWalletSchema,
+} from '../payment/schemas/systemWallet.schema';
 
 @Module({
   imports: [
@@ -52,6 +56,7 @@ import { HorseModule } from '../horse/horse.module';
       { name: Tournament.name, schema: TournamentSchema },
       { name: Transaction.name, schema: TransactionSchema },
       { name: Notification.name, schema: NotificationSchema },
+      { name: SystemWallet.name, schema: SystemWalletSchema },
     ]),
     JockeyInvitationModule,
     forwardRef(() => TournamentModule),
