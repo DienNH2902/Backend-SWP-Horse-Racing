@@ -15,6 +15,10 @@ import {
   JockeyProfile,
   JockeyProfileSchema,
 } from '../user/schemas/jockey-profile.schema';
+import {
+  SystemWallet,
+  SystemWalletSchema,
+} from './schemas/systemWallet.schema';
 
 @Module({
   imports: [
@@ -23,11 +27,12 @@ import {
       { name: User.name, schema: UserSchema },
       { name: HorseOwnerProfile.name, schema: HorseOwnerProfileSchema },
       { name: JockeyProfile.name, schema: JockeyProfileSchema },
+      { name: SystemWallet.name, schema: SystemWalletSchema },
     ]),
     NotificationModule,
   ],
   controllers: [PaymentController],
   providers: [PaymentService, VnPayService, TransactionRepository],
-  exports: [PaymentService, TransactionRepository],
+  exports: [PaymentService, TransactionRepository, MongooseModule],
 })
 export class PaymentModule {}

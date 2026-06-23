@@ -34,6 +34,10 @@ import { TransactionTitleEnum } from 'src/constants/transactionTitleEnum.enum';
 import { HorseRepository } from '../horse/horse.repository';
 import { HorseStatusEnum } from 'src/constants/horseStatusEnum.enum';
 import { TournamentStatusEnum } from 'src/constants/tournamentStatusEnum.enum';
+import {
+  SystemWallet,
+  SystemWalletDocument,
+} from '../payment/schemas/systemWallet.schema';
 
 @Injectable()
 export class RegistrationService {
@@ -48,6 +52,8 @@ export class RegistrationService {
 
     @InjectModel(HorseOwnerProfile.name)
     private readonly horseOwnerProfileModel: Model<HorseOwnerProfileDocument>,
+    @InjectModel(SystemWallet.name)
+    private readonly systemWalletModel: Model<SystemWalletDocument>,
   ) {}
 
   // ─── Helpers ───
@@ -216,6 +222,41 @@ export class RegistrationService {
         `Đăng ký đang ở trạng thái "${reg.status}", không thể duyệt`,
       );
     }
+
+    // [BỔ SUNG VÒNG CHECK KHI ADMIN DUYỆT]: Re-validate trạng thái của hợp đồng liên quan
+    const contract = await this.contractRepository.findByInvitationId(
+      this.resolveId(reg.jockeyInvitationId),
+    );
+    if (!contract || contract.status !== ContractStatusEnum.ACTIVE) {
+      const rejectReason = !contract
+        ? 'Không tìm thấy thông tin hợp đồng liên quan'
+        : `Hợp đồng liên quan đã không còn hợp lệ (Trạng thái hiện tại: ${contract.status})`;
+
+      // Tự động chuyển đơn đăng ký sang trạng thái REJECTED để giải phóng pool giải đấu
+      await this.registrationRepository.updateStatusToRejected(
+        id,
+        rejectReason,
+      );
+
+      await this.horseRepository.updateHorseStatus(
+        this.resolveId(reg.horseId),
+        HorseStatusEnum.IDLE,
+      );
+
+      const ownerIdStr = this.resolveId(reg.ownerId);
+      await this.notificationRepository.create({
+        userId: new Types.ObjectId(ownerIdStr),
+        type: NotificationTypeEnum.TOURNAMENT_REJECTED,
+        title: NotificationTitleEnum.TOURNAMENT_REJECTED,
+        content: `Đăng ký giải đấu của bạn bị hủy tự động do: ${rejectReason}`,
+        isRead: false,
+      });
+
+      throw new BadRequestException(
+        `Không thể duyệt đơn đăng ký này. Lý do: ${rejectReason}. Hệ thống đã tự động từ chối đơn.`,
+      );
+    }
+
     const ownerIdStr = this.resolveId(reg.ownerId);
 
     // 2. Re-check balance tại thời điểm admin duyệt
@@ -250,6 +291,18 @@ export class RegistrationService {
     await this.horseOwnerProfileModel.findOneAndUpdate(
       { userId: new Types.ObjectId(ownerIdStr) },
       { $inc: { balance: -reg.entryFee } },
+    );
+
+    // 4. Cộng entryFee vào Ví hệ thống (SystemWallet)
+    await this.systemWalletModel.updateOne(
+      { walletName: 'SYSTEM_MAIN_WALLET' },
+      {
+        $inc: {
+          balance: reg.entryFee,
+          totalRevenue: reg.entryFee,
+        },
+      },
+      { upsert: true }, // Đảm bảo tự động khởi tạo document nếu hệ thống chưa có bản ghi ví nào
     );
 
     // 4. Insert Transaction qua TransactionRepository
@@ -290,6 +343,40 @@ export class RegistrationService {
     if (reg.status !== RegistrationStatusEnum.PENDING) {
       throw new ConflictException(
         `Đăng ký đang ở trạng thái "${reg.status}", không thể chuyển vào danh sách chờ`,
+      );
+    }
+
+    // [BỔ SUNG VÒNG CHECK KHI ADMIN DUYỆT]: Re-validate trạng thái của hợp đồng liên quan
+    const contract = await this.contractRepository.findByInvitationId(
+      this.resolveId(reg.jockeyInvitationId),
+    );
+    if (!contract || contract.status !== ContractStatusEnum.ACTIVE) {
+      const rejectReason = !contract
+        ? 'Không tìm thấy thông tin hợp đồng liên quan'
+        : `Hợp đồng liên quan đã không còn hợp lệ (Trạng thái hiện tại: ${contract.status})`;
+
+      // Tự động chuyển đơn đăng ký sang trạng thái REJECTED để giải phóng pool giải đấu
+      await this.registrationRepository.updateStatusToRejected(
+        id,
+        rejectReason,
+      );
+
+      await this.horseRepository.updateHorseStatus(
+        this.resolveId(reg.horseId),
+        HorseStatusEnum.IDLE,
+      );
+
+      const ownerIdStr = this.resolveId(reg.ownerId);
+      await this.notificationRepository.create({
+        userId: new Types.ObjectId(ownerIdStr),
+        type: NotificationTypeEnum.TOURNAMENT_REJECTED,
+        title: NotificationTitleEnum.TOURNAMENT_REJECTED,
+        content: `Đăng ký giải đấu của bạn bị hủy tự động do: ${rejectReason}`,
+        isRead: false,
+      });
+
+      throw new BadRequestException(
+        `Không thể duyệt đơn đăng ký này. Lý do: ${rejectReason}. Hệ thống đã tự động từ chối đơn.`,
       );
     }
 

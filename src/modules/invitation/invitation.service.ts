@@ -6,7 +6,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
-import { Types } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { JockeyInvitationRepository } from './invitation.repository';
 import { ContractRepository } from './contract.repository';
 import { ContractStatusEnum } from 'src/constants/contractStatusEnum.enum';
@@ -23,6 +23,17 @@ import { UsersRepository } from '../user/user.repository';
 import { AccountStatusEnum } from 'src/constants/accountStatusEnum.enum';
 import { JockeyStatusEnum } from 'src/constants/jockeyStatusEnum.enum';
 import { User } from '../user/schemas/user.schema';
+import { InjectModel } from '@nestjs/mongoose';
+import {
+  HorseOwnerProfile,
+  HorseOwnerProfileDocument,
+} from '../user/schemas/horse-owner-profile.schema';
+import { JockeyProfile } from '../user/schemas/jockey-profile.schema';
+import { NotificationRepository } from '../notification/notification.repository';
+import { TransactionRepository } from '../payment/transaction.repository';
+import { TransactionTypeEnum } from 'src/constants/transactionType.enum';
+import { NotificationTypeEnum } from 'src/constants/notificationTypeEnum.enum';
+import { NotificationTitleEnum } from 'src/constants/notificationTitleEnum.enum';
 
 type PopulatedJockeyProfile = User & {
   jockeyProfile?: { jockeyStatus: JockeyStatusEnum };
@@ -32,8 +43,14 @@ export class JockeyInvitationService {
   constructor(
     private readonly jockeyInvitationRepository: JockeyInvitationRepository,
     private readonly contractRepository: ContractRepository,
+    private readonly notificationRepository: NotificationRepository,
+    private readonly transactionRepository: TransactionRepository,
     private readonly horseRepository: HorseRepository,
     private readonly userRepository: UsersRepository,
+    @InjectModel(HorseOwnerProfile.name)
+    private readonly horseOwnerProfileModel: Model<HorseOwnerProfileDocument>,
+    @InjectModel(JockeyProfile.name)
+    private readonly jockeyProfileModel: Model<JockeyProfile>,
   ) {}
 
   // Helper
@@ -61,32 +78,46 @@ export class JockeyInvitationService {
     dto: CreateJockeyInvitationDto,
     horseOwnerId: string,
   ): Promise<ResponseJockeyInvitationDto> {
-    // Validate: tổng shareRate phải = 100%
+    //Tổng tỉ lệ chia sẻ thưởng phải bằng 100
     if (dto.proposeOwnerShareRate + dto.proposeJockeyShareRate !== 100) {
       throw new BadRequestException(
-        'Tổng proposeOwnerShareRate và proposeJockeyShareRate phải bằng 100',
+        'Tổng tỷ lệ chia sẻ doanh thu phải bằng 100%',
       );
     }
-
-    // Validate: tổng compensationRate phải = 100%
+    //Tổng tỉ lệ đền bù phải bằng 100
     if (dto.ownerCompensationRate + dto.jockeyCompensationRate !== 100) {
+      throw new BadRequestException('Tổng tỷ lệ đền bù cam kết phải bằng 100%');
+    }
+
+    // Tính toán tổng số tiền chủ ngựa cần có để ký quỹ ban đầu (Tiền thuê + Tiền đền bù của mình)
+    // Tiền bổi thường = contractAmount * %đền bù
+    const ownerCompensationAmount =
+      (dto.proposeContractAmount * dto.ownerCompensationRate) / 100;
+    // Tiền đóng băng = contractAmount + tiền bồi thường
+    const totalRequiredAmount =
+      dto.proposeContractAmount + ownerCompensationAmount;
+
+    // Kiểm tra ví chủ ngựa
+    const ownerProfile = await this.horseOwnerProfileModel
+      .findOne({ userId: new Types.ObjectId(horseOwnerId) })
+      .lean();
+    if (!ownerProfile) {
+      throw new NotFoundException('Không tìm thấy hồ sơ chủ ngựa');
+    }
+    if (ownerProfile.balance < totalRequiredAmount) {
       throw new BadRequestException(
-        'Tổng ownerCompensationRate và jockeyCompensationRate phải bằng 100',
+        `Số dư không đủ để gửi lời mời. Bạn cần bảo đảm tối thiểu ${totalRequiredAmount} (Bao gồm tiền thuê: ${dto.proposeContractAmount} và tiền bảo ký quỹ đền bù: ${ownerCompensationAmount})`,
       );
     }
 
-    // Kiểm tra xem ngựa được đăng ký có thuộc chủ ngựa đó hay không
+    //Kiểm tra ngựa trong hợp đồng có hợp lệ không
     const horse = await this.horseRepository.findOneHorse({ _id: dto.horseId });
-    if (!horse) throw new NotFoundException('Horse not found');
-    // Lấy ra chuỗi ID chuẩn từ object userId đã được populate
-    const ownerIdStr =
-      horse.userId?._id?.toString() || horse.userId?.toString();
+    if (!horse) throw new NotFoundException('Không tìm thấy ngựa thi đấu');
 
+    const ownerIdStr = this.resolveId(horse.userId);
     if (ownerIdStr !== horseOwnerId) {
       throw new ForbiddenException('Bạn không có quyền sử dụng con ngựa này');
     }
-
-    // Kiểm tra xem ngựa này có IDLE hay không
     if (horse.horseStatus !== HorseStatusEnum.IDLE) {
       throw new ForbiddenException(
         `Không thể sử dụng ngựa ở trạng thái ${horse.horseStatus}`,
@@ -96,31 +127,32 @@ export class JockeyInvitationService {
     const jockey = (await this.userRepository.findOneUser({
       _id: dto.jockeyId,
     })) as PopulatedJockeyProfile;
-    if (!jockey) throw new NotFoundException('Không tìm thấy Jockey');
-
-    if (jockey.status !== AccountStatusEnum.ACTIVE)
+    if (!jockey)
+      throw new NotFoundException('Không tìm thấy thông tin nài ngựa');
+    if (jockey.status !== AccountStatusEnum.ACTIVE) {
       throw new BadRequestException(
-        `Trạng thái Jockey này đang: ${jockey.status}, không thể mời`,
+        'Tài khoản nài ngựa hiện đang bị khóa hoặc không hoạt động',
       );
-
-    if (jockey.jockeyProfile?.jockeyStatus !== JockeyStatusEnum.AVAILABLE)
+    }
+    if (jockey.jockeyProfile?.jockeyStatus !== JockeyStatusEnum.AVAILABLE) {
       throw new BadRequestException(
-        `Trạng thái hồ sơ Jockey này đang: ${jockey.jockeyProfile?.jockeyStatus}, không thể mời`,
+        'Nài ngựa hiện đang bận hoặc chưa sẵn sàng nhận lịch',
       );
+    }
 
-    // Kiểm tra xem nài ngựa này đã ký hợp đồng với chủ ngựa khác chưa
+    //Kiểm tra Jockey này có hợp đồng nào active cho giải này hay không
     const jockeyHasContractInTournament =
       await this.contractRepository.findActiveContractByJockeyAndTournament(
         dto.tournamentId,
         dto.jockeyId,
       );
-
     if (jockeyHasContractInTournament) {
       throw new ConflictException(
-        'Nài ngựa này đã ký hợp đồng tham gia giải đấu này rồi, không thể gửi thêm lời mời.',
+        'Nài ngựa này đã chốt hợp đồng hoạt động khác trong giải đấu này',
       );
     }
-    // Validate: chưa có thư mời PENDING nào cho bộ (tournament, horse, jockey) này
+
+    //Kiểm tra xem đang có lời mời nào đang pending cho giải này không, tránh chủ ngựa spam lời mời
     const existingPending = await this.jockeyInvitationRepository.findPending(
       dto.tournamentId,
       dto.horseId,
@@ -128,27 +160,29 @@ export class JockeyInvitationService {
     );
     if (existingPending) {
       throw new ConflictException(
-        'Đã tồn tại một lời mời đang chờ phản hồi cho cặp jockey-ngựa này trong giải đấu. ' +
-          'Vui lòng chờ jockey phản hồi hoặc hết hạn trước khi gửi lại.',
+        'Đã tồn tại một lời mời đang chờ phản hồi cho cặp đối tác này',
       );
     }
 
-    // Validate: Cặp này chưa hề ký hợp đồng ACTIVE nào (Tránh mời lại khi đã chốt kèo)
-    // const existingActiveContract =
-    //   await this.contractRepository.findActiveContract(
-    //     dto.tournamentId,
-    //     dto.horseId,
-    //     dto.jockeyId,
-    //   );
-    // if (existingActiveContract) {
-    //   throw new ConflictException(
-    //     'Nài ngựa này đã ký hợp đồng chính thức cưỡi con ngựa được chọn tại giải đấu này rồi.',
-    //   );
-    // }
+    // THỰC HIỆN HOLD TIỀN OWNER: Chuyển tiền từ balance sang heldBalance
+    await this.horseOwnerProfileModel.updateOne(
+      { userId: new Types.ObjectId(horseOwnerId) },
+      {
+        $inc: {
+          balance: -totalRequiredAmount,
+          heldBalance: totalRequiredAmount,
+        },
+      },
+    );
 
-    // Validate: jockey chưa có contract ACTIVE cho cặp này (tránh mời jockey đã ký)
-    // Note: thêm check này nếu muốn ngăn trường hợp mời jockey đã ký hợp đồng
-    // const existing = await this.contractRepository.findByInvitationId(...);
+    // 2. Tạo Transaction ghi nhận đóng băng tài sản của Owner
+    await this.transactionRepository.create({
+      senderId: new Types.ObjectId(horseOwnerId),
+      receiverId: null,
+      content: `Đóng băng tiền gửi lời mời Jockey (Tiền thuê: ${dto.proposeContractAmount}, Ký quỹ đền bù: ${ownerCompensationAmount})`,
+      amount: totalRequiredAmount,
+      type: TransactionTypeEnum.HOLD_BALANCE, // Đảm bảo enum này tồn tại hoặc map đúng giá trị hệ thống
+    });
 
     const invitation = await this.jockeyInvitationRepository.create({
       tournamentId: new Types.ObjectId(dto.tournamentId),
@@ -162,6 +196,15 @@ export class JockeyInvitationService {
       jockeyCompensationRate: dto.jockeyCompensationRate,
       message: dto.message,
       invitedAt: new Date(),
+    });
+
+    // 3. Bắn Notification cho Jockey biết có lời mời mới gửi đến
+    await this.notificationRepository.create({
+      userId: new Types.ObjectId(dto.jockeyId),
+      type: NotificationTypeEnum.INVITATION_RECEIVED,
+      title: NotificationTitleEnum.INVITATION_RECEIVED,
+      content: `Bạn nhận được lời mời tham gia giải đấu từ Chủ ngựa. Tiền thuê đề xuất: ${dto.proposeContractAmount}`,
+      isRead: false,
     });
 
     return this.toInvitationResponse(invitation);
@@ -197,46 +240,134 @@ export class JockeyInvitationService {
   }> {
     const invitation =
       await this.jockeyInvitationRepository.findByIdNoPopulate(invitationId);
-
-    if (!invitation) {
-      throw new NotFoundException('Không tìm thấy lời mời');
-    }
-
-    // Chỉ jockey được chỉ định mới có thể phản hồi
+    if (!invitation) throw new NotFoundException('Không tìm thấy lời mời');
     if (this.resolveId(invitation.jockeyId) !== jockeyId) {
       throw new ForbiddenException('Bạn không có quyền phản hồi lời mời này');
     }
-
-    // Chỉ phản hồi được khi status = PENDING
+    //Kiểm tra xem lúc accept thì status lời mời có phải pending không
     if (invitation.status !== JockeyInvitationEnum.PENDING) {
       throw new ConflictException(
-        `Lời mời này đã ở trạng thái "${invitation.status}", không thể phản hồi`,
+        `Lời mời đã đóng ở trạng thái: ${invitation.status}`,
       );
     }
 
+    const ownerCompensationAmount =
+      (invitation.proposeContractAmount * invitation.ownerCompensationRate) /
+      100;
+    const totalOwnerHeldAmount =
+      invitation.proposeContractAmount + ownerCompensationAmount;
+    const jockeyCompensationAmount =
+      (invitation.proposeContractAmount * invitation.jockeyCompensationRate) /
+      100;
+
+    // Xử lý kịch bản ACCEPTED (Chấp nhận giao kèo)
     if (dto.status === JockeyInvitationEnum.ACCEPTED) {
       const hasContract =
         await this.contractRepository.findActiveContractByJockeyAndTournament(
           invitation.tournamentId.toString(),
           jockeyId,
         );
-
+      //Nếu có hợp active rồi thì không được accept
       if (hasContract) {
+        // Hoàn tiền cho chủ ngựa vì giao kèo bị hủy do lỗi bên phía đối tác
+        await this.horseOwnerProfileModel.updateOne(
+          { userId: invitation.horseOwnerId },
+          {
+            $inc: {
+              balance: totalOwnerHeldAmount,
+              heldBalance: -totalOwnerHeldAmount,
+            },
+          },
+        );
+        await this.jockeyInvitationRepository.updateStatus(
+          invitationId,
+          JockeyInvitationEnum.REJECTED,
+        );
         throw new ConflictException(
-          'Bạn đã có một hợp đồng đang hoạt động (ACTIVE) trong giải đấu này rồi, không thể chấp nhận thêm lời mời khác',
+          'Bạn đã sở hữu hợp đồng thi đấu ACTIVE khác trong giải này',
         );
       }
+
+      // KIỂM TRA VÀ HOLD TIỀN JOCKEY
+      const jockeyProfile = await this.jockeyProfileModel.findOne({
+        userId: new Types.ObjectId(jockeyId),
+      });
+      if (!jockeyProfile || jockeyProfile.balance < jockeyCompensationAmount) {
+        throw new BadRequestException(
+          `Số dư tài khoản nài ngựa không đủ ký quỹ đền bù cam kết. Yêu cầu tối thiểu: ${jockeyCompensationAmount}`,
+        );
+      }
+
+      // Trừ tiền balance, đưa vào ngăn đóng băng của Jockey
+      await this.jockeyProfileModel.updateOne(
+        { userId: new Types.ObjectId(jockeyId) },
+        {
+          $inc: {
+            balance: -jockeyCompensationAmount,
+            heldBalance: jockeyCompensationAmount,
+          },
+        },
+      );
+
+      // 2. Tạo Transaction ghi nhận đóng băng tiền đền bù của Jockey
+      await this.transactionRepository.create({
+        senderId: new Types.ObjectId(jockeyId),
+        receiverId: null,
+        content: `Đóng băng ký quỹ đền bù khi chấp nhận lời mời từ Owner. Số tiền: ${jockeyCompensationAmount}`,
+        amount: jockeyCompensationAmount,
+        type: TransactionTypeEnum.HOLD_BALANCE,
+      });
+
+      // 3. Bắn Notification thông báo cho Owner biết Jockey đã chấp nhận ký hợp đồng
+      await this.notificationRepository.create({
+        userId: invitation.horseOwnerId,
+        type: NotificationTypeEnum.INVITATION_ACCEPTED,
+        title: NotificationTitleEnum.INVITATION_ACCEPTED,
+        content:
+          'Jockey đã chấp nhận lời mời và ký quỹ đền bù thành công. Hợp đồng chính thức có hiệu lực.',
+        isRead: false,
+      });
+    }
+    // Xử lý kịch bản REJECTED (Từ chối lời mời)
+    else if (dto.status === JockeyInvitationEnum.REJECTED) {
+      // GIẢI PHÓNG TIỀN CHO OWNER khi bị từ chối thẳng
+      await this.horseOwnerProfileModel.updateOne(
+        { userId: invitation.horseOwnerId },
+        {
+          $inc: {
+            balance: totalOwnerHeldAmount,
+            heldBalance: -totalOwnerHeldAmount,
+          },
+        },
+      );
+
+      // 2. Tạo Transaction ghi nhận hoàn trả giải phóng tiền cho Owner
+      await this.transactionRepository.create({
+        senderId: null,
+        receiverId: invitation.horseOwnerId,
+        content: `Hoàn trả tiền giải phóng ký quỹ do lời mời bị từ chối hoặc hết hạn. Số tiền: ${totalOwnerHeldAmount}`,
+        amount: totalOwnerHeldAmount,
+        type: TransactionTypeEnum.REFUND,
+      });
+
+      // 3. Bắn Notification cho Owner biết lời mời bị từ chối
+      await this.notificationRepository.create({
+        userId: invitation.horseOwnerId,
+        type: NotificationTypeEnum.INVITATION_REJECTED,
+        title: NotificationTitleEnum.INVITATION_REJECTED,
+        content:
+          'Jockey đã từ chối lời mời hợp tác của bạn. Tiền ký quỹ đã được hoàn về ví khả dụng.',
+        isRead: false,
+      });
     }
 
-    // Cập nhật status invitation
     const updated = await this.jockeyInvitationRepository.updateStatus(
       invitationId,
       dto.status,
     );
-
     const invitationResponse = this.toInvitationResponse(updated);
 
-    // Nếu status ACCEPTED → tự động tạo Contract
+    //Tự động tạo hợp đồng nếu đồng y lời mời
     if (dto.status === JockeyInvitationEnum.ACCEPTED) {
       const contract = await this.contractRepository.create({
         tournamentId: invitation.tournamentId,
@@ -252,6 +383,13 @@ export class JockeyInvitationService {
         status: ContractStatusEnum.ACTIVE,
         signedAt: new Date(),
       });
+
+      // Đổi trạng thái ngựa sang REGISTERED sau khi hợp đồng kích hoạt thành công
+      const horseIdStr = this.resolveId(invitation.horseId);
+      await this.horseRepository.updateHorseStatus(
+        horseIdStr,
+        HorseStatusEnum.REGISTERED,
+      );
 
       return {
         invitation: invitationResponse,

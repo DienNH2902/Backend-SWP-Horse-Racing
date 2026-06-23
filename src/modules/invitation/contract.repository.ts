@@ -81,4 +81,30 @@ export class ContractRepository {
       .lean()
       .exec();
   }
+
+  async updateStatus(
+    id: string,
+    status: ContractStatusEnum,
+  ): Promise<Contract | null> {
+    return this.contractModel
+      .findByIdAndUpdate(id, { $set: { status } }, { returnDocument: 'after' })
+      .lean()
+      .exec();
+  }
+
+  // Kiểm tra xem User có hợp đồng nào bị BREACHED trong giải đấu hay không
+  async hasBreachedContractInTournament(
+    tournamentId: string,
+    userId: string,
+  ): Promise<boolean> {
+    const count = await this.contractModel.countDocuments({
+      tournamentId: new Types.ObjectId(tournamentId),
+      status: ContractStatusEnum.BREACHED,
+      $or: [
+        { horseOwnerId: new Types.ObjectId(userId) },
+        { jockeyId: new Types.ObjectId(userId) },
+      ],
+    });
+    return count > 0;
+  }
 }

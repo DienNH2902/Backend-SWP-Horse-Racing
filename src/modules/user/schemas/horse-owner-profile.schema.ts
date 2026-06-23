@@ -30,6 +30,9 @@ export class HorseOwnerProfile {
 
   @Prop({ type: Number, default: 0.0 })
   balance: number; // Số dư tài khoản tiền thưởng của HorseOwner
+
+  @Prop({ type: Number, default: 0.0 })
+  heldBalance: number; // Số dư đóng băng tiền của HorseOwner
 }
 export const HorseOwnerProfileSchema =
   SchemaFactory.createForClass(HorseOwnerProfile);
