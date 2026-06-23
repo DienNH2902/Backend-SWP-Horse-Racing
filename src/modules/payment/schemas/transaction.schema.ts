@@ -7,7 +7,7 @@ export type TransactionDocument = Transaction & Document;
 @Schema({ timestamps: true })
 export class Transaction {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  senderId: Types.ObjectId;
+  senderId: Types.ObjectId | null;
 
   /**
    * receiverId = Platform khi là entry_fee vào hệ thống (system transaction)

@@ -28,6 +28,11 @@ export class RegistrationRepository {
       .exec();
   }
 
+  // Cũng là lấy 1 thư mời nhưng không populate để cho contract chỉ lưu String ObjectId, không lưu object
+  async findByIdNoPopulate(id: string): Promise<Registration | null> {
+    return await this.registrationModel.findById(id).lean().exec();
+  }
+
   async findByOwnerId(
     ownerId: string,
     tournamentId?: string,
