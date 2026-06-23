@@ -59,10 +59,6 @@ export class TournamentController {
   @Get()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  // @ApiOperation({ summary: 'Lấy danh sách tất cả các giải đấu công khai' })
-  // async getAll(): Promise<ResponseTournamentDto[]> {
-  //   return await this.tournamentService.getAllTournament();
-  // }
   @ApiOperation({
     summary: 'Lấy danh sách tất cả giải đấu (Có thể lọc theo trạng thái)',
   })

@@ -25,6 +25,7 @@ import { RaceBroadcastModule } from './modules/race-broadcast/race-broadcast.mod
 import { StreakModule } from './modules/streak/streak.module';
 import { RewardModule } from './modules/reward/reward.module';
 import { RawResultModule } from './modules/raw-result/raw-result.module';
+import { PrizeDistributionModule } from './modules/prize-distribution/prize-distribution.module';
 
 @Module({
   imports: [
@@ -90,6 +91,7 @@ import { RawResultModule } from './modules/raw-result/raw-result.module';
     StreakModule,
     RewardModule,
     RawResultModule,
+    PrizeDistributionModule,
   ],
   controllers: [AppController],
   providers: [AppService],
