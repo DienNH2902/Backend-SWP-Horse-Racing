@@ -26,6 +26,7 @@ import { NotificationTypeEnum } from 'src/constants/notificationTypeEnum.enum';
 import { NotificationTitleEnum } from 'src/constants/notificationTitleEnum.enum';
 import { TransactionTypeEnum } from 'src/constants/transactionType.enum';
 import { TransactionTitleEnum } from 'src/constants/transactionTitleEnum.enum';
+import { RaceStatusEnum } from 'src/constants/raceStatus.enum';
 
 @Injectable()
 export class RaceAssignService {
@@ -44,11 +45,15 @@ export class RaceAssignService {
     });
   }
 
-  //  Admin assign referee vào race 
-
   async assignReferee(raceId: string, dto: AssignRefereeDto): Promise<ResponseRaceDto> {
     const race = await this.raceRepository.findById(raceId);
     if (!race) throw new NotFoundException('Không tìm thấy race');
+
+    if (race.status !== RaceStatusEnum.SCHEDULED) {
+      throw new BadRequestException(
+        `Không thể gán referee khi race đang ở trạng thái "${race.status}". Chỉ được gán khi SCHEDULED.`,
+      );
+    }
 
     const conflicts = await this.raceRepository.findConflictingRacesForReferee(
       dto.refereeId,
