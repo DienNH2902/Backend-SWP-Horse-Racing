@@ -8,6 +8,8 @@ import {
 import { RawResultRepository } from './raw-result.repository';
 import { RaceRepository } from '../race/race.repository';
 import { RefereeReportService } from '../referee-report/referee-report.service';
+import { AdvancementService } from '../tournament/round-advancement.service';
+
 import { ConfirmFinalRankDto } from './dto/confirm-final-rank.dto';
 import { RawResult } from './schemas/raw-result.schema';
 import { RawResultStatus } from '../../constants/rawResultStatus.enum';
@@ -21,6 +23,7 @@ export class RawResultService {
     private readonly rawResultRepository: RawResultRepository,
     private readonly raceRepository: RaceRepository,
     private readonly refereeReportService: RefereeReportService,
+     private readonly advancementService: AdvancementService,
   ) {}
 
   /**
@@ -33,127 +36,130 @@ export class RawResultService {
    *  5. Tạo RefereeReport type=End
    *  6. Update Race.status = Finished
    */
- async confirmFinalRank(
-    raceId: string,
-    refereeId: string,
-    dto: ConfirmFinalRankDto,
-  ): Promise<{ message: string; finalRankings: any[] }> {
-    const race = await this.raceRepository.findOneRace({ _id: raceId });
-    if (!race) throw new NotFoundException('Race not found');
- 
-    if (race.status !== RaceStatusEnum.ONGOING) {
-      throw new BadRequestException(
-        `Không thể confirm kết quả: race đang ở trạng thái ${race.status}. Yêu cầu: Ongoing`,
-      );
-    }
- 
-    const raceRefereeId = race.refereeId?._id?.toString() ?? race.refereeId?.toString();
-    if (raceRefereeId !== refereeId) {
-      throw new ForbiddenException('Bạn không phải referee được phân công cho race này');
-    }
+async confirmFinalRank(
+  raceId: string,
+  refereeId: string,
+  dto: ConfirmFinalRankDto,
+): Promise<{ message: string; finalRankings: any[] }> {
+  const race = await this.raceRepository.findOneRace({ _id: raceId });
+  if (!race) throw new NotFoundException('Race not found');
 
-    const rawResults = await this.rawResultRepository.findByRaceId(raceId);
-    if (!rawResults || rawResults.length === 0) {
-      throw new NotFoundException('Không tìm thấy kết quả simulation cho race này');
-    }
- 
-    const disqualifiedSet = new Set(dto.disqualifiedHorseIds ?? []);
- 
-    // Validate: disqualifiedHorseIds phải là horseId thực sự trong race
-    if (disqualifiedSet.size > 0) {
-      const horseIdsInRace = new Set(
-        rawResults.map((r) => r.horseId.toString()),
-      );
-      for (const hId of disqualifiedSet) {
-        if (!horseIdsInRace.has(hId)) {
-          throw new BadRequestException(
-            `horseId ${hId} không thuộc race này`,
-          );
-        }
-      }
-    }
- 
-    // 3. Sort rawResults theo rawRank ASC
-    const sorted = [...rawResults].sort((a, b) => a.rawRank - b.rawRank);
- 
-    // 4. Tính finalRank
-    //    - Disqualified → finalRank = null
-    //    - Còn lại → rank liên tục từ 1 (shift lên, Option A)
-    let rankCounter = 1;
-    const updates: Array<{
-      id: string;
-      finalRank: number | null;
-      status: RawResultStatus;
-    }> = [];
- 
-    const finalRankingsForResponse: any[] = [];
- 
-    for (const result of sorted) {
-      const horseIdStr = result.horseId.toString();
-      const isDisqualified = disqualifiedSet.has(horseIdStr);
- 
-      if (isDisqualified) {
-        updates.push({
-          id: result._id.toString(),
-          finalRank: null,
-          status: RawResultStatus.DISQUALIFIED,
-        });
-        finalRankingsForResponse.push({
-          horseId: horseIdStr,
-          rawRank: result.rawRank,
-          finalRank: null,
-          status: RawResultStatus.DISQUALIFIED,
-        });
-        this.logger.log(`Horse ${horseIdStr} → DISQUALIFIED`);
-      } else {
-        updates.push({
-          id: result._id.toString(),
-          finalRank: rankCounter,
-          status: RawResultStatus.CONFIRMED,
-        });
-        finalRankingsForResponse.push({
-          horseId: horseIdStr,
-          rawRank: result.rawRank,
-          finalRank: rankCounter,
-          status: RawResultStatus.CONFIRMED,
-        });
-        this.logger.log(
-          `Horse ${horseIdStr} → finalRank ${rankCounter} (rawRank ${result.rawRank})`,
-        );
-        rankCounter++;
-      }
-    }
- 
-    // 5. Bulk update DB
-    await this.rawResultRepository.bulkUpdateFinalRankAndStatus(updates);
-    this.logger.log(`Đã update finalRank cho ${updates.length} ngựa`);
- 
-    // 6. Tạo RefereeReport type=End
-    //    rawResultId = winner (finalRank=1) để tham chiếu
-    const winner = updates.find((u) => u.finalRank === 1);
-    const winnerRawResult = winner
-      ? rawResults.find((r) => r._id.toString() === winner.id)
-      : null;
- 
-    await this.refereeReportService.createEndReport(
-      raceId,
-      refereeId,
-      {
-        rawResultId: winnerRawResult?._id?.toString() ?? undefined,
-        reason: undefined,
-      },
+  if (race.status !== RaceStatusEnum.ONGOING) {
+    throw new BadRequestException(
+      `Không thể confirm kết quả: race đang ở trạng thái ${race.status}. Yêu cầu: Ongoing`,
     );
-    this.logger.log(`Đã tạo RefereeReport type=End cho race ${raceId}`);
- 
-    // 7. Update Race.status = Finished
-    await this.raceRepository.updateStatus(raceId, RaceStatusEnum.FINISHED);
-    this.logger.log(`Race ${raceId} → status Finished`);
- 
-    return {
-      message: 'Xác nhận kết quả thành công',
-      finalRankings: finalRankingsForResponse,
-    };
   }
+
+  const raceRefereeId = race.refereeId?._id?.toString() ?? race.refereeId?.toString();
+  if (raceRefereeId !== refereeId) {
+    throw new ForbiddenException('Bạn không phải referee được phân công cho race này');
+  }
+
+  const rawResults = await this.rawResultRepository.findByRaceId(raceId);
+  if (!rawResults || rawResults.length === 0) {
+    throw new NotFoundException('Không tìm thấy kết quả simulation cho race này');
+  }
+
+  const disqualifiedSet = new Set(dto.disqualifiedHorseIds ?? []);
+
+  // Validate: disqualifiedHorseIds phải là horseId thực sự trong race
+  if (disqualifiedSet.size > 0) {
+    const horseIdsInRace = new Set(
+      rawResults.map((r) => r.horseId.toString()),
+    );
+    for (const hId of disqualifiedSet) {
+      if (!horseIdsInRace.has(hId)) {
+        throw new BadRequestException(
+          `horseId ${hId} không thuộc race này`,
+        );
+      }
+    }
+  }
+
+  // 3. Sort rawResults theo rawRank ASC
+  const sorted = [...rawResults].sort((a, b) => a.rawRank - b.rawRank);
+
+  // 4. Tính finalRank
+  //    - Disqualified → finalRank = null
+  //    - Còn lại → rank liên tục từ 1 (shift lên, Option A)
+  let rankCounter = 1;
+  const updates: Array<{
+    id: string;
+    finalRank: number | null;
+    status: RawResultStatus;
+  }> = [];
+
+  const finalRankingsForResponse: any[] = [];
+
+  for (const result of sorted) {
+    const horseIdStr = result.horseId.toString();
+    const isDisqualified = disqualifiedSet.has(horseIdStr);
+
+    if (isDisqualified) {
+      updates.push({
+        id: result._id.toString(),
+        finalRank: null,
+        status: RawResultStatus.DISQUALIFIED,
+      });
+      finalRankingsForResponse.push({
+        horseId: horseIdStr,
+        rawRank: result.rawRank,
+        finalRank: null,
+        status: RawResultStatus.DISQUALIFIED,
+      });
+      this.logger.log(`Horse ${horseIdStr} → DISQUALIFIED`);
+    } else {
+      updates.push({
+        id: result._id.toString(),
+        finalRank: rankCounter,
+        status: RawResultStatus.CONFIRMED,
+      });
+      finalRankingsForResponse.push({
+        horseId: horseIdStr,
+        rawRank: result.rawRank,
+        finalRank: rankCounter,
+        status: RawResultStatus.CONFIRMED,
+      });
+      this.logger.log(
+        `Horse ${horseIdStr} → finalRank ${rankCounter} (rawRank ${result.rawRank})`,
+      );
+      rankCounter++;
+    }
+  }
+
+  // 5. Bulk update DB
+  await this.rawResultRepository.bulkUpdateFinalRankAndStatus(updates);
+  this.logger.log(`Đã update finalRank cho ${updates.length} ngựa`);
+
+  // 6. Tạo RefereeReport type=End
+  const winner = updates.find((u) => u.finalRank === 1);
+  const winnerRawResult = winner
+    ? rawResults.find((r) => r._id.toString() === winner.id)
+    : null;
+
+  await this.refereeReportService.createEndReport(
+    raceId,
+    refereeId,
+    {
+      rawResultId: winnerRawResult?._id?.toString() ?? undefined,
+      reason: undefined,
+    },
+  );
+  this.logger.log(`Đã tạo RefereeReport type=End cho race ${raceId}`);
+
+  // 7. Update Race.status = Finished
+  await this.raceRepository.updateStatus(raceId, RaceStatusEnum.FINISHED);
+  this.logger.log(`Race ${raceId} → status Finished`);
+
+  // 8. Auto advance (round 1) hoặc distribute prize (round 2)
+  await this.advancementService.handlePostConfirm(raceId);
+  this.logger.log(`handlePostConfirm done cho race ${raceId}`);
+
+  return {
+    message: 'Xác nhận kết quả thành công',
+    finalRankings: finalRankingsForResponse,
+  };
+}
 
 
   async getRawResults(raceId: string): Promise<RawResult[]> {
