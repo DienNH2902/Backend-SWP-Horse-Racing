@@ -90,6 +90,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RoleEnum } from 'src/constants/roleEnum.enum';
 import { ResponseTransactionDto } from './dto/response-transaction.dto';
+import { ConfigService } from '@nestjs/config';
 
 interface RequestWithUser extends Request {
   user: {
@@ -101,7 +102,10 @@ interface RequestWithUser extends Request {
 @ApiTags('Payment & Transactions')
 @Controller('payment')
 export class PaymentController {
-  constructor(private readonly paymentService: PaymentService) {}
+  constructor(
+    private readonly paymentService: PaymentService,
+    private readonly configService: ConfigService,
+  ) {}
 
   @Post('vnpay/deposit')
   @UseGuards(JwtAuthGuard)
@@ -137,17 +141,19 @@ export class PaymentController {
   })
   async vnpayCallback(
     @Query() query: Record<string, string>,
-    @Res() res: Response, // Inject Response object vào đây
+    @Res() res: Response,
   ) {
+    // Lấy FE_URL từ file .env thông qua ConfigService, nếu không có thì fallback về link default
+    const feUrlConfig =
+      this.configService.get<string>('FE_URL') ||
+      'https://api.horse-racing.io.vn/payment-result';
+
     try {
       // 1. Backend xử lý logic kiểm tra chữ ký, lưu DB, bắn notification...
       await this.paymentService.processVnPayCallback(query);
 
-      // 2. Tạo URL chuyển hướng về trang thông báo của Frontend
-      // Đưa các thông tin cần thiết lên query param để FE bóc tách ra hiển thị
-      const targetFeUrl = new URL(
-        'https://api.horse-racing.io.vn/payment-result',
-      );
+      // 2. Tạo URL chuyển hướng về trang thông báo của Frontend dựa trên config env
+      const targetFeUrl = new URL(feUrlConfig);
       targetFeUrl.searchParams.append(
         'vnp_ResponseCode',
         query['vnp_ResponseCode'] || '',
@@ -167,10 +173,13 @@ export class PaymentController {
       return res.redirect(targetFeUrl.toString());
     } catch (error) {
       console.error('VNPay Callback Error:', error);
-      // Trường hợp lỗi chữ ký hoặc logic (BadRequestException) ném ra từ service
-      // Chuyển hướng về FE với mã lỗi để hiển thị trang thất bại công khai thay vì crash trang trắng
-      const failureFeUrl = `https://api.horse-racing.io.vn/payment-result?vnp_ResponseCode=99&vnp_TxnRef=${query['vnp_TxnRef'] || ''}`;
-      return res.redirect(failureFeUrl);
+
+      // Trường hợp lỗi: tạo URL thất bại và redirect về FE_URL kèm code lỗi 99
+      const targetFeUrl = new URL(feUrlConfig);
+      targetFeUrl.searchParams.append('vnp_ResponseCode', '99');
+      targetFeUrl.searchParams.append('vnp_TxnRef', query['vnp_TxnRef'] || '');
+
+      return res.redirect(targetFeUrl.toString());
     }
   }
 
