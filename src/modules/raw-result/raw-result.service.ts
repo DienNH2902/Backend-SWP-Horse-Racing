@@ -43,7 +43,7 @@ export class RawResultService {
  
     if (race.status !== RaceStatusEnum.ONGOING) {
       throw new BadRequestException(
-        `Không thể confirm kết quả: race đang ở trạng thái ${race.status}. Yêu cầu: Simulated`,
+        `Không thể confirm kết quả: race đang ở trạng thái ${race.status}. Yêu cầu: Ongoing`,
       );
     }
  

@@ -6,6 +6,9 @@ export type RaceDocument = Race & Document;
 
 @Schema({ timestamps: true })
 export class Race {
+
+  _id: Types.ObjectId;
+  
   @Prop({ type: Types.ObjectId, ref: 'Tournament', required: true })
   tournamentId: Types.ObjectId;
 

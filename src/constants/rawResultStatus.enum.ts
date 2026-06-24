@@ -1,6 +1,6 @@
 export enum RawResultStatus {
-  PENDING = 'pending',
-  CONFIRMED = 'confirmed',
+  PENDING = 'Pending',
+  CONFIRMED = 'Confirmed',
   DISQUALIFIED = 'Disqualified',
 
 }
