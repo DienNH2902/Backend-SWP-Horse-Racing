@@ -29,7 +29,6 @@ import {
 } from './dto';
 import { RegistrationStatusEnum } from 'src/constants/registrationStatus.enum';
 
-// HorseOwner routes
 
 @ApiTags('Registrations')
 @Controller('registrations')
