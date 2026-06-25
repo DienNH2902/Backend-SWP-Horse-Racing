@@ -17,6 +17,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { TournamentService } from './tournament.service';
+import { AdvancementService } from './round-advancement.service';
 import { CreateTournamentDto } from './dto/create-tournament.dto';
 import { UpdateTournamentDto } from './dto/update-tournament.dto';
 import { UpdateTournamentStatusDto } from './dto/update-tournament-status.dto';
@@ -30,7 +31,11 @@ import { GetTournamentsQueryDto } from './dto/get-tournament-status-query.dto';
 @ApiTags('Tournaments')
 @Controller('tournaments')
 export class TournamentController {
-  constructor(private readonly tournamentService: TournamentService) {}
+  constructor(
+    private readonly tournamentService: TournamentService,
+    private readonly advancementService: AdvancementService,
+
+  ) {}
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -134,4 +139,22 @@ export class TournamentController {
   async remove(@Param('id') id: string) {
     return await this.tournamentService.removeTournament(id);
   }
+
+@Get(':tournamentId/advancements')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(RoleEnum.ADMIN, RoleEnum.REFEREE)
+@ApiBearerAuth()
+@ApiOperation({ summary: 'Xem danh sách ngựa đã advance lên vòng 2 của tournament' })
+async getAdvancements(@Param('tournamentId') tournamentId: string) {
+  return this.advancementService.getAdvancementsByTournament(tournamentId);
+}
+
+// @Get('advancements/race/:raceId')
+// @UseGuards(JwtAuthGuard, RolesGuard)
+// @Roles(RoleEnum.ADMIN, RoleEnum.REFEREE)
+// @ApiBearerAuth()
+// @ApiOperation({ summary: 'Xem ngựa được advance từ 1 race vòng 1 cụ thể' })
+// async getAdvancementByRace(@Param('raceId') raceId: string) {
+//   return this.advancementService.getAdvancementByFromRace(raceId);
+// }
 }

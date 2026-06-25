@@ -11,6 +11,8 @@ import { RaceRepository } from '../race/race.repository';
 import { RoundAdvancementRepository } from './round-advancement.repository';
 import { PrizeDistributionRepository } from '../prize-distribution/prize-distribution.repository'; 
 import { RawResultStatus } from 'src/constants/rawResultStatus.enum';
+import { RoundAdvancement } from './schemas/round-advancement.schema';
+
 
 
 @Injectable()
@@ -22,13 +24,7 @@ export class AdvancementService {
     private readonly raceRepository: RaceRepository,
     private readonly roundAdvancementRepository: RoundAdvancementRepository,
     private readonly prizeDistributionRepository: PrizeDistributionRepository,
-    // Inject thêm các repo bên dưới sau khi bạn xác nhận tên:
-    // private readonly tournamentRepository: TournamentRepository,
-    // private readonly prizeRepository: PrizeRepository,
-    // private readonly contractRepository: ContractRepository,
-    // private readonly horseOwnerProfileRepository: HorseOwnerProfileRepository,
-    // private readonly jockeyProfileRepository: JockeyProfileRepository,
-    // private readonly transactionRepository: TransactionRepository,
+
   ) {}
 
   /**
@@ -192,5 +188,17 @@ export class AdvancementService {
 
     this.logger.log(`✅ Prize distributed cho winner horse ${horseId}, jockey ${jockeyId}`);
     this.logger.log(`⚠️  Uncomment các bước trong distributePrize() sau khi inject đủ repository`);
+  }
+
+
+  async getAdvancementsByTournament(tournamentId: string): Promise<RoundAdvancement[]> {
+  const round2Races = await this.raceRepository.findByTournamentAndRound(tournamentId, 2);
+  if (!round2Races || round2Races.length === 0) return [];
+  const toRaceId = (round2Races[0] as any)._id.toString();
+  return this.roundAdvancementRepository.findByToRaceId(toRaceId);
+}
+
+  async getAdvancementByFromRace(fromRaceId: string): Promise<RoundAdvancement[]> {
+    return this.roundAdvancementRepository.findByFromRaceId(fromRaceId);
   }
 }

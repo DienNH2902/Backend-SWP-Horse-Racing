@@ -82,38 +82,55 @@ export class RaceService {
   }
 
   // Hệ thống tự động tạo race vòng 2 sau khi vòng 1 kết thúc 
-  async createFinalRace(
-    tournamentId: string,
-    startTime: string,
-    date: string,
-  ): Promise<ResponseRaceDto> {
-    const tournament = await this.tournamentRepository.findById(tournamentId);
-    if (!tournament) throw new NotFoundException('Không tìm thấy giải đấu');
- 
-    // Tất cả race vòng 1 phải FINISHED
-    const allDone = await this.raceRepository.allRound1Finished(tournamentId);
-    if (!allDone) {
-      throw new ConflictException(
-        'Chưa thể tạo race chung kết — vẫn còn race vòng 1 chưa kết thúc',
+async createFinalRace(
+  tournamentId: string,
+  startTime: string,
+  date: string,
+): Promise<ResponseRaceDto> {
+  const tournament = await this.tournamentRepository.findById(tournamentId);
+  if (!tournament) throw new NotFoundException('Không tìm thấy giải đấu');
+
+  // Tránh tạo trùng vòng 2
+  const existing = await this.raceRepository.findByTournamentAndRound(tournamentId, 2);
+  if (existing.length > 0) {
+    throw new ConflictException('Race chung kết đã tồn tại');
+  }
+
+  // Validate date nằm trong tournament
+  const raceDate = new Date(date);
+  if (
+    raceDate < new Date(tournament.startDate) ||
+    raceDate > new Date(tournament.endDate)
+  ) {
+    throw new BadRequestException(
+      `Ngày ${date} phải nằm trong thời gian Tournament: ${tournament.startDate} → ${tournament.endDate}`,
+    );
+  }
+
+  // Validate date phải sau race cuối cùng của round 1
+  const round1Races = await this.raceRepository.findByTournamentAndRound(tournamentId, 1);
+  if (round1Races.length > 0) {
+    const lastRound1Date = round1Races.reduce((latest, r) => {
+      const d = new Date(r.date);
+      return d > latest ? d : latest;
+    }, new Date(0));
+
+    if (raceDate <= lastRound1Date) {
+      throw new BadRequestException(
+        `Ngày race chung kết phải sau ngày race vòng 1 cuối cùng (${lastRound1Date.toISOString().split('T')[0]})`,
       );
     }
- 
-    // Tránh tạo trùng vòng 2
-    const existing = await this.raceRepository.findByTournamentAndRound(tournamentId, 2);
-    if (existing.length > 0) {
-      throw new ConflictException('Race chung kết đã tồn tại');
-    }
- 
-    // Repository tự lo raceOrder + build data
-    const finalRace = await this.raceRepository.createRound2Race(
-      tournamentId,
-      tournament.title,
-      new Date(startTime),
-      new Date(date),
-    );
- 
-    return this.toResponse(finalRace);
   }
+
+  const finalRace = await this.raceRepository.createRound2Race(
+    tournamentId,
+    tournament.title,
+    new Date(startTime),
+    new Date(date),
+  );
+
+  return this.toResponse(finalRace);
+}
 
 
   async getRacesByTournament(
