@@ -22,16 +22,16 @@ export class RaceSimulationController {
     return await this.simulationService.runSimulation(raceId);
   }
 
-  // @Get(':raceId/result')
-  // @UseGuards(JwtAuthGuard, RolesGuard)
-  // @Roles(RoleEnum.REFEREE, RoleEnum.ADMIN)
-  // @ApiBearerAuth()
-  // @ApiOperation({
-  //   summary: 'Xem kết quả simulation (rawResult + stats + events)',
-  // })
-  // async getResult(@Param('raceId') raceId: string) {
-  //   return await this.simulationService.getSimulationResult(raceId);
-  // }
+  @Get(':raceId/result')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleEnum.REFEREE, RoleEnum.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Xem kết quả simulation (rawResult + stats + events)',
+  })
+  async getResult(@Param('raceId') raceId: string) {
+    return await this.simulationService.getSimulationResult(raceId);
+  }
 
   @Delete(':raceId/reset')
   @UseGuards(JwtAuthGuard, RolesGuard)
