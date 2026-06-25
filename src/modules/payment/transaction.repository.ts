@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import {ClientSession, Model, Types } from 'mongoose';
 import { Transaction, TransactionDocument } from './schemas/transaction.schema';
 
 @Injectable()
@@ -12,6 +12,13 @@ export class TransactionRepository {
 
   async create(data: Partial<Transaction>): Promise<Transaction> {
     return new this.transactionModel(data).save();
+  }
+
+  async createWithSession(
+    data: Partial<Transaction>,
+    session: ClientSession,
+  ): Promise<Transaction> {
+    return new this.transactionModel(data).save({ session });
   }
 
   async findByUserId(userId: string): Promise<Transaction[]> {

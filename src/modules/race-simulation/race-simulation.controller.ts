@@ -16,7 +16,7 @@ export class RaceSimulationController {
   @Roles(RoleEnum.REFEREE)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'REFEREE kích hoạt chạy simulation cho race (race.status phải là "ready")',
+    summary: 'REFEREE kích hoạt chạy simulation cho RACE',
   })
   async runSimulation(@Param('raceId') raceId: string) {
     return await this.simulationService.runSimulation(raceId);

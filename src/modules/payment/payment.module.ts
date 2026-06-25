@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Transaction, TransactionSchema } from './schemas/transaction.schema';
 import { TransactionRepository } from './transaction.repository';
+import { SystemWalletRepository } from './system-wallet.repository';
 import { VnPayService } from './vnpay.service';
 import { PaymentService } from './payment.service';
 import { PaymentController } from './payment.controller';
@@ -32,7 +33,17 @@ import {
     NotificationModule,
   ],
   controllers: [PaymentController],
-  providers: [PaymentService, VnPayService, TransactionRepository],
-  exports: [PaymentService, TransactionRepository, MongooseModule],
+  providers: [
+    PaymentService,
+    VnPayService,
+    TransactionRepository,
+    SystemWalletRepository,
+  ],
+  exports: [
+    PaymentService,
+    TransactionRepository,
+    SystemWalletRepository,
+    MongooseModule,
+  ],
 })
 export class PaymentModule {}
