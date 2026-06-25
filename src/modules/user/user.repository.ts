@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, QueryFilter, Types, UpdateQuery } from 'mongoose';
+import { ClientSession, Model, QueryFilter, Types, UpdateQuery } from 'mongoose';
 import { User, UserDocument } from './schemas/user.schema';
 import { JockeyProfile } from './schemas/jockey-profile.schema';
 import { HorseOwnerProfile } from './schemas/horse-owner-profile.schema';
@@ -233,4 +233,68 @@ export class UsersRepository {
   async deleteUser(id: string): Promise<User | null> {
     return this.userModel.findByIdAndDelete(id).exec();
   }
+
+  async findAdminUser(): Promise<User | null> {
+    return this.userModel
+      .findOne({ role: RoleEnum.ADMIN })
+      .select('-password -__v')
+      .lean()
+      .exec();
+  }
+ 
+  async findJockeyProfileById(
+    jockeyProfileId: string,
+  ): Promise<JockeyProfile | null> {
+    return this.jockeyModel.findById(jockeyProfileId).lean().exec();
+  }
+ 
+  async findHorseOwnerProfileByUserId(
+    userId: string,
+  ): Promise<HorseOwnerProfile | null> {
+    return this.horseOwnerModel
+      .findOne({ userId: new Types.ObjectId(userId) })
+      .lean()
+      .exec();
+  }
+ 
+  async findJockeyProfileByUserId(
+    userId: string,
+  ): Promise<JockeyProfile | null> {
+    return this.jockeyModel
+      .findOne({ userId: new Types.ObjectId(userId) })
+      .lean()
+      .exec();
+  }
+ 
+  async incrementHorseOwnerBalance(
+    horseOwnerProfileId: string,
+    amount: number,
+    session?: ClientSession,
+  ): Promise<HorseOwnerProfile | null> {
+    return this.horseOwnerModel
+      .findByIdAndUpdate(
+        horseOwnerProfileId,
+        { $inc: { balance: amount } },
+        { returnDocument: 'after', session },
+      )
+      .lean()
+      .exec();
+  }
+ 
+  async incrementJockeyBalance(
+    jockeyProfileId: string,
+    amount: number,
+    session?: ClientSession,
+  ): Promise<JockeyProfile | null> {
+    return this.jockeyModel
+      .findByIdAndUpdate(
+        jockeyProfileId,
+        { $inc: { balance: amount } },
+        { returnDocument: 'after', session },
+      )
+      .lean()
+      .exec();
+  }
+
+  
 }

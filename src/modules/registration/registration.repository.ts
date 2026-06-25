@@ -258,6 +258,7 @@ export class RegistrationRepository {
         status: RegistrationStatusEnum.CONFIRMED,
       })
       .populate('horseId', 'name')
+      .populate('jockeyId', 'name')
       .lean()
       .exec();
   }

@@ -58,11 +58,14 @@ export class ResponseRaceDto {
     return obj.horses.map((r: any) => ({
       horseId: r.horseId?._id?.toString() ?? r.horseId?.toString(),
       name: r.horseId?.name ?? null,
+      jockeyId: r.jockeyId?._id?.toString() ?? r.jockeyId?.toString() ?? null,
+      jockeyName: r.jockeyId?.name ?? null,
       gateNumber: r.gateNumber ?? null,
       status: r.status,
     }));
   })
-  horses: { horseId: string; name: string; gateNumber: number | null; status: string }[];
+  horses: { horseId: string; name: string; jockeyId: string | null; jockeyName: string | null; gateNumber: number | null; status: string ;  
+  }[];
 
   @Expose()
   @Transform(({ obj }) => obj.totalSlots ?? null)
