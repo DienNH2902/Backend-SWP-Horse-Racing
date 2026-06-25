@@ -6,3 +6,6 @@ export enum TournamentStatusEnum {
   COMPLETED = 'Completed', // Giải đấu đã kết thúc
   CANCELED = 'Canceled', // Giải đấu bị hủy bỏ
 }
+
+export const TOURNAMENT_TOTAL_ROUNDS = 2;
+
