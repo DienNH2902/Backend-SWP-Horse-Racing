@@ -33,6 +33,10 @@ export class RaceService {
     });
   }
 
+  private resolveId(field: any): string {
+    return field?._id?.toString() || field?.toString();
+  }
+
   private async toResponseDto(raceDoc: any): Promise<ResponseRaceDto> {
     if (!raceDoc) {
       throw new NotFoundException('Không tìm thấy trận đấu yêu cầu');
@@ -58,8 +62,19 @@ export class RaceService {
       gateNumber: reg.gateNumber as number,
     }));
 
+    const tournament = await this.tournamentRepository.findById(
+      this.resolveId(raceObj.tournamentId),
+    );
+
+    if (!tournament) {
+      throw new NotFoundException(
+        'Không tìm thấy thông tin giải đấu được chỉ định để map DTO',
+      );
+    }
+    const maxCapacity = tournament.horsesPerRace || 10;
+
     // Tính toán động số slot
-    const totalSlots = (raceObj.totalSlots || 10) as number;
+    const totalSlots = maxCapacity;
     const filledSlots = registrations.length;
 
     raceObj.totalSlots = totalSlots as number;
@@ -204,7 +219,7 @@ export class RaceService {
       tournamentId,
       status,
     );
-    return races.map((r) => this.toResponse(r));
+    return Promise.all(races.map((r) => this.toResponseDto(r)));
   }
 
   // async getRaceById(id: string): Promise<ResponseRaceDto> {
@@ -222,7 +237,7 @@ export class RaceService {
 
   async getRacesByReferee(refereeId: string): Promise<ResponseRaceDto[]> {
     const races = await this.raceRepository.findByReferee(refereeId);
-    return races.map((r) => this.toResponse(r));
+    return Promise.all(races.map((r) => this.toResponseDto(r)));
   }
 
   async confirmReady(raceId: string, refereeId: string) {
