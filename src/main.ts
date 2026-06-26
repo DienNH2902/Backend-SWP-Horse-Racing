@@ -18,7 +18,7 @@ async function bootstrap() {
       'https://horse-racing.io.vn', // Điền domain chính thức của Frontend vào đây
       'https://goldenhoof-fe.vercel.app',
       'null',
-      'http://localhost:5500',      // ← Live Server port mặc định
+      'http://localhost:5500', // ← Live Server port mặc định
       'http://127.0.0.1:5500',
     ],
 
@@ -58,6 +58,7 @@ async function bootstrap() {
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
+      transform: true,
     }),
   );
 

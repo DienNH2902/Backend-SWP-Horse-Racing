@@ -45,6 +45,7 @@ import {
   SystemWallet,
   SystemWalletSchema,
 } from '../payment/schemas/systemWallet.schema';
+import { RaceModule } from '../race/race.module';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import {
     PaymentModule,
     NotificationModule,
     HorseModule,
+    RaceModule,
   ],
   controllers: [
     RegistrationController,

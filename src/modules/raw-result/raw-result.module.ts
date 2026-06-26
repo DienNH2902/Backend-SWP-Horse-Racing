@@ -7,6 +7,7 @@ import { RawResultController } from './raw-result.controller';
 import { RaceModule } from '../race/race.module';
 import { RefereeReportModule } from '../referee-report/referee-report.module';
 import { TournamentModule } from '../tournament/tournament.module';
+import { BetModule } from '../bet/bet.module';
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -14,10 +15,11 @@ import { TournamentModule } from '../tournament/tournament.module';
     ]),
     forwardRef(() => RaceModule),
     forwardRef(() => RefereeReportModule),
-    forwardRef(() => TournamentModule), 
+    forwardRef(() => TournamentModule),
+    BetModule,
   ],
   controllers: [RawResultController],
   providers: [RawResultService, RawResultRepository],
   exports: [RawResultService, RawResultRepository],
 })
-export class RawResultModule {} 
+export class RawResultModule {}

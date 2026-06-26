@@ -76,7 +76,7 @@ export class TournamentRepository {
     return await this.tournamentModel.findByIdAndDelete(id).exec();
   }
 
-    async updateTournamentWithSession(
+  async updateTournamentWithSession(
     id: string,
     updateData: Partial<Tournament>,
     session?: ClientSession,

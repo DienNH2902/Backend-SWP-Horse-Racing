@@ -31,4 +31,9 @@ export enum NotificationTypeEnum {
 
   // Hệ thống
   SYSTEM_ALERT = 'System_alert',
+
+  PLACE_BET_SUCCESS = 'Place_bet_success',
+  UPDATE_BET_SUCCESS = 'Update_bet_success',
+  BET_WIN = 'Bet_win',
+  BET_LOSE = 'Bet_lose',
 }
