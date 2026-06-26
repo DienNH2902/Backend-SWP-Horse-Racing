@@ -21,4 +21,9 @@ export enum NotificationTitleEnum {
   BALANCE_NOT_ENOUGH = 'Số dư tài khoản không đủ',
 
   SYSTEM_ALERT = 'Thông báo hệ thống',
+
+  PLACE_BET_SUCCESS = 'Đặt cược thành công',
+  UPDATE_BET_SUCCESS = 'Thay đổi cược thành công',
+  BET_WIN = 'Chúc mừng thắng cược',
+  BET_LOSE = 'Kết quả đặt cược',
 }
