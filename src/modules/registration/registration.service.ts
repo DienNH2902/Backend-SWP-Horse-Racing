@@ -38,6 +38,7 @@ import {
   SystemWallet,
   SystemWalletDocument,
 } from '../payment/schemas/systemWallet.schema';
+import { RaceRepository } from '../race/race.repository';
 
 @Injectable()
 export class RegistrationService {
@@ -49,6 +50,7 @@ export class RegistrationService {
     private readonly transactionRepository: TransactionRepository,
     private readonly notificationRepository: NotificationRepository,
     private readonly horseRepository: HorseRepository,
+    private readonly raceRepository: RaceRepository,
 
     @InjectModel(HorseOwnerProfile.name)
     private readonly horseOwnerProfileModel: Model<HorseOwnerProfileDocument>,
@@ -222,6 +224,43 @@ export class RegistrationService {
       );
     }
 
+    const race = await this.raceRepository.findOneRace({ _id: dto.raceId });
+    if (!race) {
+      throw new NotFoundException(
+        'Không tìm thấy thông tin trận đấu được chỉ định',
+      );
+    }
+
+    const tournament = await this.tournamentRepository.findById(
+      this.resolveId(race.tournamentId),
+    );
+
+    if (!tournament) {
+      throw new NotFoundException(
+        'Không tìm thấy thông tin giải đấu được chỉ định',
+      );
+    }
+
+    // 3. Kiểm tra xem cổng xuất phát này trong trận đấu đã có ai chiếm giữ chưa
+    const usedGates = await this.registrationRepository.getUsedGateNumbers(
+      dto.raceId,
+    );
+    if (usedGates.includes(dto.gateNumber)) {
+      throw new BadRequestException(
+        `Cổng chạy số [${dto.gateNumber}] trong trận đấu này đã có ngựa khác đăng ký`,
+      );
+    }
+
+    // 4. Kiểm tra số lượng slot tối đa của trận đấu
+    const currentConfirmedCount =
+      await this.registrationRepository.countConfirmedByRace(dto.raceId);
+    const maxCapacity = tournament.horsesPerRace || 10;
+    if (currentConfirmedCount >= maxCapacity) {
+      throw new BadRequestException(
+        'Trận đấu hiện tại đã đủ số lượng ngựa tham gia chạy, không thể duyệt thêm',
+      );
+    }
+
     // [BỔ SUNG VÒNG CHECK KHI ADMIN DUYỆT]: Re-validate trạng thái của hợp đồng liên quan
     const contract = await this.contractRepository.findByInvitationId(
       this.resolveId(reg.jockeyInvitationId),
@@ -318,6 +357,11 @@ export class RegistrationService {
       id,
       dto.gateNumber,
     );
+
+    // Cập nhật thêm raceId vào bản ghi Registration để xác định đơn này thuộc về trận đấu nào
+    await this.registrationRepository.updateById(id, {
+      raceId: new Types.ObjectId(dto.raceId),
+    });
 
     // 6. Notification cho owner qua NotificationRepository
     await this.notificationRepository.create({

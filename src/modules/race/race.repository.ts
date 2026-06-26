@@ -196,18 +196,14 @@ export class RaceRepository {
       .exec() as Promise<Race[]>;
   }
 
- 
-async updateStatus(raceId: string, status: RaceStatusEnum): Promise<void> {
-  await this.raceModel
-    .findByIdAndUpdate(
-      new Types.ObjectId(raceId),
-      {
+  async updateStatus(raceId: string, status: RaceStatusEnum): Promise<void> {
+    await this.raceModel
+      .findByIdAndUpdate(new Types.ObjectId(raceId), {
         status,
         ...(status === RaceStatusEnum.SIMULATED && { simulatedAt: new Date() }),
-      },
-    )
-    .exec();
-}
+      })
+      .exec();
+  }
   async assignRaceCourse(
     raceId: string,
     raceCourseId: string,
@@ -224,39 +220,38 @@ async updateStatus(raceId: string, status: RaceStatusEnum): Promise<void> {
   }
 
   async findFinishedBefore(date: Date): Promise<Race[]> {
-  return this.raceModel
-    .find({
-      status: RaceStatusEnum.FINISHED,
-      updatedAt: { $lt: date },
-    })
-    .select('_id')
-    .lean()
-    .exec() as Promise<Race[]>;
-}
+    return this.raceModel
+      .find({
+        status: RaceStatusEnum.FINISHED,
+        updatedAt: { $lt: date },
+      })
+      .select('_id')
+      .lean()
+      .exec() as Promise<Race[]>;
+  }
 
+  async findByTournamentAndStatus(
+    tournamentId: string,
+    status?: RaceStatusEnum,
+  ): Promise<Race[]> {
+    const filter: any = {
+      tournamentId: new Types.ObjectId(tournamentId),
+    };
+    if (status) filter.status = status;
 
-async findByTournamentAndStatus(
-  tournamentId: string,
-  status?: RaceStatusEnum,
-): Promise<Race[]> {
-  const filter: any = {
-    tournamentId: new Types.ObjectId(tournamentId),
-  };
-  if (status) filter.status = status;
+    return this.raceModel
+      .find(filter)
+      .populate('tournamentId refereeId raceCourseId')
+      .sort({ raceOrder: 1 })
+      .lean()
+      .exec() as Promise<Race[]>;
+  }
 
-  return this.raceModel
-    .find(filter)
-    .populate('tournamentId refereeId raceCourseId')
-    .sort({ raceOrder: 1 })
-    .lean()
-    .exec() as Promise<Race[]>;
-}
-
-async findOneRace(filter: Record<string, any>): Promise<Race | null> {
-  return this.raceModel
-    .findOne(filter)
-    .populate('tournamentId refereeId raceCourseId')
-    .lean()
-    .exec() as Promise<Race | null>;
-}
+  async findOneRace(filter: Record<string, any>): Promise<Race | null> {
+    return this.raceModel
+      .findOne(filter)
+      .populate('tournamentId refereeId raceCourseId')
+      .lean()
+      .exec() as Promise<Race | null>;
+  }
 }
