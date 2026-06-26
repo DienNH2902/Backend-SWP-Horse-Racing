@@ -131,27 +131,11 @@ async confirmFinalRank(
   await this.rawResultRepository.bulkUpdateFinalRankAndStatus(updates);
   this.logger.log(`Đã update finalRank cho ${updates.length} ngựa`);
 
-  // 6. Tạo RefereeReport type=End
-  const winner = updates.find((u) => u.finalRank === 1);
-  const winnerRawResult = winner
-    ? rawResults.find((r) => r._id.toString() === winner.id)
-    : null;
-
-  await this.refereeReportService.createEndReport(
-    raceId,
-    refereeId,
-    {
-      rawResultId: winnerRawResult?._id?.toString() ?? undefined,
-      reason: undefined,
-    },
-  );
-  this.logger.log(`Đã tạo RefereeReport type=End cho race ${raceId}`);
-
-  // 7. Update Race.status = Finished
+  // 6. Update Race.status = Finished
   await this.raceRepository.updateStatus(raceId, RaceStatusEnum.FINISHED);
   this.logger.log(`Race ${raceId} → status Finished`);
 
-  // 8. Auto advance (round 1) hoặc distribute prize (round 2)
+  // 7. Auto advance (round 1) hoặc distribute prize (round 2)
   await this.advancementService.handlePostConfirm(raceId);
   this.logger.log(`handlePostConfirm done cho race ${raceId}`);
 
