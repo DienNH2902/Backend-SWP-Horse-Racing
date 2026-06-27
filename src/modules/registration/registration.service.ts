@@ -211,7 +211,6 @@ export class RegistrationService {
     return this.toResponse(reg);
   }
 
-  // Admin confirm — assign gateNumber, trừ tiền
   async adminConfirm(
     id: string,
     dto: ApproveRegistrationDto,

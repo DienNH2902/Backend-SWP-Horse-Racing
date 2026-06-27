@@ -18,6 +18,7 @@ import {
 } from '@nestjs/swagger';
 import { TournamentService } from './tournament.service';
 import { AdvancementService } from './round-advancement.service';
+import { PrizeService } from '../prize-distribution/prize.service';
 import { CreateTournamentDto } from './dto/create-tournament.dto';
 import { UpdateTournamentDto } from './dto/update-tournament.dto';
 import { UpdateTournamentStatusDto } from './dto/update-tournament-status.dto';

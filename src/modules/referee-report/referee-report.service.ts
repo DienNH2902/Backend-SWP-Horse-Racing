@@ -46,7 +46,7 @@ export class RefereeReportService {
       raceId: new Types.ObjectId(raceId),
       refereeId: new Types.ObjectId(refereeId),
       type: RefereeReportType.START,
-      rawResultId: null,
+      rawResultId: [],
       reason: null,
     });
 
@@ -62,10 +62,10 @@ export class RefereeReportService {
     const race = await this.raceRepo.findById(raceId);
     if (!race) throw new NotFoundException('Không tìm thấy race');
 
-    const allowedStatuses = [RaceStatusEnum.SIMULATED, RaceStatusEnum.ONGOING];
+    const allowedStatuses = [RaceStatusEnum.FINISHED];
     if (!allowedStatuses.includes(race.status as RaceStatusEnum)) {
       throw new BadRequestException(
-        'Race phải ở trạng thái "SIMULATED" hoặc "ONGOING" để tạo end report',
+        'Race phải ở trạng thái "FINISHED" để tạo end report',
       );
     }
 
@@ -82,9 +82,7 @@ export class RefereeReportService {
       raceId: new Types.ObjectId(raceId),
       refereeId: new Types.ObjectId(refereeId),
       type: RefereeReportType.END,
-      rawResultId: dto.rawResultId
-        ? new Types.ObjectId(dto.rawResultId)
-        : null,
+      rawResultId: dto.rawResultId?.map((id) => new Types.ObjectId(id)) ?? [],
       reason: dto.reason ?? null,
     });
 
