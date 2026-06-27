@@ -39,6 +39,7 @@ import {
   SystemWalletDocument,
 } from '../payment/schemas/systemWallet.schema';
 import { RaceRepository } from '../race/race.repository';
+import { JockeyProfile } from '../user/schemas/jockey-profile.schema';
 
 @Injectable()
 export class RegistrationService {
@@ -54,6 +55,8 @@ export class RegistrationService {
 
     @InjectModel(HorseOwnerProfile.name)
     private readonly horseOwnerProfileModel: Model<HorseOwnerProfileDocument>,
+    @InjectModel(JockeyProfile.name)
+    private readonly jockeyProfileModel: Model<JockeyProfile>,
     @InjectModel(SystemWallet.name)
     private readonly systemWalletModel: Model<SystemWalletDocument>,
   ) {}
@@ -451,6 +454,82 @@ export class RegistrationService {
       throw new ConflictException(
         `Đăng ký đang ở trạng thái "${reg.status}", không thể từ chối`,
       );
+    }
+
+    // 1. Tìm thông tin Lời mời (Invitation) liên quan để lấy tỷ lệ tính tiền ký quỹ
+    const invitation = await this.invitationRepository.findByIdNoPopulate(
+      this.resolveId(reg.jockeyInvitationId),
+    );
+    if (invitation) {
+      const ownerCompensationAmount =
+        (invitation.proposeContractAmount * invitation.ownerCompensationRate) /
+        100;
+      const totalOwnerHeldAmount =
+        invitation.proposeContractAmount + ownerCompensationAmount;
+      const jockeyCompensationAmount =
+        (invitation.proposeContractAmount * invitation.jockeyCompensationRate) /
+        100;
+
+      const ownerIdStr = this.resolveId(reg.ownerId);
+      const jockeyIdStr = this.resolveId(reg.jockeyId);
+
+      // --- GIẢI PHÓNG TIỀN CHO OWNER ---
+      await this.horseOwnerProfileModel.updateOne(
+        { userId: new Types.ObjectId(ownerIdStr) },
+        {
+          $inc: {
+            balance: totalOwnerHeldAmount,
+            heldBalance: -totalOwnerHeldAmount,
+          },
+        },
+      );
+      await this.transactionRepository.create({
+        senderId: null,
+        receiverId: new Types.ObjectId(ownerIdStr),
+        content: `Hoàn trả tiền giải phóng ký quỹ hợp đồng do đơn đăng ký giải đấu bị từ chối. Số tiền: ${totalOwnerHeldAmount}`,
+        amount: totalOwnerHeldAmount,
+        type: TransactionTypeEnum.REFUND,
+      });
+
+      // --- GIẢI PHÓNG TIỀN CHO JOCKEY ---
+      await this.jockeyProfileModel.updateOne(
+        { userId: new Types.ObjectId(jockeyIdStr) },
+        {
+          $inc: {
+            balance: jockeyCompensationAmount,
+            heldBalance: -jockeyCompensationAmount,
+          },
+        },
+      );
+      await this.transactionRepository.create({
+        senderId: null,
+        receiverId: new Types.ObjectId(jockeyIdStr),
+        content: `Hoàn trả tiền giải phóng ký quỹ đền bù do đơn đăng ký giải đấu bị từ chối. Số tiền: ${jockeyCompensationAmount}`,
+        amount: jockeyCompensationAmount,
+        type: TransactionTypeEnum.REFUND,
+      });
+
+      const contract = await this.contractRepository.findByInvitationId(
+        this.resolveId(invitation),
+      );
+
+      if (!contract)
+        throw new NotFoundException('Không tìm thấy hợp đồng liên quan');
+
+      // --- HỦY HỢP ĐỒNG LIÊN QUAN ---
+      await this.contractRepository.updateStatus(
+        this.resolveId(contract),
+        ContractStatusEnum.CANCELLED,
+      );
+
+      // --- BẮN NOTIFICATION CHO JOCKEY ---
+      await this.notificationRepository.create({
+        userId: new Types.ObjectId(jockeyIdStr),
+        type: NotificationTypeEnum.INVITATION_REJECTED,
+        title: NotificationTitleEnum.INVITATION_REJECTED,
+        content: `Hợp đồng thi đấu giải của bạn đã bị hủy tự động do ban tổ chức từ chối đơn đăng ký. Tiền ký quỹ đã hoàn về ví.`,
+        isRead: false,
+      });
     }
 
     // Gọi hàm đóng gói từ Repository
