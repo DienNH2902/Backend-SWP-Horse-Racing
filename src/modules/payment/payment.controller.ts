@@ -91,6 +91,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { RoleEnum } from 'src/constants/roleEnum.enum';
 import { ResponseTransactionDto } from './dto/response-transaction.dto';
 import { ConfigService } from '@nestjs/config';
+import { VnPayQueryDto } from './dto/vnpay-query.dto';
 
 interface RequestWithUser extends Request {
   user: {
@@ -139,18 +140,15 @@ export class PaymentController {
   @ApiOperation({
     summary: 'Webhook xử lý kết quả trả về từ VNPay và redirect về FE',
   })
-  async vnpayCallback(
-    @Query() query: Record<string, string>,
-    @Res() res: Response,
-  ) {
+  async vnpayCallback(@Query() query: VnPayQueryDto, @Res() res: Response) {
     // Lấy FE_URL từ file .env thông qua ConfigService, nếu không có thì fallback về link default
     const feUrlConfig =
       this.configService.get<string>('FE_URL') ||
-      'https://api.horse-racing.io.vn/payment-result';
+      'https://goldenhoof-fe.vercel.app/payment-result';
 
     try {
       // 1. Backend xử lý logic kiểm tra chữ ký, lưu DB, bắn notification...
-      await this.paymentService.processVnPayCallback(query);
+      await this.paymentService.processVnPayCallback(query as any);
 
       // 2. Tạo URL chuyển hướng về trang thông báo của Frontend dựa trên config env
       const targetFeUrl = new URL(feUrlConfig);
@@ -176,10 +174,54 @@ export class PaymentController {
 
       // Trường hợp lỗi: tạo URL thất bại và redirect về FE_URL kèm code lỗi 99
       const targetFeUrl = new URL(feUrlConfig);
-      targetFeUrl.searchParams.append('vnp_ResponseCode', '99');
+      targetFeUrl.searchParams.append(
+        'vnp_ResponseCode',
+        query['vnp_ResponseCode'] || '99',
+      );
       targetFeUrl.searchParams.append('vnp_TxnRef', query['vnp_TxnRef'] || '');
 
       return res.redirect(targetFeUrl.toString());
+    }
+  }
+
+  /**
+   * CẬP NHẬT BẢO MẬT: Endpoint IPN xử lý mất mạng giữa chừng (Server-to-Server)
+   * VNPay sẽ gọi ngầm endpoint này. Định dạng trả về bắt buộc theo chuẩn quy định của VNPay.
+   * Cần cấu hình URL này trong Dashboard quản lý merchant của VNPay (hoặc file env mục VNP_IPN_URL nếu có).
+   */
+  @Get('vnpay/ipn')
+  @ApiOperation({
+    summary:
+      'Endpoint IPN xử lý ngầm từ Server VNPay sang Server Backend khi mất mạng',
+  })
+  async vnpayIpn(@Query() query: VnPayQueryDto) {
+    try {
+      // Thực hiện toàn bộ logic check chữ ký, kiểm tra số tiền, cộng balance và tạo transaction
+      await this.paymentService.processVnPayCallback(query as any);
+
+      // Trả về đúng format Object yêu cầu của VNPay để họ xác nhận đã xử lý thành công
+      return { RspCode: '00', Message: 'Confirm Success' };
+    } catch (error: any) {
+      console.error('VNPay IPN Error:', error);
+
+      // Phân loại mã lỗi trả về cho VNPay dựa trên loại Exception để VNPay biết có cần gọi lại hay không
+      if (error?.message === 'Chữ ký không hợp lệ') {
+        return { RspCode: '97', Message: 'Invalid Checksum' };
+      }
+      if (
+        error?.message === 'Số tiền thanh toán không khớp với yêu cầu khởi tạo'
+      ) {
+        return { RspCode: '04', Message: 'Invalid Amount' };
+      }
+      if (error?.message === 'Người dùng không tồn tại') {
+        return { RspCode: '01', Message: 'User Not Found' };
+      }
+
+      // Lỗi hệ thống khác hoặc các lỗi runtime không xác định
+      return {
+        RspCode: '99',
+        Message: (error?.message as string) || 'Unknown Error',
+      };
     }
   }
 
