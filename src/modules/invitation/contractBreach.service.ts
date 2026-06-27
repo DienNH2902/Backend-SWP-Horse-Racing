@@ -77,12 +77,32 @@ export class ContractBreachService {
       const jockeyReceived = finalCompensationAmount - systemCommission; // Jockey thực nhận 90%
 
       // Hoàn trả lại tiền thuê đã đóng băng cho Owner, trừ đi toàn bộ tiền ký quỹ đền bù
+      // await this.horseOwnerProfileModel.updateOne(
+      //   { userId: new Types.ObjectId(ownerUserId) },
+      //   {
+      //     $inc: {
+      //       balance: contractAmount,
+      //       heldBalance: -(contractAmount + ownerCompensationLimit),
+      //     },
+      //   },
+      // );
+
+      const ownerProfile = await this.horseOwnerProfileModel.findOne({
+        userId: new Types.ObjectId(ownerUserId),
+      });
+      const currentOwnerPoints = ownerProfile?.reputationPoints ?? 70;
+      const newOwnerPoints = Math.max(0, currentOwnerPoints - 10);
+
+      // Cập nhật số dư và điểm uy tín chuẩn xác
       await this.horseOwnerProfileModel.updateOne(
         { userId: new Types.ObjectId(ownerUserId) },
         {
           $inc: {
             balance: contractAmount,
             heldBalance: -(contractAmount + ownerCompensationLimit),
+          },
+          $set: {
+            reputationPoints: newOwnerPoints,
           },
         },
       );
@@ -154,11 +174,29 @@ export class ContractBreachService {
       );
 
       // Jockey vi phạm: Mất trắng toàn bộ khoản ký quỹ đền bù nằm trong ví đóng băng
+      // await this.jockeyProfileModel.updateOne(
+      //   { userId: new Types.ObjectId(jockeyUserId) },
+      //   {
+      //     $inc: {
+      //       heldBalance: -jockeyCompensationLimit,
+      //     },
+      //   },
+      // );
+
+      const jockeyProfile = await this.jockeyProfileModel.findOne({
+        userId: new Types.ObjectId(jockeyUserId),
+      });
+      const currentJockeyPoints = jockeyProfile?.reputationPoints ?? 70;
+      const newJockeyPoints = Math.max(0, currentJockeyPoints - 10);
+
       await this.jockeyProfileModel.updateOne(
         { userId: new Types.ObjectId(jockeyUserId) },
         {
           $inc: {
             heldBalance: -jockeyCompensationLimit,
+          },
+          $set: {
+            reputationPoints: newJockeyPoints,
           },
         },
       );
