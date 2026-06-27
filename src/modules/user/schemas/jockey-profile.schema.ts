@@ -34,13 +34,13 @@ export class JockeyProfile {
   @Prop({ type: Number, default: 0.0 })
   winRate: number; // Tỉ lệ thắng (Ví dụ: 0.25 tương đương 25%)
 
-  @Prop({ type: Number, default: 0 })
+  @Prop({ type: Number, default: 70, min: 0, max: 100 })
   reputationPoints: number; // Điểm uy tín / danh tiếng của Jockey
 
-  @Prop({ type: Number, default: 0.0 })
+  @Prop({ type: Number, default: 0.0, min: 0 })
   balance: number; // Số dư tài khoản tiền thưởng của Jockey
 
-  @Prop({ type: Number, default: 0.0 })
+  @Prop({ type: Number, default: 0.0, min: 0 })
   heldBalance: number; // Số dư đóng băng tiền của Jockey
 }
 export const JockeyProfileSchema = SchemaFactory.createForClass(JockeyProfile);

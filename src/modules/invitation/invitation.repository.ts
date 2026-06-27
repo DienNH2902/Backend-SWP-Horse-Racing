@@ -104,4 +104,25 @@ export class JockeyInvitationRepository {
     );
     return result.modifiedCount;
   }
+
+  async findPendingOlderThan(date: Date): Promise<any[]> {
+    return this.jockeyInvitationModel
+      .find({
+        status: JockeyInvitationEnum.PENDING,
+        createdAt: { $lt: date },
+      })
+      .lean()
+      .exec();
+  }
+
+  async updateStatusMany(
+    ids: string[],
+    status: JockeyInvitationEnum,
+  ): Promise<number> {
+    const result = await this.jockeyInvitationModel.updateMany(
+      { _id: { $in: ids.map((id) => new Types.ObjectId(id)) } },
+      { $set: { status } },
+    );
+    return result.modifiedCount;
+  }
 }
