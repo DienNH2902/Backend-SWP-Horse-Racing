@@ -37,6 +37,7 @@ export class RawResultService {
    *  4. bulkWrite vào DB
    *  5. Tạo RefereeReport type=End
    *  6. Update Race.status = Finished
+   *  7. Auto advance (round 1) hoặc distribute prize (round 2)
    */
   async confirmFinalRank(
     raceId: string,
@@ -95,7 +96,7 @@ export class RawResultService {
     }> = [];
 
     const finalRankingsForResponse: any[] = [];
-    let winnerHorseId: string | null = null; // Biến lưu trữ ID của ngựa thắng cuộc thực tế
+    let winnerHorseId: string | null = null; // ID của ngựa thắng cuộc thực tế (sau khi loại ngựa vi phạm)
 
     for (const result of sorted) {
       const horseIdStr = result.horseId.toString();
@@ -162,23 +163,11 @@ export class RawResultService {
     }
     // ==========================================
 
-    // 6. Tạo RefereeReport type=End
-    const winner = updates.find((u) => u.finalRank === 1);
-    const winnerRawResult = winner
-      ? rawResults.find((r) => r._id.toString() === winner.id)
-      : null;
-
-    await this.refereeReportService.createEndReport(raceId, refereeId, {
-      rawResultId: winnerRawResult?._id?.toString() ?? undefined,
-      reason: undefined,
-    });
-    this.logger.log(`Đã tạo RefereeReport type=End cho race ${raceId}`);
-
-    // 7. Update Race.status = Finished
+    // 6. Update Race.status = Finished
     await this.raceRepository.updateStatus(raceId, RaceStatusEnum.FINISHED);
     this.logger.log(`Race ${raceId} → status Finished`);
 
-    // 8. Auto advance (round 1) hoặc distribute prize (round 2)
+    // 7. Auto advance (round 1) hoặc distribute prize (round 2)
     await this.advancementService.handlePostConfirm(raceId);
     this.logger.log(`handlePostConfirm done cho race ${raceId}`);
 

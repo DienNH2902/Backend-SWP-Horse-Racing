@@ -6,8 +6,8 @@ import { RefereeReportType } from '../../../constants/refereeReportType.enum';
 export class RefereeReport {
   _id: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'RawResult', default: null })
-  rawResultId: Types.ObjectId | null;
+  @Prop({ type: [Types.ObjectId], ref: 'RawResult', default: [] })
+  rawResultId: Types.ObjectId[];
 
   @Prop({ type: Types.ObjectId, ref: 'Race', required: true })
   raceId: Types.ObjectId;

@@ -262,4 +262,18 @@ export class RegistrationRepository {
       .lean()
       .exec();
   }
+
+    async updateRaceIdForAdvancement(
+    registrationId: string,
+    newRaceId: string,
+  ): Promise<Registration | null> {
+    return this.registrationModel
+      .findByIdAndUpdate(
+        registrationId,
+        { $set: { raceId: new Types.ObjectId(newRaceId) } },
+        { returnDocument: 'after' },
+      )
+      .lean()
+      .exec();
+  }
 }

@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { RefereeReport  } from './schemas/referee-report.schema';
+import { RefereeReport } from './schemas/referee-report.schema';
 import { RefereeReportType } from '../../constants/refereeReportType.enum';
 
 export interface CreateRefereeReportData {
   raceId: Types.ObjectId;
   refereeId: Types.ObjectId;
   type: RefereeReportType;
-  rawResultId?: Types.ObjectId | null;
+  rawResultId?: Types.ObjectId[];
   reason?: string | null;
 }
 
@@ -24,7 +24,7 @@ export class RefereeReportRepository {
       raceId: data.raceId,
       refereeId: data.refereeId,
       type: data.type,
-      rawResultId: data.rawResultId ?? null,
+      rawResultId: data.rawResultId ?? [],
       reason: data.reason ?? null,
     });
   }

@@ -59,7 +59,7 @@ export class RaceController {
   @Roles(RoleEnum.ADMIN)
   @ApiOperation({
     summary:
-      'Tạo RACE vòng 2 — chỉ khả dụng khi toàn bộ vòng 1 đã kết thúc',
+      'Tạo RACE vòng 2',
   })
   @ApiParam({ name: 'tournamentId', description: 'Tournament ID' })
   @ApiQuery({ name: 'startTime', example: '2026-07-20T08:00:00.000Z' })
@@ -124,7 +124,7 @@ export class RaceController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Xem chi tiết một race' })
-  @ApiParam({ name: 'id', description: 'Race ID' })
+  @ApiParam({ name:  'id', description: 'Race ID' })
   getOne(@Param('id') id: string): Promise<ResponseRaceDto> {
     return this.service.getRaceById(id);
   }

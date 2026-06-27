@@ -1,17 +1,19 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsMongoId, IsOptional, IsString } from 'class-validator';
+import { IsMongoId, IsOptional, IsString, IsArray } from 'class-validator';
 
 
 export class CreateEndReportDto {
   @ApiPropertyOptional({
-    description: 'ID của RawResult bị vi phạm (nếu có)',
+    description: 'Danh sách ID của các RawResult bị vi phạm (nếu có)',
+    type: [String],
   })
   @IsOptional()
-  @IsMongoId()
-  rawResultId?: string;
- 
+  @IsArray()
+  @IsMongoId({ each: true })
+  rawResultId?: string[];
+
   @ApiPropertyOptional({
-    description: 'Lý do vi phạm hoặc ghi chú của Referee',
+    description: 'Lý do vi phạm hoặc ghi chú của Referee (áp dụng chung)',
   })
   @IsOptional()
   @IsString()
