@@ -15,7 +15,10 @@ export class SystemWalletRepository {
     private readonly systemWalletModel: Model<SystemWalletDocument>,
   ) {}
 
-  
+  /**
+   * Lấy ví hệ thống chính. Vì walletName unique + default sẵn,
+   * collection chỉ nên có duy nhất 1 document này.
+   */
   async findMainWallet(): Promise<SystemWallet | null> {
     return this.systemWalletModel
       .findOne({ walletName: MAIN_WALLET_NAME })

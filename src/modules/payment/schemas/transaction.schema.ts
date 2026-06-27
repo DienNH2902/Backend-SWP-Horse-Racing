@@ -1,3 +1,10 @@
+// ============================================================
+// File: transaction.schema.ts
+// CHỈ THAY ĐỔI @Prop của senderId — bỏ required: true, thêm default: null.
+// Lý do: khi hệ thống (SystemWallet) trả tiền RA cho user (vd prize payout),
+// senderId = null đại diện "Platform/System" — đối xứng với quy ước
+// receiverId = null đã có sẵn khi tiền chảy VÀO hệ thống (entry fee).
+// ============================================================
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { TransactionTypeEnum } from 'src/constants/transactionType.enum';
@@ -6,12 +13,13 @@ export type TransactionDocument = Transaction & Document;
 
 @Schema({ timestamps: true })
 export class Transaction {
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  /**
+   * senderId = null khi là giao dịch hệ thống trả ra (vd: prize payout, refund)
+   * receiverId = null khi là giao dịch hệ thống nhận vào (vd: entry fee)
+   */
+  @Prop({ type: Types.ObjectId, ref: 'User', default: null })
   senderId: Types.ObjectId | null;
 
-  /**
-   * receiverId = Platform khi là entry_fee vào hệ thống (system transaction)
-   */
   @Prop({ type: Types.ObjectId, ref: 'User', default: null })
   receiverId: Types.ObjectId | null;
 

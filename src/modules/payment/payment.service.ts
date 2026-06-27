@@ -136,7 +136,7 @@ import { RoleEnum } from 'src/constants/roleEnum.enum';
 import { ResponseTransactionDto } from './dto/response-transaction.dto';
 import { NotificationTypeEnum } from 'src/constants/notificationTypeEnum.enum';
 import { NotificationTitleEnum } from 'src/constants/notificationTitleEnum.enum';
-import { TransactionTitleEnum } from 'src/constants/transactionTitleEnum.enum';
+// import { TransactionTitleEnum } from 'src/constants/transactionTitleEnum.enum';
 
 export interface VnPayCallbackResponse {
   success: boolean;
@@ -177,7 +177,13 @@ export class PaymentService {
       );
     }
 
-    const referenceId = `${userId}_${Date.now()}`;
+    // const referenceId = `${userId}_${Date.now()}`;
+
+    /**
+     * UPDATE BẢO MẬT: Nhúng thẳng amount vào txnRef theo định dạng: userId_amount_timestamp
+     * Điều này giúp chúng ta kiểm tra được số tiền gốc mà không cần tạo transaction nháp trong DB.
+     */
+    const referenceId = `${userId}_${amount}_${Date.now()}`;
     return this.vnPayService.createPaymentUrl(
       referenceId,
       amount,
@@ -192,12 +198,36 @@ export class PaymentService {
     const result = this.vnPayService.verifyCallback(query);
     if (!result.isValid) throw new BadRequestException('Chữ ký không hợp lệ');
 
-    const { txnRef, responseCode, amount } = result;
-    const userId = txnRef.split('_')[0];
+    const { txnRef, responseCode, amount: callbackAmount } = result;
+    // const userId = txnRef.split('_')[0];
 
-    const isProcessed = await this.transactionRepository.checkExistsByContent(
-      `VNPay Deposit: ${txnRef}`,
-    );
+    /**
+     * UPDATE BẢO MẬT: Bóc tách referenceId mới để lấy userId và originalAmount
+     */
+    const parts = txnRef.split('_');
+    const userId = parts[0];
+    const originalAmount = parseInt(parts[1] || '0', 10);
+
+    /**
+     * 1 - KHẮC PHỤC: Đối chiếu số tiền trả về từ VNPay với số tiền gốc user yêu cầu nạp
+     */
+    if (callbackAmount !== originalAmount) {
+      throw new BadRequestException(
+        'Số tiền thanh toán không khớp với yêu cầu khởi tạo',
+      );
+    }
+
+    // const isProcessed = await this.transactionRepository.checkExistsByContent(
+    //   `VNPay Deposit: ${txnRef}`,
+    // );
+
+    /**
+     * 2 - KHẮC PHỤC: Đồng bộ chuỗi kiểm tra trùng lặp giao dịch (Idempotency)
+     * Đảm bảo chuỗi truyền vào checkExistsByContent khớp chính xác với trường 'content' được lưu ở dưới.
+     */
+    const transactionContent = `VNPay Deposit: ${txnRef}`;
+    const isProcessed =
+      await this.transactionRepository.checkExistsByContent(transactionContent);
     if (isProcessed)
       return { success: true, message: 'Giao dịch đã được xử lý trước đó' };
 
@@ -208,20 +238,24 @@ export class PaymentService {
       if (user.role === RoleEnum.HORSE_OWNER) {
         await this.horseOwnerModel.findOneAndUpdate(
           { userId: new Types.ObjectId(userId) },
-          { $inc: { balance: amount } },
+          { $inc: { balance: callbackAmount } },
         );
       } else if (user.role === RoleEnum.JOCKEY) {
         await this.jockeyModel.findOneAndUpdate(
           { userId: new Types.ObjectId(userId) },
-          { $inc: { balance: amount } },
+          { $inc: { balance: callbackAmount } },
         );
       }
 
+      /**
+       * 3 - KHẮC PHỤC: Lưu 'transactionContent' (có chứa txnRef duy nhất) vào DB
+       * thay vì dùng Enum chung chung để hàm checkExistsByContent phía trên hoạt động chính xác.
+       */
       await this.transactionRepository.create({
         senderId: new Types.ObjectId(userId),
         receiverId: null,
-        content: TransactionTitleEnum.DEPOSIT,
-        amount,
+        content: transactionContent,
+        amount: callbackAmount,
         type: TransactionTypeEnum.DEPOSIT,
       });
 
@@ -229,11 +263,15 @@ export class PaymentService {
         userId: new Types.ObjectId(userId),
         type: NotificationTypeEnum.DEPOSIT_SUCCESS, // Dùng Enum thay cho 'deposit_success'
         title: NotificationTitleEnum.DEPOSIT_SUCCESS, // Dùng Enum thay cho 'Nạp tiền thành công'
-        content: `Bạn đã nạp thành công ${amount} VNĐ vào tài khoản.`,
+        content: `Bạn đã nạp thành công ${callbackAmount} VNĐ vào tài khoản.`,
         isRead: false,
       });
 
-      return { success: true, message: 'Nạp tiền thành công', amount };
+      return {
+        success: true,
+        message: 'Nạp tiền thành công',
+        amount: callbackAmount,
+      };
     }
 
     return { success: false, message: 'Giao dịch thất bại hoặc bị hủy' };

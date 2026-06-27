@@ -16,7 +16,7 @@ import { PrizeDistribution, PrizeDistributionSchema } from '../prize-distributio
 import { RegistrationModule } from '../registration/registration.module';
 import { RawResultModule } from '../raw-result/raw-result.module';
 import { RaceModule } from '../race/race.module';
-
+import { PrizeModule } from '../prize-distribution/prize.module';
 
 @Module({
   imports: [
@@ -28,6 +28,7 @@ import { RaceModule } from '../race/race.module';
     forwardRef(() => RawResultModule),
     forwardRef(() => RaceModule),
     forwardRef(() => RegistrationModule),
+    forwardRef(() => PrizeModule),
   ],
   controllers: [TournamentController],
   providers: [
