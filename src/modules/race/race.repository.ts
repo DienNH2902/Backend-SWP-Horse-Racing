@@ -201,9 +201,11 @@ export class RaceRepository {
       .findByIdAndUpdate(new Types.ObjectId(raceId), {
         status,
         ...(status === RaceStatusEnum.SIMULATED && { simulatedAt: new Date() }),
+        ...(status === RaceStatusEnum.READY && { refereeConfirmedAt: new Date() }),
       })
       .exec();
   }
+
   async assignRaceCourse(
     raceId: string,
     raceCourseId: string,
