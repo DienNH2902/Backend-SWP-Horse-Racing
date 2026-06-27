@@ -6,7 +6,7 @@ export type TransactionDocument = Transaction & Document;
 
 @Schema({ timestamps: true })
 export class Transaction {
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  @Prop({ type: Types.ObjectId, ref: 'User', default: null })
   senderId: Types.ObjectId | null;
 
   /**
