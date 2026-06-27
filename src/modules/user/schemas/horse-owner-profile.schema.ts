@@ -25,13 +25,13 @@ export class HorseOwnerProfile {
   // totalHorsesOwned: number;
 
   //auto
-  @Prop({ type: Number, default: 0 })
+  @Prop({ type: Number, default: 70, min: 0, max: 100 })
   reputationPoints: number; // Điểm uy tín / danh tiếng của HorseOwner
 
-  @Prop({ type: Number, default: 0.0 })
+  @Prop({ type: Number, default: 0.0, min: 0 })
   balance: number; // Số dư tài khoản tiền thưởng của HorseOwner
 
-  @Prop({ type: Number, default: 0.0 })
+  @Prop({ type: Number, default: 0.0, min: 0 })
   heldBalance: number; // Số dư đóng băng tiền của HorseOwner
 }
 export const HorseOwnerProfileSchema =

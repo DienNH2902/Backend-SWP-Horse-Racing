@@ -279,10 +279,28 @@ export class JockeyInvitationService {
             },
           },
         );
+
+        await this.transactionRepository.create({
+          senderId: null,
+          receiverId: invitation.horseOwnerId,
+          content: `Hoàn trả tiền giải phóng ký quỹ (Lời mời tự động hủy do Jockey đã có hợp đồng khác). Số tiền: ${totalOwnerHeldAmount}`,
+          amount: totalOwnerHeldAmount,
+          type: TransactionTypeEnum.REFUND,
+        });
+
+        await this.notificationRepository.create({
+          userId: invitation.horseOwnerId,
+          type: NotificationTypeEnum.INVITATION_REJECTED,
+          title: NotificationTitleEnum.INVITATION_REJECTED,
+          content: `Lời mời gửi tới Jockey đã bị hệ thống hủy bỏ do đối tác đã chốt hợp đồng thi đấu khác trong giải này. Tiền ký quỹ đã được hoàn về ví khả dụng.`,
+          isRead: false,
+        });
+
         await this.jockeyInvitationRepository.updateStatus(
           invitationId,
           JockeyInvitationEnum.REJECTED,
         );
+
         throw new ConflictException(
           'Bạn đã sở hữu hợp đồng thi đấu ACTIVE khác trong giải này',
         );
@@ -328,6 +346,7 @@ export class JockeyInvitationService {
         isRead: false,
       });
     }
+
     // Xử lý kịch bản REJECTED (Từ chối lời mời)
     else if (dto.status === JockeyInvitationEnum.REJECTED) {
       // GIẢI PHÓNG TIỀN CHO OWNER khi bị từ chối thẳng
