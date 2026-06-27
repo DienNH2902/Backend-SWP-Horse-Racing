@@ -438,6 +438,16 @@ export class ResponseUserDto {
   @Expose()
   @Transform(({ obj }) => {
     if (obj.role === 'Jockey')
+      return obj.jockeyProfile?.heldBalance ?? obj.heldBalance ?? 0;
+    if (obj.role === 'Horse Owner')
+      return obj.horseOwnerProfile?.heldBalance ?? obj.heldBalance ?? 0;
+    return undefined;
+  })
+  heldBalance?: number;
+
+  @Expose()
+  @Transform(({ obj }) => {
+    if (obj.role === 'Jockey')
       return obj.jockeyProfile?.reputationPoints ?? obj.reputationPoints ?? 0;
     if (obj.role === 'Horse Owner')
       return (

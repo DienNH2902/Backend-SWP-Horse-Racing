@@ -14,7 +14,6 @@ import {
   RefereeReportResponseDto,
 } from './dto/index';
 
-// External repos
 import { RaceRepository } from '../race/race.repository';
 import { RaceStatusEnum } from 'src/constants/raceStatus.enum';
 
@@ -31,13 +30,10 @@ export class RefereeReportService {
     });
   }
 
-  // ── Tạo START report — gọi nội bộ khi Referee confirm ready ────────────────
-  // Được gọi từ RaceService.confirmReady(), không expose endpoint riêng
   async createStartReport(
     raceId: string,
     refereeId: string,
   ): Promise<RefereeReportResponseDto> {
-    // Chỉ tạo 1 lần — tránh duplicate
     const existed = await this.reportRepo.existsByRaceIdAndType(
       raceId,
       RefereeReportType.START,
@@ -50,14 +46,13 @@ export class RefereeReportService {
       raceId: new Types.ObjectId(raceId),
       refereeId: new Types.ObjectId(refereeId),
       type: RefereeReportType.START,
-      rawResultId: null,
+      rawResultId: [],
       reason: null,
     });
 
     return this.toResponse(report);
   }
 
-  // ── Tạo END report — Referee gọi sau khi race kết thúc ────────────────────
   async createEndReport(
     raceId: string,
     refereeId: string,
@@ -67,10 +62,10 @@ export class RefereeReportService {
     const race = await this.raceRepo.findById(raceId);
     if (!race) throw new NotFoundException('Không tìm thấy race');
 
-    const allowedStatuses = [RaceStatusEnum.SIMULATED, RaceStatusEnum.FINISHED];
+    const allowedStatuses = [RaceStatusEnum.FINISHED];
     if (!allowedStatuses.includes(race.status as RaceStatusEnum)) {
       throw new BadRequestException(
-        'Race phải ở trạng thái "simulated" hoặc "finished" để tạo end report',
+        'Race phải ở trạng thái "FINISHED" để tạo end report',
       );
     }
 
@@ -87,9 +82,7 @@ export class RefereeReportService {
       raceId: new Types.ObjectId(raceId),
       refereeId: new Types.ObjectId(refereeId),
       type: RefereeReportType.END,
-      rawResultId: dto.rawResultId
-        ? new Types.ObjectId(dto.rawResultId)
-        : null,
+      rawResultId: dto.rawResultId?.map((id) => new Types.ObjectId(id)) ?? [],
       reason: dto.reason ?? null,
     });
 

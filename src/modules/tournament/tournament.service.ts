@@ -13,6 +13,8 @@ import { plainToInstance } from 'class-transformer';
 // import { Types } from 'mongoose';
 import { GetTournamentsQueryDto } from './dto/get-tournament-status-query.dto';
 import { RegistrationRepository } from '../registration/registration.repository';
+import { TOURNAMENT_TOTAL_ROUNDS } from 'src/constants/tournamentStatusEnum.enum';
+import { PrizeRepository } from '../prize-distribution/prize.repository';
 
 export class ParticipantJockeyDto {
   jockeyId: string;
@@ -62,6 +64,7 @@ export class TournamentService {
   constructor(
     private readonly tournamentRepository: TournamentRepository,
     private readonly registrationRepository: RegistrationRepository,
+    private readonly prizeRepository: PrizeRepository
     // private readonly userTournamentRepository: UserTournamentRepository,
   ) {}
 
@@ -103,36 +106,37 @@ export class TournamentService {
     return d;
   }
 
-  async createTournament(
-    dto: CreateTournamentDto,
-  ): Promise<ResponseTournamentDto> {
-    // Chuẩn hóa khoảng thời gian về mốc ngày (bỏ giờ)
-    const start = this.startOfDay(new Date(dto.startDate));
-    const end = this.endOfDay(new Date(dto.endDate));
-
-    if (start >= end) {
-      throw new BadRequestException(
-        'Ngày bắt đầu giải đấu phải trước ngày kết thúc',
-      );
-    }
-
-    // Kiểm tra trùng lịch với các giải đấu khác
-    const overlapping =
-      await this.tournamentRepository.findOverlappingTournament(start, end);
-    if (overlapping) {
-      throw new BadRequestException(
-        'Thời gian của giải đấu bị trùng lặp với một giải đấu khác đã tồn tại',
-      );
-    }
-
-    const tournament = await this.tournamentRepository.createTournament({
-      ...dto,
-      startDate: start,
-      endDate: end,
-    });
-
-    return this.toResponse(tournament);
+async createTournament(
+  dto: CreateTournamentDto,
+): Promise<ResponseTournamentDto> {
+  // Chuẩn hóa khoảng thời gian về mốc ngày (bỏ giờ)
+  const start = this.startOfDay(new Date(dto.startDate));
+  const end = this.endOfDay(new Date(dto.endDate));
+ 
+  if (start.getTime() >= end.getTime()) {
+    throw new BadRequestException(
+      'Ngày bắt đầu giải đấu phải trước ngày kết thúc',
+    );
   }
+ 
+  // Kiểm tra trùng lịch với các giải đấu khác
+  const overlapping =
+    await this.tournamentRepository.findOverlappingTournament(start, end);
+  if (overlapping) {
+    throw new BadRequestException(
+      'Thời gian của giải đấu bị trùng lặp với một giải đấu khác đã tồn tại',
+    );
+  }
+ 
+  const tournament = await this.tournamentRepository.createTournament({
+    ...dto,
+    totalRounds: TOURNAMENT_TOTAL_ROUNDS, // set cứng, không nhận từ client
+    startDate: start,
+    endDate: end,
+  });
+ 
+  return this.toResponse(tournament);
+}
 
   // async getAllTournament(): Promise<ResponseTournamentDto[]> {
   //   const tournaments = await this.tournamentRepository.findAllTournament();
@@ -181,24 +185,36 @@ export class TournamentService {
   //   return this.toResponse(tournament);
   // }
 
-  async getOneTournament(id: string): Promise<any> {
-    const tournament = await this.tournamentRepository.findTournamentById(id);
-    if (!tournament) {
-      throw new NotFoundException('Không tìm thấy giải đấu yêu cầu');
-    }
+async getOneTournament(id: string): Promise<any> {
+  const tournament = await this.tournamentRepository.findTournamentById(id);
+  if (!tournament) {
+    throw new NotFoundException('Không tìm thấy giải đấu yêu cầu');
+  }
 
-    const plainTournament = tournament.toObject();
-    const availableSlot = await this.calculateAvailableSlot(
-      plainTournament._id.toString(),
+  const plainTournament = tournament.toObject();
+  const tournamentId = plainTournament._id.toString();
+
+  const [availableSlot, prize] = await Promise.all([
+    this.calculateAvailableSlot(
+      tournamentId,
       plainTournament.horsesPerRace,
       plainTournament.totalRaces,
-    );
+    ),
+    this.prizeRepository.findByTournamentId(tournamentId),
+  ]);
 
-    return {
-      ...this.toResponse(plainTournament),
-      availableSlot,
-    };
-  }
+  return {
+    ...this.toResponse(plainTournament),
+    availableSlot,
+    prize: prize
+      ? {
+          _id: prize._id.toString(),
+          name: prize.name,
+          amount: prize.amount
+        }
+      : null,
+  };
+}
 
   async getTournamentParticipants(
     tournamentId: string,

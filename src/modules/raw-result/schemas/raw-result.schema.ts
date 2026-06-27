@@ -1,10 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Types } from 'mongoose';
+import { HydratedDocument, Types } from 'mongoose';
+import { RawResultStatus } from 'src/constants/rawResultStatus.enum';
 
-export enum RawResultStatus {
-  PENDING = 'pending',
-  CONFIRMED = 'confirmed',
-}
+export type RawResultDocument = HydratedDocument<RawResult>;
+
 
 @Schema({ timestamps: true })
 export class RawResult {

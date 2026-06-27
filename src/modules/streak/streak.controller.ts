@@ -1,42 +1,20 @@
-// import {
-//   Controller,
-//   Get,
-//   Post,
-//   Body,
-//   Patch,
-//   Param,
-//   Delete,
-// } from '@nestjs/common';
-// import { StreakService } from './streak.service';
-// import { CreateStreakDto } from './dto/create-streak.dto';
-// import { UpdateStreakDto } from './dto/response-streak.dto';
+import { Controller, Get, UseGuards, Request } from '@nestjs/common';
+import { StreakService } from './streak.service';
+import { ResponseStreakDto } from './dto/response-streak.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 
-// @Controller('streak')
-// export class StreakController {
-//   constructor(private readonly streakService: StreakService) {}
+@Controller('streak')
+export class StreakController {
+  constructor(private readonly streakService: StreakService) {}
 
-//   @Post()
-//   create(@Body() createStreakDto: CreateStreakDto) {
-//     return this.streakService.create(createStreakDto);
-//   }
-
-//   @Get()
-//   findAll() {
-//     return this.streakService.findAll();
-//   }
-
-//   @Get(':id')
-//   findOne(@Param('id') id: string) {
-//     return this.streakService.findOne(+id);
-//   }
-
-//   @Patch(':id')
-//   update(@Param('id') id: string, @Body() updateStreakDto: UpdateStreakDto) {
-//     return this.streakService.update(+id, updateStreakDto);
-//   }
-
-//   @Delete(':id')
-//   remove(@Param('id') id: string) {
-//     return this.streakService.remove(+id);
-//   }
-// }
+  // API lấy trạng thái Streak hiện tại của User đang đăng nhập
+  @Get('my-status')
+  @UseGuards(JwtAuthGuard) // Bắt buộc phải đăng nhập mới lấy được thông tin
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Lấy streak của tài khoản hiện tại' })
+  async getMyStreak(@Request() req: any): Promise<ResponseStreakDto> {
+    const userId = req.user._id as string;
+    return await this.streakService.getStreak(userId);
+  }
+}

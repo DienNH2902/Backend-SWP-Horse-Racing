@@ -15,8 +15,15 @@ export enum NotificationTitleEnum {
   TOURNAMENT_REJECTED = 'Đăng ký giải đấu bị từ chối',
   RACE_REMINDER = 'Nhắc nhở lịch thi đấu',
   REWARD_RECEIVED = 'Phần thưởng giải đấu',
+  CONTRACT_BREACHED = 'Hợp đồng đã vi phạm',
+  CONTRACT_COMPLETED = 'Hợp đồng đã hoàn thành tốt đẹp',
 
   BALANCE_NOT_ENOUGH = 'Số dư tài khoản không đủ',
 
   SYSTEM_ALERT = 'Thông báo hệ thống',
+
+  PLACE_BET_SUCCESS = 'Đặt cược thành công',
+  UPDATE_BET_SUCCESS = 'Thay đổi cược thành công',
+  BET_WIN = 'Chúc mừng thắng cược',
+  BET_LOSE = 'Kết quả đặt cược',
 }

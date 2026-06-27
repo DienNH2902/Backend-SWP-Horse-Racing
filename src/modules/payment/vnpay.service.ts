@@ -15,7 +15,7 @@ export class VnPayService {
     const tmnCode = this.configService.get<string>('VNP_TMN_CODE') || '';
     const secretKey = this.configService.get<string>('VNP_HASH_SECRET') || '';
     let vnpUrl = this.configService.get<string>('VNP_URL') || '';
-    const returnUrl = this.configService.get<string>('VNP_RETURN_URL') || '';
+    const returnUrl = this.configService.get<string>('VNP_RETURN_URL') || ''; //Nơi vnpay tự gọi hàm callback ở backend
 
     const date = new Date();
     const createDate =

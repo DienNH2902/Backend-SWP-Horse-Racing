@@ -177,7 +177,11 @@ export class AuthService {
       gender: user.gender,
     };
 
-    await this.streakService.trackLoginStreak(user._id.toString());
+    await this.streakService.trackLoginStreak(
+      user._id.toString(),
+      user.fullName,
+      user.email,
+    );
 
     return this.generateToken(payload);
   }
@@ -296,7 +300,11 @@ export class AuthService {
       gender: user.gender || 0, // Fallback giá trị mặc định nếu user mới tạo chưa có giới tính
     };
 
-    await this.streakService.trackLoginStreak(user._id.toString());
+    await this.streakService.trackLoginStreak(
+      user._id.toString(),
+      user.fullName,
+      user.email,
+    );
 
     // 4. Ký và trả về chuỗi JWT token chuẩn của hệ thống
     return this.generateToken(payload);

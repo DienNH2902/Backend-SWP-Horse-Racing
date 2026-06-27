@@ -48,7 +48,7 @@ export class RaceController {
   @UseGuards(RolesGuard)
   @Roles(RoleEnum.ADMIN)
   @ApiOperation({
-    summary: 'Admin tạo nhiều race vòng 1 cùng lúc cho một tournament',
+    summary: 'ADMIN tạo nhiều RACE vòng 1 cùng lúc cho một TOURNAMENT',
   })
   createBatch(@Body() dto: CreateRaceBatchDto): Promise<ResponseRaceDto[]> {
     return this.service.createRacesBatch(dto);
@@ -59,7 +59,7 @@ export class RaceController {
   @Roles(RoleEnum.ADMIN)
   @ApiOperation({
     summary:
-      'Tạo race chung kết (vòng 2) — chỉ khả dụng khi toàn bộ vòng 1 đã kết thúc',
+      'Tạo RACE vòng 2',
   })
   @ApiParam({ name: 'tournamentId', description: 'Tournament ID' })
   @ApiQuery({ name: 'startTime', example: '2026-07-20T08:00:00.000Z' })
@@ -75,7 +75,7 @@ export class RaceController {
   @Patch(':raceId/assign-referee')
   @UseGuards(RolesGuard)
   @Roles(RoleEnum.ADMIN)
-  @ApiOperation({ summary: 'ADMIN gán referee vào race' })
+  @ApiOperation({ summary: 'ADMIN gán REFEREE vào RACE' })
   @ApiParam({ name: 'raceId', description: 'Race ID' })
   assignReferee(
     @Param('raceId') raceId: string,
@@ -87,7 +87,7 @@ export class RaceController {
   @Post(':raceId/bulk-assign-horses')
   @UseGuards(RolesGuard)
   @Roles(RoleEnum.ADMIN)
-  @ApiOperation({ summary: 'ADMIN sắp xếp ngựa WAITLISTED vào race' })
+  @ApiOperation({ summary: 'ADMIN sắp xếp ngựa WAITLISTED vào RACE' })
   @ApiParam({ name: 'raceId', description: 'Race ID' })
   bulkAssignHorses(
     @Param('raceId') raceId: string,
@@ -100,14 +100,14 @@ export class RaceController {
   @UseGuards(RolesGuard)
   @Roles(RoleEnum.REFEREE)
   @ApiOperation({
-    summary: 'Referee xem danh sách race được assigned cho mình',
+    summary: 'REFEREE xem danh sách RACE được assigned cho mình',
   })
   getMyRaces(@Request() req: any): Promise<ResponseRaceDto[]> {
     return this.service.getRacesByReferee(req.user._id as string);
   }
 
   @Get('tournament/:tournamentId')
-  @ApiOperation({ summary: 'Xem toàn bộ race của một tournament, lọc theo status' })
+  @ApiOperation({ summary: 'Xem toàn bộ RACE của một TOURNAMENT, lọc theo status' })
   @ApiParam({ name: 'tournamentId' })
   @ApiQuery({
     name: 'status',
@@ -124,7 +124,7 @@ export class RaceController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Xem chi tiết một race' })
-  @ApiParam({ name: 'id', description: 'Race ID' })
+  @ApiParam({ name:  'id', description: 'Race ID' })
   getOne(@Param('id') id: string): Promise<ResponseRaceDto> {
     return this.service.getRaceById(id);
   }
@@ -132,7 +132,7 @@ export class RaceController {
   @Patch(':raceId/assign-race-course')
   @UseGuards(RolesGuard)
   @Roles(RoleEnum.ADMIN)
-  @ApiOperation({ summary: 'Admin gán đường đua vào Race' })
+  @ApiOperation({ summary: 'ADMIN gán đường đua vào RACE' })
   @ApiParam({ name: 'raceId', description: 'Race ID' })
   assignRaceCourse(
     @Param('raceId') raceId: string,

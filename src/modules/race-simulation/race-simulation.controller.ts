@@ -16,7 +16,7 @@ export class RaceSimulationController {
   @Roles(RoleEnum.REFEREE)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'REFEREE kích hoạt chạy simulation cho race (race.status phải là "ready")',
+    summary: 'REFEREE kích hoạt chạy simulation cho RACE',
   })
   async runSimulation(@Param('raceId') raceId: string) {
     return await this.simulationService.runSimulation(raceId);
@@ -35,10 +35,11 @@ export class RaceSimulationController {
 
   @Delete(':raceId/reset')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleEnum.ADMIN)
+  @Roles(RoleEnum.ADMIN, RoleEnum.REFEREE)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: '[DEV] Reset simulation data — xóa ticks/events/results, race về Ready',
+    summary:
+      '[DEV] Reset simulation data — xóa ticks/events/results, race về Ready',
   })
   async resetSimulation(@Param('raceId') raceId: string) {
     return await this.simulationService.resetSimulation(raceId);

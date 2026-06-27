@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { ClientSession, Model } from 'mongoose';
 import { Tournament, TournamentDocument } from './schemas/tournament.schema';
 import { TournamentStatusEnum } from 'src/constants/tournamentStatusEnum.enum';
 
@@ -74,5 +74,18 @@ export class TournamentRepository {
 
   async deleteTournament(id: string): Promise<any> {
     return await this.tournamentModel.findByIdAndDelete(id).exec();
+  }
+
+  async updateTournamentWithSession(
+    id: string,
+    updateData: Partial<Tournament>,
+    session?: ClientSession,
+  ): Promise<TournamentDocument | null> {
+    return await this.tournamentModel
+      .findByIdAndUpdate(id, updateData, {
+        returnDocument: 'after',
+        session,
+      })
+      .exec();
   }
 }

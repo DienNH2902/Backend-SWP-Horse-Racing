@@ -16,9 +16,10 @@ import { RaceRepository } from '../race/race.repository';
 import { RaceCourseRepository } from '../race/race-course/race-course.repository';
 import { RaceConditionRepository } from '../race/race-condition/race-condition.repository';
 import { RegistrationRepository } from '../registration/registration.repository';
+import { UsersRepository } from '../user/user.repository';
 
 import { RaceStatusEnum } from 'src/constants/raceStatus.enum';
-import { RawResultStatus } from './schemas/raw-result.schema';
+import { RawResultStatus } from '../../constants/rawResultStatus.enum';
 
 import { calcHorseRaceStats } from './engine/stats-calculator';
 import { calcConditionModifier } from './engine/condition-modifier';
@@ -49,6 +50,8 @@ export class RaceSimulationService {
     private readonly raceCourseRepo: RaceCourseRepository,
     private readonly raceConditionRepo: RaceConditionRepository,
     private readonly registrationRepo: RegistrationRepository,
+    private readonly usersRepo: UsersRepository,
+
   ) {}
 
   // ── [DEV] Reset để chạy lại simulation nhiều lần ─────────────────────────
@@ -66,7 +69,7 @@ export class RaceSimulationService {
   }
 
   // ── Main: chạy simulation ─────────────────────────────────────────────────
-  async runSimulation(raceId: string): Promise<{ message: string }> {
+async runSimulation(raceId: string): Promise<{ message: string }> {
     this.logger.log(`[SIM] ═══ Bắt đầu simulation race ${raceId} ═══`);
 
     // ── 1. Load + validate ────────────────────────────────────────────────────
@@ -135,17 +138,58 @@ export class RaceSimulationService {
 
     const raceObjectId = new Types.ObjectId(raceId);
 
+    // ── 3.5. Resolve lại JockeyProfile thật ──────────────────────────────────
+    // BUG FIX: reg.jockeyProfile (từ findConfirmedWithDetails()) thực chất là
+    // User document do populate sai field (JockeyInvitation.jockeyId ref 'User',
+    // không phải 'JockeyProfile'). reg.jockeyProfile._id vì vậy là User._id,
+    // không phải JockeyProfile._id như RawResult.jockeyId yêu cầu (ref: 'JockeyProfile').
+    // Resolve lại đúng JockeyProfile bằng userId để lấy _id và weight thật.
+    const jockeyProfileMap = new Map<
+      string,
+      { _id: Types.ObjectId; weight: number; height: number }
+    >();
+    for (const reg of registrations) {
+      const userId =
+        (reg.jockeyProfile as any)?._id?.toString() ??
+        (reg.jockeyProfile as any)?.toString();
+
+      if (!jockeyProfileMap.has(userId)) {
+        const realProfile = await this.usersRepo.findJockeyProfileByUserId(userId);
+        if (!realProfile) {
+          throw new NotFoundException(
+            `Không tìm thấy JockeyProfile cho user ${userId} (registration ${reg._id})`,
+          );
+        }
+        jockeyProfileMap.set(userId, {
+          _id: (realProfile as any)._id,
+          weight: (realProfile as any).weight,
+          height: (realProfile as any).height,
+        });
+        this.logger.log(
+          `[SIM] Resolved JockeyProfile thật cho user ${userId}: ` +
+          `profileId=${(realProfile as any)._id}, weight=${(realProfile as any).weight}`,
+        );
+      }
+    }
+
     // ── 4. Build HorseInput ───────────────────────────────────────────────────
-    const horseInputs: HorseInput[] = registrations.map((reg) => ({
-      horseId: reg.horse._id,
-      jockeyId: reg.jockeyProfile._id,
-      lane: reg.gateNumber,
-      horseWeight: reg.horse.weight,
-      horseHeight: reg.horse.height,
-      horseWinRate: reg.horse.winRate,
-      jockeyWeight: reg.jockeyProfile.weight,
-      totalWin: reg.horse.totalWin ?? 0,
-    }));
+    const horseInputs: HorseInput[] = registrations.map((reg) => {
+      const userId =
+        (reg.jockeyProfile as any)?._id?.toString() ??
+        (reg.jockeyProfile as any)?.toString();
+      const realProfile = jockeyProfileMap.get(userId)!;
+
+      return {
+        horseId: reg.horse._id,
+        jockeyId: realProfile._id, // ← JockeyProfile._id thật, không phải User._id
+        lane: reg.gateNumber,
+        horseWeight: reg.horse.weight,
+        horseHeight: reg.horse.height,
+        horseWinRate: reg.horse.winRate,
+        jockeyWeight: realProfile.weight, // ← weight thật từ JockeyProfile
+        totalWin: reg.horse.totalWin ?? 0,
+      };
+    });
 
     // ── 5. Tính stats + conditionModifier ────────────────────────────────────
     const horsesData: HorseEngineData[] = horseInputs.map((input) => {

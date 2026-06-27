@@ -14,6 +14,8 @@ export enum NotificationTypeEnum {
   INVITATION_ACCEPTED = 'Invitation_accepted', // Chủ ngựa nhận thông báo nài đã đồng ý
   INVITATION_REJECTED = 'Invitation_rejected', // Chủ ngựa nhận thông báo nài đã từ chối
   CONTRACT_CANCELLED = 'Contract_cancelled', // Hợp đồng bị hủy bỏ
+  CONTRACT_BREACHED = 'Contract_breached', // Hợp đồng bị vi phạm
+  CONTRACT_COMPLETED = 'Contract_completed', // Hợp đồng hoàn thành tốt đẹp
 
   // --- Hệ thống giải đấu / Vận hành (Tournament) ---
   TOURNAMENT_REGISTERED = 'Tournament_registered', // Đăng ký giải đấu thành công
@@ -29,4 +31,9 @@ export enum NotificationTypeEnum {
 
   // Hệ thống
   SYSTEM_ALERT = 'System_alert',
+
+  PLACE_BET_SUCCESS = 'Place_bet_success',
+  UPDATE_BET_SUCCESS = 'Update_bet_success',
+  BET_WIN = 'Bet_win',
+  BET_LOSE = 'Bet_lose',
 }

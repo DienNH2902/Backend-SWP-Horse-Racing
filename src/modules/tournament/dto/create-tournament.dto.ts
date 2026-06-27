@@ -3,11 +3,29 @@ import {
   IsString,
   IsNotEmpty,
   IsNumber,
+  IsUrl,
   Min,
   IsDate,
   IsOptional,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
+
+/**
+ * Parse chuỗi ngày dạng DD/MM/YYYY thành Date theo local time.
+ * Trả về giá trị gốc nếu không hợp lệ, để @IsDate() có thể bắt lỗi.
+ */
+function parseDateString(value: unknown): unknown {
+  if (typeof value === 'string' && value.includes('/')) {
+    const [day, month, year] = value.split('/');
+    const date = new Date(
+      Number(year),
+      Number(month) - 1,
+      Number(day),
+    );
+    return isNaN(date.getTime()) ? value : date;
+  }
+  return value;
+}
 
 export class CreateTournamentDto {
   @ApiProperty({ example: 'Golden Hoof Championship 2026' })
@@ -27,7 +45,7 @@ export class CreateTournamentDto {
     required: false,
     description: 'Đường dẫn ảnh banner hoặc logo của giải đấu',
   })
-  @IsString()
+  @IsUrl()
   @IsOptional()
   imageUrl?: string;
 
@@ -36,15 +54,7 @@ export class CreateTournamentDto {
     description: 'DD/MM/YYYY format',
     required: true,
   })
-  @Transform(({ value }) => {
-    // Nếu value truyền lên là chuỗi dạng DD/MM/YYYY
-    if (typeof value === 'string' && value.includes('/')) {
-      const [day, month, year] = value.split('/');
-      // Chuyển thành định dạng YYYY-MM-DD để tạo Object Date chuẩn
-      return new Date(`${year}-${month}-${day}`);
-    }
-    return value;
-  })
+  @Transform(({ value }) => parseDateString(value))
   @IsDate()
   @IsNotEmpty()
   startDate: Date;
@@ -54,15 +64,7 @@ export class CreateTournamentDto {
     description: 'DD/MM/YYYY format',
     required: true,
   })
-  @Transform(({ value }) => {
-    // Nếu value truyền lên là chuỗi dạng DD/MM/YYYY
-    if (typeof value === 'string' && value.includes('/')) {
-      const [day, month, year] = value.split('/');
-      // Chuyển thành định dạng YYYY-MM-DD để tạo Object Date chuẩn
-      return new Date(`${year}-${month}-${day}`);
-    }
-    return value;
-  })
+  @Transform(({ value }) => parseDateString(value))
   @IsDate()
   @IsNotEmpty()
   endDate: Date;

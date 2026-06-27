@@ -23,6 +23,11 @@ import { join } from 'path';
 import { OtpModule } from './modules/otp/otp.module';
 import { RaceBroadcastModule } from './modules/race-broadcast/race-broadcast.module';
 import { StreakModule } from './modules/streak/streak.module';
+import { RewardModule } from './modules/reward/reward.module';
+import { PointsTransactionModule } from './modules/points-transaction/points-transaction.module';
+import { RawResultModule } from './modules/raw-result/raw-result.module';
+import { PrizeDistributionModule } from './modules/prize-distribution/prize-distribution.module';
+import { BetModule } from './modules/bet/bet.module';
 
 @Module({
   imports: [
@@ -86,6 +91,11 @@ import { StreakModule } from './modules/streak/streak.module';
     RefereeReportModule,
     RaceBroadcastModule,
     StreakModule,
+    RewardModule,
+    PointsTransactionModule,
+    RawResultModule,
+    PrizeDistributionModule,
+    BetModule,
   ],
   controllers: [AppController],
   providers: [AppService],

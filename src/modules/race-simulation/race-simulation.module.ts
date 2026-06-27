@@ -21,8 +21,9 @@ import { RaceModule } from '../race/race.module';
 import { RaceCourseModule } from '../race/race-course/race-course.module';
 import { RaceConditionModule } from '../race/race-condition/race-condition.module';
 import { RegistrationModule } from '../registration/registration.module';
+import { UserModule } from '../user/user.module';
 
-import { RawResult, RawResultSchema } from './schemas/raw-result.schema';
+import { RawResult, RawResultSchema } from '../raw-result/schemas/raw-result.schema';
 
 @Module({
   imports: [
@@ -33,10 +34,11 @@ import { RawResult, RawResultSchema } from './schemas/raw-result.schema';
       { name: RawResult.name,      schema: RawResultSchema      },
     ]),
 
-      RaceModule,
+    RaceModule,
     RaceCourseModule,
     RaceConditionModule,
     RegistrationModule,
+    UserModule
   ],
   controllers: [RaceSimulationController],
   providers: [

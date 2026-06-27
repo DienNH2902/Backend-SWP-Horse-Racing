@@ -34,6 +34,12 @@ import { TransactionTitleEnum } from 'src/constants/transactionTitleEnum.enum';
 import { HorseRepository } from '../horse/horse.repository';
 import { HorseStatusEnum } from 'src/constants/horseStatusEnum.enum';
 import { TournamentStatusEnum } from 'src/constants/tournamentStatusEnum.enum';
+import {
+  SystemWallet,
+  SystemWalletDocument,
+} from '../payment/schemas/systemWallet.schema';
+import { RaceRepository } from '../race/race.repository';
+import { JockeyProfile } from '../user/schemas/jockey-profile.schema';
 
 @Injectable()
 export class RegistrationService {
@@ -45,9 +51,14 @@ export class RegistrationService {
     private readonly transactionRepository: TransactionRepository,
     private readonly notificationRepository: NotificationRepository,
     private readonly horseRepository: HorseRepository,
+    private readonly raceRepository: RaceRepository,
 
     @InjectModel(HorseOwnerProfile.name)
     private readonly horseOwnerProfileModel: Model<HorseOwnerProfileDocument>,
+    @InjectModel(JockeyProfile.name)
+    private readonly jockeyProfileModel: Model<JockeyProfile>,
+    @InjectModel(SystemWallet.name)
+    private readonly systemWalletModel: Model<SystemWalletDocument>,
   ) {}
 
   // ─── Helpers ───
@@ -203,7 +214,6 @@ export class RegistrationService {
     return this.toResponse(reg);
   }
 
-  // Admin confirm — assign gateNumber, trừ tiền
   async adminConfirm(
     id: string,
     dto: ApproveRegistrationDto,
@@ -216,6 +226,78 @@ export class RegistrationService {
         `Đăng ký đang ở trạng thái "${reg.status}", không thể duyệt`,
       );
     }
+
+    const race = await this.raceRepository.findOneRace({ _id: dto.raceId });
+    if (!race) {
+      throw new NotFoundException(
+        'Không tìm thấy thông tin trận đấu được chỉ định',
+      );
+    }
+
+    const tournament = await this.tournamentRepository.findById(
+      this.resolveId(race.tournamentId),
+    );
+
+    if (!tournament) {
+      throw new NotFoundException(
+        'Không tìm thấy thông tin giải đấu được chỉ định',
+      );
+    }
+
+    // 3. Kiểm tra xem cổng xuất phát này trong trận đấu đã có ai chiếm giữ chưa
+    const usedGates = await this.registrationRepository.getUsedGateNumbers(
+      dto.raceId,
+    );
+    if (usedGates.includes(dto.gateNumber)) {
+      throw new BadRequestException(
+        `Cổng chạy số [${dto.gateNumber}] trong trận đấu này đã có ngựa khác đăng ký`,
+      );
+    }
+
+    // 4. Kiểm tra số lượng slot tối đa của trận đấu
+    const currentConfirmedCount =
+      await this.registrationRepository.countConfirmedByRace(dto.raceId);
+    const maxCapacity = tournament.horsesPerRace || 10;
+    if (currentConfirmedCount >= maxCapacity) {
+      throw new BadRequestException(
+        'Trận đấu hiện tại đã đủ số lượng ngựa tham gia chạy, không thể duyệt thêm',
+      );
+    }
+
+    // [BỔ SUNG VÒNG CHECK KHI ADMIN DUYỆT]: Re-validate trạng thái của hợp đồng liên quan
+    const contract = await this.contractRepository.findByInvitationId(
+      this.resolveId(reg.jockeyInvitationId),
+    );
+    if (!contract || contract.status !== ContractStatusEnum.ACTIVE) {
+      const rejectReason = !contract
+        ? 'Không tìm thấy thông tin hợp đồng liên quan'
+        : `Hợp đồng liên quan đã không còn hợp lệ (Trạng thái hiện tại: ${contract.status})`;
+
+      // Tự động chuyển đơn đăng ký sang trạng thái REJECTED để giải phóng pool giải đấu
+      await this.registrationRepository.updateStatusToRejected(
+        id,
+        rejectReason,
+      );
+
+      await this.horseRepository.updateHorseStatus(
+        this.resolveId(reg.horseId),
+        HorseStatusEnum.IDLE,
+      );
+
+      const ownerIdStr = this.resolveId(reg.ownerId);
+      await this.notificationRepository.create({
+        userId: new Types.ObjectId(ownerIdStr),
+        type: NotificationTypeEnum.TOURNAMENT_REJECTED,
+        title: NotificationTitleEnum.TOURNAMENT_REJECTED,
+        content: `Đăng ký giải đấu của bạn bị hủy tự động do: ${rejectReason}`,
+        isRead: false,
+      });
+
+      throw new BadRequestException(
+        `Không thể duyệt đơn đăng ký này. Lý do: ${rejectReason}. Hệ thống đã tự động từ chối đơn.`,
+      );
+    }
+
     const ownerIdStr = this.resolveId(reg.ownerId);
 
     // 2. Re-check balance tại thời điểm admin duyệt
@@ -252,6 +334,18 @@ export class RegistrationService {
       { $inc: { balance: -reg.entryFee } },
     );
 
+    // 4. Cộng entryFee vào Ví hệ thống (SystemWallet)
+    await this.systemWalletModel.updateOne(
+      { walletName: 'SYSTEM_MAIN_WALLET' },
+      {
+        $inc: {
+          balance: reg.entryFee,
+          totalRevenue: reg.entryFee,
+        },
+      },
+      { upsert: true }, // Đảm bảo tự động khởi tạo document nếu hệ thống chưa có bản ghi ví nào
+    );
+
     // 4. Insert Transaction qua TransactionRepository
     await this.transactionRepository.create({
       senderId: new Types.ObjectId(ownerIdStr),
@@ -266,6 +360,11 @@ export class RegistrationService {
       id,
       dto.gateNumber,
     );
+
+    // Cập nhật thêm raceId vào bản ghi Registration để xác định đơn này thuộc về trận đấu nào
+    await this.registrationRepository.updateById(id, {
+      raceId: new Types.ObjectId(dto.raceId),
+    });
 
     // 6. Notification cho owner qua NotificationRepository
     await this.notificationRepository.create({
@@ -290,6 +389,40 @@ export class RegistrationService {
     if (reg.status !== RegistrationStatusEnum.PENDING) {
       throw new ConflictException(
         `Đăng ký đang ở trạng thái "${reg.status}", không thể chuyển vào danh sách chờ`,
+      );
+    }
+
+    // [BỔ SUNG VÒNG CHECK KHI ADMIN DUYỆT]: Re-validate trạng thái của hợp đồng liên quan
+    const contract = await this.contractRepository.findByInvitationId(
+      this.resolveId(reg.jockeyInvitationId),
+    );
+    if (!contract || contract.status !== ContractStatusEnum.ACTIVE) {
+      const rejectReason = !contract
+        ? 'Không tìm thấy thông tin hợp đồng liên quan'
+        : `Hợp đồng liên quan đã không còn hợp lệ (Trạng thái hiện tại: ${contract.status})`;
+
+      // Tự động chuyển đơn đăng ký sang trạng thái REJECTED để giải phóng pool giải đấu
+      await this.registrationRepository.updateStatusToRejected(
+        id,
+        rejectReason,
+      );
+
+      await this.horseRepository.updateHorseStatus(
+        this.resolveId(reg.horseId),
+        HorseStatusEnum.IDLE,
+      );
+
+      const ownerIdStr = this.resolveId(reg.ownerId);
+      await this.notificationRepository.create({
+        userId: new Types.ObjectId(ownerIdStr),
+        type: NotificationTypeEnum.TOURNAMENT_REJECTED,
+        title: NotificationTitleEnum.TOURNAMENT_REJECTED,
+        content: `Đăng ký giải đấu của bạn bị hủy tự động do: ${rejectReason}`,
+        isRead: false,
+      });
+
+      throw new BadRequestException(
+        `Không thể duyệt đơn đăng ký này. Lý do: ${rejectReason}. Hệ thống đã tự động từ chối đơn.`,
       );
     }
 
@@ -320,6 +453,82 @@ export class RegistrationService {
       throw new ConflictException(
         `Đăng ký đang ở trạng thái "${reg.status}", không thể từ chối`,
       );
+    }
+
+    // 1. Tìm thông tin Lời mời (Invitation) liên quan để lấy tỷ lệ tính tiền ký quỹ
+    const invitation = await this.invitationRepository.findByIdNoPopulate(
+      this.resolveId(reg.jockeyInvitationId),
+    );
+    if (invitation) {
+      const ownerCompensationAmount =
+        (invitation.proposeContractAmount * invitation.ownerCompensationRate) /
+        100;
+      const totalOwnerHeldAmount =
+        invitation.proposeContractAmount + ownerCompensationAmount;
+      const jockeyCompensationAmount =
+        (invitation.proposeContractAmount * invitation.jockeyCompensationRate) /
+        100;
+
+      const ownerIdStr = this.resolveId(reg.ownerId);
+      const jockeyIdStr = this.resolveId(reg.jockeyId);
+
+      // --- GIẢI PHÓNG TIỀN CHO OWNER ---
+      await this.horseOwnerProfileModel.updateOne(
+        { userId: new Types.ObjectId(ownerIdStr) },
+        {
+          $inc: {
+            balance: totalOwnerHeldAmount,
+            heldBalance: -totalOwnerHeldAmount,
+          },
+        },
+      );
+      await this.transactionRepository.create({
+        senderId: null,
+        receiverId: new Types.ObjectId(ownerIdStr),
+        content: `Hoàn trả tiền giải phóng ký quỹ hợp đồng do đơn đăng ký giải đấu bị từ chối. Số tiền: ${totalOwnerHeldAmount}`,
+        amount: totalOwnerHeldAmount,
+        type: TransactionTypeEnum.REFUND,
+      });
+
+      // --- GIẢI PHÓNG TIỀN CHO JOCKEY ---
+      await this.jockeyProfileModel.updateOne(
+        { userId: new Types.ObjectId(jockeyIdStr) },
+        {
+          $inc: {
+            balance: jockeyCompensationAmount,
+            heldBalance: -jockeyCompensationAmount,
+          },
+        },
+      );
+      await this.transactionRepository.create({
+        senderId: null,
+        receiverId: new Types.ObjectId(jockeyIdStr),
+        content: `Hoàn trả tiền giải phóng ký quỹ đền bù do đơn đăng ký giải đấu bị từ chối. Số tiền: ${jockeyCompensationAmount}`,
+        amount: jockeyCompensationAmount,
+        type: TransactionTypeEnum.REFUND,
+      });
+
+      const contract = await this.contractRepository.findByInvitationId(
+        this.resolveId(invitation),
+      );
+
+      if (!contract)
+        throw new NotFoundException('Không tìm thấy hợp đồng liên quan');
+
+      // --- HỦY HỢP ĐỒNG LIÊN QUAN ---
+      await this.contractRepository.updateStatus(
+        this.resolveId(contract),
+        ContractStatusEnum.CANCELLED,
+      );
+
+      // --- BẮN NOTIFICATION CHO JOCKEY ---
+      await this.notificationRepository.create({
+        userId: new Types.ObjectId(jockeyIdStr),
+        type: NotificationTypeEnum.INVITATION_REJECTED,
+        title: NotificationTitleEnum.INVITATION_REJECTED,
+        content: `Hợp đồng thi đấu giải của bạn đã bị hủy tự động do ban tổ chức từ chối đơn đăng ký. Tiền ký quỹ đã hoàn về ví.`,
+        isRead: false,
+      });
     }
 
     // Gọi hàm đóng gói từ Repository
