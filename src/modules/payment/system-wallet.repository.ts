@@ -15,7 +15,6 @@ export class SystemWalletRepository {
     private readonly systemWalletModel: Model<SystemWalletDocument>,
   ) {}
 
-  
   async findMainWallet(): Promise<SystemWallet | null> {
     return this.systemWalletModel
       .findOne({ walletName: MAIN_WALLET_NAME })
