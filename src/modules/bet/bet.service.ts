@@ -276,71 +276,89 @@ export class BetService {
     session.startTransaction();
 
     try {
-      const tempProfile = await this.spectatorModel.findByIdAndUpdate(
-        spectator._id,
-        { $inc: { pointBalance: bet.pointsWagered } },
-        { new: true, session },
-      );
+      // 1. TỐI ƯU DÒNG TIỀN: Tính toán chênh lệch điểm cược (Mới - Cũ)
+      // Nếu delta > 0: Bạn cược thêm tiền -> cần kiểm tra xem ví đủ không
+      // Nếu delta < 0: Bạn giảm tiền cược -> hệ thống sẽ cộng lại tiền thừa vào ví
+      const deltaPoints = dto.pointsWagered - bet.pointsWagered;
 
-      if (!tempProfile) {
+      if (deltaPoints > 0 && spectator.pointBalance < deltaPoints) {
         throw new BadRequestException(
-          'Không tìm thấy hồ sơ cũ đã cược trước đó của bạn',
+          'Số dư tài khoản không đủ để tăng mức cược mới',
         );
       }
 
-      await this.pointsTransactionService.logTransaction({
-        userId,
-        type: PointsTransactionType.REFUND,
-        amount: bet.pointsWagered,
-        balanceAfter: tempProfile.pointBalance,
-        reason: `Hoàn điểm đặt cược mã [${this.resolveId(bet)}] để thực hiện đổi thông tin cược`,
-      });
-
-      if (tempProfile.pointBalance < dto.pointsWagered) {
-        throw new BadRequestException(
-          'Số dư tài khoản sau khi hoàn cược cũ vẫn không đủ chi trả mức cược mới',
-        );
-      }
-
+      // Cập nhật số dư ví 1 lần duy nhất
       const finalProfile = await this.spectatorModel.findByIdAndUpdate(
         spectator._id,
-        { $inc: { pointBalance: -dto.pointsWagered } },
+        { $inc: { pointBalance: -deltaPoints } }, // Trừ đi khoảng chênh lệch
         { new: true, session },
       );
 
       if (!finalProfile) {
-        throw new BadRequestException('Lỗi cập nhật cá cược');
+        throw new BadRequestException('Lỗi cập nhật số dư tài khoản');
       }
 
-      await this.pointsTransactionService.logTransaction({
-        userId,
-        type: PointsTransactionType.SPEND,
-        amount: dto.pointsWagered,
-        balanceAfter: finalProfile.pointBalance,
-        reason: `Tái áp dụng điểm cược mới ${dto.pointsWagered} điểm vào ngựa [${horse.name}]`,
-      });
+      // Ghi log giao dịch điểm tương ứng với hành động
+      if (deltaPoints > 0) {
+        await this.pointsTransactionService.logTransaction({
+          userId,
+          type: PointsTransactionType.SPEND,
+          amount: deltaPoints,
+          balanceAfter: finalProfile.pointBalance,
+          reason: `Cược thêm ${deltaPoints} điểm khi cập nhật đơn cược [${betId}]`,
+        });
+      } else if (deltaPoints < 0) {
+        await this.pointsTransactionService.logTransaction({
+          userId,
+          type: PointsTransactionType.REFUND,
+          amount: Math.abs(deltaPoints),
+          balanceAfter: finalProfile.pointBalance,
+          reason: `Hoàn lại ${Math.abs(deltaPoints)} điểm thừa khi cập nhật đơn cược [${betId}]`,
+        });
+      }
 
-      const totalBettors = await this.betRepository.countTotalBettorsInRace(
+      // 2. CHUẨN HÓA SỐ LIỆU ĐÁM ĐÔNG & TÍNH ODDS:
+      const isChangeHorse = this.resolveId(bet.horseId) !== dto.horseId;
+
+      // Lấy số liệu thô hiện tại từ DB (Vẫn đang bao gồm đơn cược cũ của bạn)
+      let totalBettors = await this.betRepository.countTotalBettorsInRace(
         this.resolveId(bet.raceId),
       );
-      const horseBettors = await this.betRepository.countBettorsOnHorse(
+      let horseBettors = await this.betRepository.countBettorsOnHorse(
         this.resolveId(bet.raceId),
         dto.horseId,
       );
+
+      // ĐƯA SỐ LIỆU VỀ TRẠNG THÁI "CHƯA TỪNG CÓ BẠN"
+      // Vì đơn cược cũ đã lưu trong DB, tổng số người thực tế của race (không tính bạn) phải trừ đi 1
+      totalBettors = Math.max(totalBettors - 1, 0);
+
+      if (!isChangeHorse) {
+        // Nếu giữ nguyên ngựa cũ: Số người cược con này thực tế (không tính bạn) phải trừ đi 1
+        horseBettors = Math.max(horseBettors - 1, 0);
+      }
+      // Nếu đổi sang ngựa mới: horseBettors bốc từ DB lên chính là số người cược thực tế của ngựa đó (chưa hề tính bạn)
+
+      // TÁI ÁP DỤNG LƯỢT CƯỢC MỚI CỦA BẠN VÀO (+1)
+      const finalTotalBettors = totalBettors + 1;
+      const finalHorseBettors = horseBettors + 1;
+
+      // Tính Odds chuẩn dựa trên cục diện mới
       const finalOdds = this.calculateOdds(
         horse.winRate || 0,
-        totalBettors,
-        horseBettors + 1,
+        finalTotalBettors,
+        finalHorseBettors,
       );
 
+      // 3. CẬP NHẬT ĐƠN CƯỢC VỚI THÔNG SỐ SẠCH
       const updatedBet = await this.betRepository.updateBet(
         betId,
         {
           horseId: new Types.ObjectId(dto.horseId),
           pointsWagered: dto.pointsWagered,
           horseWinRateAtBet: horse.winRate || 0,
-          bettorsOnHorseAtBet: horseBettors + 1,
-          totalBettorsAtBet: totalBettors,
+          bettorsOnHorseAtBet: finalHorseBettors,
+          totalBettorsAtBet: finalTotalBettors,
           finalOdds,
         },
         session,
@@ -350,6 +368,7 @@ export class BetService {
         throw new BadRequestException('Lỗi! Không thể cập nhật cá cược');
       }
 
+      // 4. TẠO THÔNG BÁO THÀNH CÔNG
       await this.notificationRepository.create({
         userId: new Types.ObjectId(userId),
         type: NotificationTypeEnum.UPDATE_BET_SUCCESS,
@@ -456,7 +475,7 @@ export class BetService {
             userId: specProfile.userId,
             type: NotificationTypeEnum.BET_LOSE,
             title: NotificationTitleEnum.BET_LOSE,
-            content: `Đơn cược của bạn tại vòng đua [${raceId}] đã không chuẩn xác. Hãy may mắn hơn ở lần sau!`,
+            content: `Đơn cược của bạn tại vòng đua [${raceId}] đã không chuẩn xác. Chúc bạn may mắn hơn ở lần sau!`,
             isRead: false,
           });
         }

@@ -109,4 +109,8 @@ export class RewardRepository {
       )
       .exec();
   }
+
+  async deleteReward(id: string): Promise<Reward | null> {
+    return this.rewardModel.findByIdAndDelete(id).exec();
+  }
 }
