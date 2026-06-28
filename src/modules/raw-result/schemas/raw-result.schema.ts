@@ -4,7 +4,6 @@ import { RawResultStatus } from 'src/constants/rawResultStatus.enum';
 
 export type RawResultDocument = HydratedDocument<RawResult>;
 
-
 @Schema({ timestamps: true })
 export class RawResult {
   _id: Types.ObjectId;

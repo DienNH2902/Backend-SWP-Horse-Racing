@@ -231,4 +231,11 @@ export class RewardService {
       insuranceCardsCount,
     };
   }
+
+  async removeReward(id: string): Promise<any> {
+    await this.rewardRepository.deleteReward(id);
+    return {
+      message: 'Xóa reward thành công',
+    };
+  }
 }
