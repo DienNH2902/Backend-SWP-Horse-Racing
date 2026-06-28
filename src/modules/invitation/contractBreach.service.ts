@@ -309,7 +309,7 @@ export class ContractBreachService {
     await this.transactionRepository.create({
       senderId: new Types.ObjectId(ownerUserId),
       receiverId: new Types.ObjectId(jockeyUserId),
-      content: `Giải ngân hoàn tất hợp đồng thi đấu giải. Jockey nhận tiền công: ${contract.contractAmount}`,
+      content: `Giải ngân hoàn tất hợp đồng thi đấu giải ${jockeyCompensationLimit}. Jockey nhận tiền công: ${contract.contractAmount}`,
       amount: contract.contractAmount,
       type: TransactionTypeEnum.PRIZE_PAYOUT, // Đảm bảo đúng enum payout hệ thống của bạn
     });
@@ -327,7 +327,7 @@ export class ContractBreachService {
       userId: new Types.ObjectId(jockeyUserId),
       type: NotificationTypeEnum.CONTRACT_COMPLETED,
       title: NotificationTitleEnum.CONTRACT_COMPLETED,
-      content: `Chúc mừng bạn đã hoàn thành giải đấu. Tiền công ${contract.contractAmount} và tiền cọc đền bù của bạn đã được cộng vào tài khoản khả dụng.`,
+      content: `Chúc mừng bạn đã hoàn thành giải đấu. Tiền công ${contract.contractAmount} và tiền cọc đền bù của bạn ${jockeyCompensationLimit} đã được cộng vào tài khoản khả dụng.`,
       isRead: false,
     });
 
