@@ -456,7 +456,7 @@ export class BetService {
             userId: specProfile.userId,
             type: NotificationTypeEnum.BET_LOSE,
             title: NotificationTitleEnum.BET_LOSE,
-            content: `Đơn cược của bạn tại vòng đua [${raceId}] đã không chuẩn xác. Hãy may mắn hơn ở lần sau!`,
+            content: `Đơn cược của bạn tại vòng đua [${raceId}] đã không chuẩn xác. Chúc bạn may mắn hơn ở lần sau!`,
             isRead: false,
           });
         }

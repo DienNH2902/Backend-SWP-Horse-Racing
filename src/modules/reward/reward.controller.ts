@@ -7,6 +7,7 @@ import {
   UseGuards,
   Body,
   Put,
+  Delete,
 } from '@nestjs/common';
 import { RewardService } from './reward.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -72,5 +73,12 @@ export class RewardController {
   async claimReward(@Request() req: any, @Param('rewardId') rewardId: string) {
     const userId = req.user._id as string;
     return await this.rewardService.processClaimReward(userId, rewardId);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Xóa một phần thưởng bằng ID' })
+  @ApiResponse({ status: 20, type: ResponseRewardDto })
+  async deleteReward(@Param('id') id: string): Promise<any> {
+    return await this.rewardService.removeReward(id);
   }
 }
