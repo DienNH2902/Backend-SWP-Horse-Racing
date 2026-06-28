@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { ClientSession, Model, QueryFilter, Types, UpdateQuery } from 'mongoose';
+import {
+  ClientSession,
+  Model,
+  QueryFilter,
+  Types,
+  UpdateQuery,
+} from 'mongoose';
 import { User, UserDocument } from './schemas/user.schema';
 import { JockeyProfile } from './schemas/jockey-profile.schema';
 import { HorseOwnerProfile } from './schemas/horse-owner-profile.schema';
@@ -241,13 +247,13 @@ export class UsersRepository {
       .lean()
       .exec();
   }
- 
+
   async findJockeyProfileById(
     jockeyProfileId: string,
   ): Promise<JockeyProfile | null> {
     return this.jockeyModel.findById(jockeyProfileId).lean().exec();
   }
- 
+
   async findHorseOwnerProfileByUserId(
     userId: string,
   ): Promise<HorseOwnerProfile | null> {
@@ -256,7 +262,7 @@ export class UsersRepository {
       .lean()
       .exec();
   }
- 
+
   async findJockeyProfileByUserId(
     userId: string,
   ): Promise<JockeyProfile | null> {
@@ -265,7 +271,7 @@ export class UsersRepository {
       .lean()
       .exec();
   }
- 
+
   async incrementHorseOwnerBalance(
     horseOwnerProfileId: string,
     amount: number,
@@ -280,7 +286,7 @@ export class UsersRepository {
       .lean()
       .exec();
   }
- 
+
   async incrementJockeyBalance(
     jockeyProfileId: string,
     amount: number,
@@ -295,6 +301,4 @@ export class UsersRepository {
       .lean()
       .exec();
   }
-
-  
 }
