@@ -263,7 +263,7 @@ export class RegistrationRepository {
       .exec();
   }
 
-    async updateRaceIdForAdvancement(
+  async updateRaceIdForAdvancement(
     registrationId: string,
     newRaceId: string,
   ): Promise<Registration | null> {
