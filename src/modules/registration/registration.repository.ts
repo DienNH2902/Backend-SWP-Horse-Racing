@@ -222,6 +222,7 @@ export class RegistrationRepository {
     }));
     await this.registrationModel.bulkWrite(ops);
   }
+
   async findConfirmedWithDetails(raceId: string): Promise<any[]> {
     const docs = await this.registrationModel
       .find({
@@ -243,11 +244,20 @@ export class RegistrationRepository {
       .lean()
       .exec();
 
-    return docs.map((doc: any) => ({
+    // return docs.map((doc: any) => ({
+    //   ...doc,
+    //   horse: doc.horseId,
+    //   jockeyProfile: doc.jockeyInvitationId?.jockeyId,
+    //   gateNumber: doc.gateNumber,
+    // }));
+
+    return (docs as Record<string, any>[]).map((doc) => ({
       ...doc,
-      horse: doc.horseId,
-      jockeyProfile: doc.jockeyInvitationId?.jockeyId,
-      gateNumber: doc.gateNumber,
+      horse: doc.horseId as Record<string, any>,
+      jockeyProfile: doc.jockeyInvitationId?.jockeyId as
+        | Record<string, any>
+        | undefined,
+      gateNumber: doc.gateNumber as number | undefined,
     }));
   }
 
