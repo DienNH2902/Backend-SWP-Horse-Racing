@@ -290,6 +290,7 @@ export class ContractBreachService {
         $inc: {
           balance: ownerCompensationLimit,
           heldBalance: -(contract.contractAmount + ownerCompensationLimit),
+          reputationPoints: 15,
         },
       },
     );
@@ -301,6 +302,7 @@ export class ContractBreachService {
         $inc: {
           balance: contract.contractAmount + jockeyCompensationLimit,
           heldBalance: -jockeyCompensationLimit,
+          reputationPoints: 15,
         },
       },
     );
