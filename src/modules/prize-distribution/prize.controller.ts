@@ -33,7 +33,7 @@ export class PrizeController {
   @Roles(RoleEnum.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'ADMIN tạo prize cho giải đấu (chỉ khi tournament ở trạng thái PREPARING)',
+    summary: 'ADMIN tạo prize cho giải đấu (chỉ khi tournament ở trạng thái PREPARING/ REGISTRATION)',
   })
   async createPrize(@Body() dto: CreatePrizeDto): Promise<PrizeResponseDto> {
     return await this.prizeService.createPrize(dto);

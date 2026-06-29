@@ -34,9 +34,12 @@ export class PrizeService {
     }
 
     // Chỉ cho tạo prize khi tournament đang ở trạng thái PREPARING
-    if (tournament.status !== TournamentStatusEnum.PREPARING) {
+    if (
+      tournament.status !== TournamentStatusEnum.PREPARING &&
+      tournament.status !== TournamentStatusEnum.REGISTRATION
+    ) {
       throw new BadRequestException(
-        'Tournament phải ở trạng thái "PREPARING" để tạo prize',
+        'Tournament phải ở trạng thái "PREPARING" hoặc "REGISTRATION" để tạo prize',
       );
     }
 
