@@ -556,9 +556,9 @@ export class PaymentService {
       await this.transactionRepository.create({
         senderId: null,
         receiverId: request.userId,
-        content: `Hoàn tiền rút thất bại: Giải phóng điểm đóng băng về ví chính`,
+        content: `Yêu cầu rút tiền thất bại: Giải phóng điểm đóng băng về ví chính`,
         amount: request.amount,
-        type: TransactionTypeEnum.WITHDRAWAL,
+        type: TransactionTypeEnum.REFUND,
       });
 
       // 4. Bắn Notification giải trình lý do từ chối

@@ -3,6 +3,7 @@ export enum TransactionTypeEnum {
   PRIZE_PAYOUT = 'Prize_payout',
   DEPOSIT = 'Deposit',
   WITHDRAWAL = 'Withdrawal',
+  WITHDRAWAL_FAIL = 'Withdrawal_fail',
   REFUND = 'Refund',
   PENALTY = 'Penalty',
   HOLD_BALANCE = 'Hold_balance',
