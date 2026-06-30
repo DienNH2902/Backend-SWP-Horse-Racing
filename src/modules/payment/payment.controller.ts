@@ -80,6 +80,7 @@ import {
   UseGuards,
   // HttpStatus,
   Res,
+  Param,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
@@ -92,6 +93,8 @@ import { RoleEnum } from 'src/constants/roleEnum.enum';
 import { ResponseTransactionDto } from './dto/response-transaction.dto';
 import { ConfigService } from '@nestjs/config';
 import { VnPayQueryDto } from './dto/vnpay-query.dto';
+import { ApproveWithdrawalDto } from './dto/approval-withdrawal.dto';
+import { CreateWithdrawalDto } from './dto/create-withdrawal.dto';
 
 interface RequestWithUser extends Request {
   user: {
@@ -242,5 +245,84 @@ export class PaymentController {
   @ApiOperation({ summary: 'Admin lấy toàn bộ lịch sử giao dịch hệ thống' })
   getAllTransactions(): Promise<ResponseTransactionDto[]> {
     return this.paymentService.getAllTransactions();
+  }
+
+  @Post('withdrawal/request')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleEnum.SPECTATOR, RoleEnum.HORSE_OWNER)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Khởi tạo yêu cầu rút tiền (Dành cho Horse Owner & Jockey)',
+  })
+  async requestWithdrawal(
+    @Body() dto: CreateWithdrawalDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.paymentService.requestWithdrawal(req.user._id, dto);
+  }
+
+  @Get('withdrawal/admin/all')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleEnum.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Admin lấy danh sách toàn bộ các yêu cầu rút tiền trên hệ thống',
+  })
+  async getAllWithdrawals() {
+    return this.paymentService.getAllWithdrawalRequests();
+  }
+
+  @Get('withdrawal/my-request')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleEnum.SPECTATOR, RoleEnum.HORSE_OWNER)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Lấy tất cả các yêu cầu rút tiền của tôi (Dành cho Horse Owner & Jockey)',
+  })
+  async findAllMyRequest(@Req() req: RequestWithUser) {
+    return this.paymentService.findAllMyRequest(req.user._id);
+  }
+
+  @Get('withdrawal/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleEnum.ADMIN, RoleEnum.SPECTATOR, RoleEnum.HORSE_OWNER)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Admin xem chi tiết thông tin một đơn rút kèm dữ liệu chi tiết của User',
+  })
+  async getWithdrawalDetail(@Param('id') id: string) {
+    return this.paymentService.getWithdrawalDetail(id);
+  }
+
+  @Post('withdrawal/admin/:id/approve')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleEnum.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Admin phê duyệt giải ngân rút tiền thành công (Đã chuyển khoản ngoài đời thực)',
+  })
+  async approveWithdrawal(
+    @Param('id') id: string,
+    @Body() dto: ApproveWithdrawalDto,
+  ) {
+    return this.paymentService.approveWithdrawal(id, dto);
+  }
+
+  @Post('withdrawal/admin/:id/reject')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleEnum.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Admin từ chối yêu cầu rút tiền và hoàn trả lại số dư đóng băng cho User',
+  })
+  async rejectWithdrawal(
+    @Param('id') id: string,
+    @Body() dto: ApproveWithdrawalDto,
+  ) {
+    return this.paymentService.rejectWithdrawal(id, dto);
   }
 }

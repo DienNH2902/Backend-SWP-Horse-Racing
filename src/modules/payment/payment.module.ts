@@ -20,6 +20,11 @@ import {
   SystemWallet,
   SystemWalletSchema,
 } from './schemas/systemWallet.schema';
+import {
+  WithdrawalRequest,
+  WithdrawalRequestSchema,
+} from './schemas/withdrawal.schema';
+import { WithdrawalRepository } from './withdrawal.repository';
 
 @Module({
   imports: [
@@ -29,6 +34,7 @@ import {
       { name: HorseOwnerProfile.name, schema: HorseOwnerProfileSchema },
       { name: JockeyProfile.name, schema: JockeyProfileSchema },
       { name: SystemWallet.name, schema: SystemWalletSchema },
+      { name: WithdrawalRequest.name, schema: WithdrawalRequestSchema },
     ]),
     NotificationModule,
   ],
@@ -38,6 +44,7 @@ import {
     VnPayService,
     TransactionRepository,
     SystemWalletRepository,
+    WithdrawalRepository,
   ],
   exports: [
     PaymentService,
