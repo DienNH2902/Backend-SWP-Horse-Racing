@@ -143,6 +143,25 @@ export class BetRepository {
         { $set: updateData },
         { new: true, session },
       )
+      .populate([
+        {
+          path: 'spectatorId',
+          model: 'SpectatorProfile', // Ép định danh chính xác Model của bảng phụ trong DB
+          populate: {
+            path: 'userId',
+            model: 'User', // Đảm bảo khớp với Class User đã khai báo
+            select: 'fullName email avatar',
+          },
+        },
+        {
+          path: 'raceId',
+          select: 'name title', // Thay thế bằng các trường lưu tên trận đấu trong DB của bạn
+        },
+        {
+          path: 'horseId',
+          select: 'name', // Chỉ lấy trường name của ngựa
+        },
+      ])
       .exec();
   }
 }
