@@ -19,7 +19,15 @@ export class BetRepository {
   }
 
   async findAllBets(): Promise<BetDocument[] | null> {
-    return await this.betModel.find().lean().exec();
+    return await this.betModel.find().sort({ createdAt: -1 }).lean().exec();
+  }
+
+  async findAllMyBets(userId: string): Promise<BetDocument[] | null> {
+    return await this.betModel
+      .find({ spectatorId: new Types.ObjectId(userId) })
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec();
   }
 
   async findById(id: string): Promise<BetDocument | null> {

@@ -47,6 +47,15 @@ export class BetController {
     return this.betService.findAllBets();
   }
 
+  @Get('/my-bet')
+  @ApiOperation({
+    summary: 'Lấy toàn bộ các bet đặt cược của tài khoản hiện tại',
+  })
+  async getAllMyBets(@Request() req: any): Promise<ResponseBetDto> {
+    const userId = req.user._id as string;
+    return this.betService.findAllMyBets(userId);
+  }
+
   @Patch(':id')
   @ApiOperation({
     summary:
