@@ -78,6 +78,23 @@ export class BetService {
     return Math.round(finalOdds * 100) / 100;
   }
 
+  async findAllBets(): Promise<ResponseBetDto> {
+    const bets = await this.betRepository.findAllBets();
+    return this.toResponse(bets);
+  }
+
+  async findAllMyBets(userId: string): Promise<ResponseBetDto> {
+    const spectator = await this.spectatorModel.findOne({
+      userId: new Types.ObjectId(userId),
+    });
+    if (!spectator)
+      throw new NotFoundException('Không tìm thấy Profile của Spectator này');
+    const bets = await this.betRepository.findAllMyBets(
+      spectator._id.toString(),
+    );
+    return this.toResponse(bets);
+  }
+
   /**
    * ĐẶT CƯỢC MỚI
    */
