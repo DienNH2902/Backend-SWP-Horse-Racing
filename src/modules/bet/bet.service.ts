@@ -78,6 +78,11 @@ export class BetService {
     return Math.round(finalOdds * 100) / 100;
   }
 
+  async findAllBets(): Promise<ResponseBetDto> {
+    const bets = await this.betRepository.findAllBets();
+    return this.toResponse(bets);
+  }
+
   /**
    * ĐẶT CƯỢC MỚI
    */
