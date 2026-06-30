@@ -3,6 +3,7 @@
 export enum NotificationTitleEnum {
   DEPOSIT_SUCCESS = 'Nạp tiền thành công',
   DEPOSIT_FAILED = 'Nạp tiền thất bại',
+  CREATE_WITHDRAW_SUCCESS = 'Tạo đơn rút tiền thành công',
   WITHDRAW_SUCCESS = 'Rút tiền thành công',
   WITHDRAW_FAILED = 'Rút tiền thất bại',
 

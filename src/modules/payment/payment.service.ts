@@ -118,9 +118,13 @@
 //     return transactions.map((t) => this.toResponse(t));
 //   }
 // }
-import { Injectable, BadRequestException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectConnection, InjectModel } from '@nestjs/mongoose';
+import { Connection, Model, Types } from 'mongoose';
 import { plainToInstance } from 'class-transformer';
 import { VnPayService } from './vnpay.service';
 import { TransactionRepository } from './transaction.repository';
@@ -136,6 +140,10 @@ import { RoleEnum } from 'src/constants/roleEnum.enum';
 import { ResponseTransactionDto } from './dto/response-transaction.dto';
 import { NotificationTypeEnum } from 'src/constants/notificationTypeEnum.enum';
 import { NotificationTitleEnum } from 'src/constants/notificationTitleEnum.enum';
+import { CreateWithdrawalDto } from './dto/create-withdrawal.dto';
+import { WithdrawalRepository } from './withdrawal.repository';
+import { ApproveWithdrawalDto } from './dto/approval-withdrawal.dto';
+import { WithdrawalStatusEnum } from 'src/constants/withdrawalStatusEnum.enum';
 // import { TransactionTitleEnum } from 'src/constants/transactionTitleEnum.enum';
 
 export interface VnPayCallbackResponse {
@@ -150,11 +158,13 @@ export class PaymentService {
     private readonly vnPayService: VnPayService,
     private readonly transactionRepository: TransactionRepository,
     private readonly notificationRepository: NotificationRepository,
+    private readonly withdrawalRepository: WithdrawalRepository,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     @InjectModel(HorseOwnerProfile.name)
     private readonly horseOwnerModel: Model<HorseOwnerProfileDocument>,
     @InjectModel(JockeyProfile.name)
     private readonly jockeyModel: Model<JockeyProfile>,
+    @InjectConnection() private readonly connection: Connection,
   ) {}
 
   private toResponse(data: unknown): ResponseTransactionDto {
@@ -285,5 +295,310 @@ export class PaymentService {
   async getAllTransactions(): Promise<ResponseTransactionDto[]> {
     const transactions = await this.transactionRepository.findAll();
     return transactions.map((t) => this.toResponse(t));
+  }
+
+  async findAllMyRequest(id: string): Promise<any> {
+    const requests = await this.withdrawalRepository.findAllMyRequest(id);
+    return requests;
+  }
+
+  async requestWithdrawal(userId: string, dto: CreateWithdrawalDto) {
+    const user = await this.userModel.findById(userId).lean();
+    if (!user) throw new BadRequestException('Người dùng không tồn tại');
+    if (user.role !== RoleEnum.HORSE_OWNER && user.role !== RoleEnum.JOCKEY) {
+      throw new BadRequestException(
+        'Chỉ Chủ ngựa và Nài ngựa mới có thể rút tiền',
+      );
+    }
+
+    const session = await this.connection.startSession();
+    session.startTransaction();
+
+    try {
+      if (user.role === RoleEnum.JOCKEY) {
+        const profile = await this.jockeyModel
+          .findOne({
+            userId: new Types.ObjectId(user._id),
+          })
+          .session(session);
+
+        if (!profile) throw new NotFoundException(`Không tìm thấy hồ sơ`);
+
+        if (profile.balance < dto.amount) {
+          throw new BadRequestException(
+            'Số dư tài khoản khả dụng không đủ để thực hiện rút tiền',
+          );
+        }
+
+        await this.jockeyModel.updateOne(
+          { userId: new Types.ObjectId(userId) },
+          { $inc: { balance: -dto.amount, heldBalance: dto.amount } },
+          { session },
+        );
+      }
+
+      if (user.role === RoleEnum.HORSE_OWNER) {
+        const profile = await this.horseOwnerModel
+          .findOne({
+            userId: new Types.ObjectId(user._id),
+          })
+          .session(session);
+
+        if (!profile) throw new NotFoundException(`Không tìm thấy hồ sơ`);
+
+        if (profile.balance < dto.amount) {
+          throw new BadRequestException(
+            'Số dư tài khoản khả dụng không đủ để thực hiện rút tiền',
+          );
+        }
+
+        await this.horseOwnerModel.updateOne(
+          { userId: new Types.ObjectId(userId) },
+          { $inc: { balance: -dto.amount, heldBalance: dto.amount } },
+          { session },
+        );
+      }
+
+      // 2. Lưu yêu cầu rút tiền vào danh sách chờ xử lý (PENDING)
+      await this.withdrawalRepository.create(
+        {
+          userId: new Types.ObjectId(userId),
+          bankName: dto.bankName,
+          accountNumber: dto.accountNumber,
+          accountName: dto.accountName,
+          amount: dto.amount,
+          content: dto.content || '',
+        },
+        session,
+      );
+
+      // 3. Tạo Transaction ghi nhận biến động đóng băng số tiền
+      await this.transactionRepository.create({
+        senderId: new Types.ObjectId(userId),
+        receiverId: null,
+        content: `Yêu cầu rút tiền về ngân hàng: Đóng băng tạm thời - ${dto.amount} VNĐ`,
+        amount: dto.amount,
+        type: TransactionTypeEnum.WITHDRAWAL,
+      });
+
+      // 4. Tạo thông báo cho hệ thống
+      await this.notificationRepository.create({
+        userId: new Types.ObjectId(userId),
+        type: NotificationTypeEnum.DEPOSIT_SUCCESS, // Tạo/Tùy biến Enum thông báo rút tiền của bạn nếu có
+        title: NotificationTitleEnum.CREATE_WITHDRAW_SUCCESS,
+        content: `Hệ thống đã tiếp nhận yêu cầu rút ${dto.amount} VNĐ của bạn và đang chờ Admin duyệt.`,
+        isRead: false,
+      });
+
+      await session.commitTransaction();
+      return {
+        success: true,
+        message:
+          'Gửi yêu cầu rút tiền thành công, vui lòng chờ hệ thống xét duyệt.',
+      };
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
+    }
+  }
+
+  // ==========================================
+  // LUỒNG ADMIN PHÊ DUYỆT RÚT TIỀN THÀNH CÔNG
+  // ==========================================
+  async approveWithdrawal(requestId: string, dto: ApproveWithdrawalDto) {
+    const request = await this.withdrawalRepository.findById(requestId);
+    if (!request || request.status !== WithdrawalStatusEnum.PENDING) {
+      throw new BadRequestException(
+        'Yêu cầu rút tiền không tồn tại hoặc đã được xử lý từ trước',
+      );
+    }
+
+    const user = await this.userModel.findById(request.userId).lean();
+    if (!user)
+      throw new BadRequestException(
+        'Không tìm thấy người dùng sở hữu yêu cầu này',
+      );
+
+    const session = await this.connection.startSession();
+    session.startTransaction();
+
+    try {
+      // 1. Cập nhật trạng thái đơn rút thành APPROVED
+      request.status = WithdrawalStatusEnum.APPROVED;
+      request.adminNote = dto.adminNote || 'Đã phê duyệt hoàn tất chuyển khoản';
+      await request.save({ session });
+
+      if (user.role === RoleEnum.JOCKEY) {
+        const profile = await this.jockeyModel
+          .findOne({
+            userId: new Types.ObjectId(user._id),
+          })
+          .session(session);
+
+        if (!profile) throw new NotFoundException(`Không tìm thấy hồ sơ`);
+
+        await this.jockeyModel.updateOne(
+          { userId: request.userId },
+          { $inc: { heldBalance: -request.amount } },
+          { session },
+        );
+      }
+
+      if (user.role === RoleEnum.HORSE_OWNER) {
+        const profile = await this.horseOwnerModel
+          .findOne({
+            userId: new Types.ObjectId(user._id),
+          })
+          .session(session);
+
+        if (!profile) throw new NotFoundException(`Không tìm thấy hồ sơ`);
+
+        await this.horseOwnerModel.updateOne(
+          { userId: request.userId },
+          { $inc: { heldBalance: -request.amount } },
+          { session },
+        );
+      }
+
+      // 3. Ghi nhận Transaction lịch sử giải ngân ra cổng ngân hàng ngoài đời thực
+      await this.transactionRepository.create({
+        senderId: request.userId,
+        receiverId: null,
+        content: `Giải ngân rút tiền thành công: ${request.bankName} - STK: ${request.accountNumber}`,
+        amount: request.amount,
+        type: TransactionTypeEnum.WITHDRAWAL,
+      });
+
+      // 4. Bắn Notification thông báo tin vui cho User
+      await this.notificationRepository.create({
+        userId: request.userId,
+        type: NotificationTypeEnum.WITHDRAW_SUCCESS,
+        title: NotificationTitleEnum.WITHDRAW_SUCCESS,
+        content: `Yêu cầu rút ${request.amount} VNĐ của bạn đã được phê duyệt. Tiền đã được chuyển vào số tài khoản ${request.accountNumber}.`,
+        isRead: false,
+      });
+
+      await session.commitTransaction();
+      return {
+        success: true,
+        message: 'Phê duyệt giải ngân rút tiền thành công',
+      };
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
+    }
+  }
+
+  // ==========================================
+  // LUỒNG ADMIN TỪ CHỐI YÊU CẦU RÚT TIỀN
+  // ==========================================
+  async rejectWithdrawal(requestId: string, dto: ApproveWithdrawalDto) {
+    const request = await this.withdrawalRepository.findById(requestId);
+    if (!request || request.status !== WithdrawalStatusEnum.PENDING) {
+      throw new BadRequestException(
+        'Yêu cầu rút tiền không tồn tại hoặc đã được xử lý từ trước',
+      );
+    }
+
+    const user = await this.userModel.findById(request.userId).lean();
+    if (!user)
+      throw new BadRequestException(
+        'Không tìm thấy người dùng sở hữu yêu cầu này',
+      );
+
+    const session = await this.connection.startSession();
+    session.startTransaction();
+
+    try {
+      // 1. Cập nhật trạng thái đơn rút thành REJECTED
+      request.status = WithdrawalStatusEnum.REJECTED;
+      request.adminNote =
+        dto.adminNote || 'Yêu cầu bị từ chối do thông tin không hợp lệ';
+      await request.save({ session });
+
+      if (user.role === RoleEnum.JOCKEY) {
+        const profile = await this.jockeyModel
+          .findOne({
+            userId: new Types.ObjectId(user._id),
+          })
+          .session(session);
+
+        if (!profile) throw new NotFoundException(`Không tìm thấy hồ sơ`);
+
+        await this.jockeyModel.updateOne(
+          { userId: request.userId },
+          { $inc: { heldBalance: -request.amount, balance: request.amount } },
+          { session },
+        );
+      }
+
+      if (user.role === RoleEnum.HORSE_OWNER) {
+        const profile = await this.horseOwnerModel
+          .findOne({
+            userId: new Types.ObjectId(user._id),
+          })
+          .session(session);
+
+        if (!profile) throw new NotFoundException(`Không tìm thấy hồ sơ`);
+
+        await this.horseOwnerModel.updateOne(
+          { userId: request.userId },
+          { $inc: { heldBalance: -request.amount, balance: request.amount } },
+          { session },
+        );
+      }
+
+      // 3. Ghi nhận Transaction hoàn trả lại tiền đóng băng
+      await this.transactionRepository.create({
+        senderId: null,
+        receiverId: request.userId,
+        content: `Hoàn tiền rút thất bại: Giải phóng điểm đóng băng về ví chính`,
+        amount: request.amount,
+        type: TransactionTypeEnum.WITHDRAWAL,
+      });
+
+      // 4. Bắn Notification giải trình lý do từ chối
+      await this.notificationRepository.create({
+        userId: request.userId,
+        type: NotificationTypeEnum.WITHDRAW_FAILED,
+        title: NotificationTitleEnum.WITHDRAW_FAILED,
+        content: `Yêu cầu rút ${request.amount} VNĐ bị từ chối. Lý do: ${request.adminNote}. Số tiền đã được hoàn trả về ví khả dụng của bạn.`,
+        isRead: false,
+      });
+
+      await session.commitTransaction();
+      return {
+        success: true,
+        message: 'Đã hủy và hoàn trả tiền về ví cho người dùng thành công',
+      };
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
+    }
+  }
+
+  // Admin xem chi tiết thông tin đơn rút + user profile để kiểm tra chéo trước khi bấm nút duyệt
+  async getWithdrawalDetail(requestId: string) {
+    const detail = (await this.withdrawalRepository.findByIdWithUserDetails(
+      requestId,
+    )) as Record<string, any> | null;
+
+    if (!detail) {
+      throw new BadRequestException(
+        'Không tìm thấy thông tin đơn yêu cầu rút tiền',
+      );
+    }
+    return detail;
+  }
+
+  // Danh sách hiển thị toàn bộ lịch sử yêu cầu rút tiền trên CMS Admin
+  async getAllWithdrawalRequests() {
+    return this.withdrawalRepository.findAllRequests();
   }
 }
