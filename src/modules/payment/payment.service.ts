@@ -378,13 +378,13 @@ export class PaymentService {
         receiverId: null,
         content: `Yêu cầu rút tiền về ngân hàng: Đóng băng tạm thời - ${dto.amount} VNĐ`,
         amount: dto.amount,
-        type: TransactionTypeEnum.WITHDRAWAL,
+        type: TransactionTypeEnum.HOLD_BALANCE,
       });
 
       // 4. Tạo thông báo cho hệ thống
       await this.notificationRepository.create({
         userId: new Types.ObjectId(userId),
-        type: NotificationTypeEnum.DEPOSIT_SUCCESS, // Tạo/Tùy biến Enum thông báo rút tiền của bạn nếu có
+        type: NotificationTypeEnum.CREATE_WITHDRAW_SUCCESS, // Tạo/Tùy biến Enum thông báo rút tiền của bạn nếu có
         title: NotificationTitleEnum.CREATE_WITHDRAW_SUCCESS,
         content: `Hệ thống đã tiếp nhận yêu cầu rút ${dto.amount} VNĐ của bạn và đang chờ Admin duyệt.`,
         isRead: false,
