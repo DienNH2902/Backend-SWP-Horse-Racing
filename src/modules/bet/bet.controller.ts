@@ -28,7 +28,7 @@ export class BetController {
 
   @Post()
   @ApiOperation({
-    summary: 'Đặt cược mới cho vòng đua (Chỉ khi trạng thái là Scheduled)',
+    summary: 'Đặt cược mới cho vòng đua (Chỉ khi trạng thái race là Scheduled)',
   })
   async createBet(
     @Request() req: any,
@@ -54,6 +54,14 @@ export class BetController {
   async getAllMyBets(@Request() req: any): Promise<ResponseBetDto> {
     const userId = req.user._id as string;
     return this.betService.findAllMyBets(userId);
+  }
+
+  @Get(':id')
+  @ApiOperation({
+    summary: 'Lấy bet bằng id',
+  })
+  async getBetById(@Param('id') id: string): Promise<ResponseBetDto> {
+    return this.betService.findBetById(id);
   }
 
   @Patch(':id')

@@ -19,19 +19,84 @@ export class BetRepository {
   }
 
   async findAllBets(): Promise<BetDocument[] | null> {
-    return await this.betModel.find().sort({ createdAt: -1 }).lean().exec();
+    return (await this.betModel
+      .find()
+      .populate([
+        {
+          path: 'spectatorId',
+          model: 'SpectatorProfile', // Ép định danh chính xác Model của bảng phụ trong DB
+          populate: {
+            path: 'userId',
+            model: 'User', // Đảm bảo khớp với Class User đã khai báo
+            select: 'fullName email avatar',
+          },
+        },
+        {
+          path: 'raceId',
+          select: 'name title', // Thay thế bằng các trường lưu tên trận đấu trong DB của bạn
+        },
+        {
+          path: 'horseId',
+          select: 'name', // Chỉ lấy trường name của ngựa
+        },
+      ])
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec()) as unknown as BetDocument[];
   }
 
   async findAllMyBets(userId: string): Promise<BetDocument[] | null> {
     return await this.betModel
       .find({ spectatorId: new Types.ObjectId(userId) })
+      .populate([
+        {
+          path: 'spectatorId',
+          model: 'SpectatorProfile', // Ép định danh chính xác Model của bảng phụ trong DB
+          populate: {
+            path: 'userId',
+            model: 'User', // Đảm bảo khớp với Class User đã khai báo
+            select: 'fullName email avatar',
+          },
+        },
+        {
+          path: 'raceId',
+          select: 'name title', // Thay thế bằng các trường lưu tên trận đấu trong DB của bạn
+        },
+        {
+          path: 'horseId',
+          select: 'name', // Chỉ lấy trường name của ngựa
+        },
+      ])
       .sort({ createdAt: -1 })
       .lean()
       .exec();
   }
 
   async findById(id: string): Promise<BetDocument | null> {
-    return this.betModel.findById(new Types.ObjectId(id)).exec();
+    return this.betModel
+      .findById(new Types.ObjectId(id))
+      .populate([
+        {
+          path: 'spectatorId',
+          model: 'SpectatorProfile', // Ép định danh chính xác Model của bảng phụ trong DB
+          populate: {
+            path: 'userId',
+            model: 'User', // Đảm bảo khớp với Class User đã khai báo
+            select: 'fullName email avatar',
+          },
+        },
+        {
+          path: 'raceId',
+          select: 'name title', // Thay thế bằng các trường lưu tên trận đấu trong DB của bạn
+        },
+        {
+          path: 'horseId',
+          select: 'name', // Chỉ lấy trường name của ngựa
+        },
+      ])
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec();
   }
 
   async findBySpectatorAndRace(
