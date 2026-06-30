@@ -73,7 +73,30 @@ export class BetRepository {
   }
 
   async findById(id: string): Promise<BetDocument | null> {
-    return this.betModel.findById(new Types.ObjectId(id)).exec();
+    return this.betModel
+      .findById(new Types.ObjectId(id))
+      .populate([
+        {
+          path: 'spectatorId',
+          model: 'SpectatorProfile', // Ép định danh chính xác Model của bảng phụ trong DB
+          populate: {
+            path: 'userId',
+            model: 'User', // Đảm bảo khớp với Class User đã khai báo
+            select: 'fullName email avatar',
+          },
+        },
+        {
+          path: 'raceId',
+          select: 'name title', // Thay thế bằng các trường lưu tên trận đấu trong DB của bạn
+        },
+        {
+          path: 'horseId',
+          select: 'name', // Chỉ lấy trường name của ngựa
+        },
+      ])
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec();
   }
 
   async findBySpectatorAndRace(
