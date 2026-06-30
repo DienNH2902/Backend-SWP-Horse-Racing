@@ -4,6 +4,7 @@ export enum NotificationTypeEnum {
   // --- Hệ thống tài chính (Wallet / Payment) ---
   DEPOSIT_SUCCESS = 'Deposit_success',
   DEPOSIT_FAILED = 'Deposit_failed',
+  CREATE_WITHDRAW_SUCCESS = 'Create_withdraw_success',
   WITHDRAW_SUCCESS = 'Withdraw_success',
   WITHDRAW_FAILED = 'Withdraw_failed',
   CONTRACT_PAID = 'Contract_paid', // Chủ ngựa bị trừ tiền thanh toán hợp đồng
