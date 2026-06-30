@@ -95,6 +95,11 @@ export class BetService {
     return this.toResponse(bets);
   }
 
+  async findBetById(id: string): Promise<ResponseBetDto> {
+    const bet = await this.betRepository.findById(id);
+    return this.toResponse(bet);
+  }
+
   /**
    * ĐẶT CƯỢC MỚI
    */
