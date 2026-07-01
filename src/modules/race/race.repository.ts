@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model, Types, ClientSession } from 'mongoose';
 import { Race, RaceDocument } from './schemas/race.schema';
 import { RaceStatusEnum } from '../../constants/raceStatus.enum';
 
@@ -256,4 +256,25 @@ export class RaceRepository {
       .lean()
       .exec() as Promise<Race | null>;
   }
+
+  async tryTransitionStatus(
+    raceId: string,
+    fromStatus: RaceStatusEnum,
+    toStatus: RaceStatusEnum,
+    session?: ClientSession,
+  ): Promise<Race | null> {
+    return this.raceModel
+      .findOneAndUpdate(
+        { _id: new Types.ObjectId(raceId), status: fromStatus },
+        {
+          $set: {
+            status: toStatus,
+            ...(toStatus === RaceStatusEnum.FINISHED && { finishedAt: new Date() }),
+          },
+        },
+        { returnDocument: 'after', session },
+      )
+      .lean()
+      .exec();
+  }  
 }

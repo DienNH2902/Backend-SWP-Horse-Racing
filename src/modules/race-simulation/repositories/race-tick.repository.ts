@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model, Types, ClientSession } from 'mongoose';
 import { RaceTick } from '../schemas/race-tick.schema';
 
 export interface CreateRaceTickDto {
@@ -19,12 +19,13 @@ export class RaceTickRepository {
     private readonly raceTickModel: Model<RaceTick>,
   ) {}
 
-  async bulkInsert(ticks: CreateRaceTickDto[]): Promise<void> {
+  async bulkInsert(ticks: CreateRaceTickDto[], session?: ClientSession): Promise<void> {
     // Chia batch 1000 để tránh MongoDB document limit
     const BATCH_SIZE = 1000;
     for (let i = 0; i < ticks.length; i += BATCH_SIZE) {
       await this.raceTickModel.insertMany(ticks.slice(i, i + BATCH_SIZE), {
         ordered: false,
+        session
       });
     }
   }

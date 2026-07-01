@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model, Types, ClientSession } from 'mongoose';
 import { HorseRaceStats } from '../schemas/horse-race-stat.schema';
 
 export interface CreateHorseRaceStatsDto {
@@ -12,6 +12,8 @@ export interface CreateHorseRaceStatsDto {
   acceleration: number;
   stamina: number;
   totalWin: number;
+  horseWinRate: number;
+  jockeyWinRate: number;
 }
 
 @Injectable()
@@ -21,10 +23,9 @@ export class HorseRaceStatsRepository {
     private readonly statsModel: Model<HorseRaceStats>,
   ) {}
 
-  async bulkInsert(stats: CreateHorseRaceStatsDto[]): Promise<void> {
-    await this.statsModel.insertMany(stats, { ordered: false });
+  async bulkInsert(stats: CreateHorseRaceStatsDto[], session?: ClientSession): Promise<void> {
+  await this.statsModel.insertMany(stats, { ordered: false, session });
   }
-
   async findByRaceId(raceId: string): Promise<HorseRaceStats[]> {
     return await this.statsModel
       .find({ raceId: new Types.ObjectId(raceId) })

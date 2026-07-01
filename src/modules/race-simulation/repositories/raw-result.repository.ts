@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model, Types, ClientSession } from 'mongoose';
 import { RawResult } from '../../raw-result/schemas/raw-result.schema';
 import { RawResultStatus } from 'src/constants/rawResultStatus.enum';
 
@@ -21,8 +21,8 @@ export class RawResultRepository {
     private readonly rawResultModel: Model<RawResult>,
   ) {}
 
-  async bulkInsert(results: CreateRawResultDto[]): Promise<void> {
-    await this.rawResultModel.insertMany(results, { ordered: false });
+  async bulkInsert(results: CreateRawResultDto[], session?: ClientSession): Promise<void> {
+    await this.rawResultModel.insertMany(results, { ordered: false, session });
   }
 
   async findByRaceId(raceId: string): Promise<RawResult[]> {

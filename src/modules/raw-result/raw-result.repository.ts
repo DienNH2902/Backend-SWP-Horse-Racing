@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model, Types, ClientSession } from 'mongoose';
 import { RawResult, RawResultDocument } from './schemas/raw-result.schema';
 import { RawResultStatus } from '../../constants/rawResultStatus.enum';
 
@@ -43,6 +43,7 @@ export class RawResultRepository {
       finalRank: number | null;
       status: RawResultStatus;
     }>,
+    session?: ClientSession,
   ): Promise<void> {
     const ops = updates.map(({ id, finalRank, status }) => ({
       updateOne: {
@@ -50,6 +51,6 @@ export class RawResultRepository {
         update: { $set: { finalRank, status } as any },
       },
     }));
-    await this.rawResultModel.bulkWrite(ops);
+    await this.rawResultModel.bulkWrite(ops, { session });
   }
 }

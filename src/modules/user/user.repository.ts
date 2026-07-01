@@ -301,4 +301,30 @@ export class UsersRepository {
       .lean()
       .exec();
   }
+
+  async incrementJockeyRaceStats(
+    jockeyProfileId: string,
+    isWinner: boolean,
+    session?: ClientSession,
+  ): Promise<JockeyProfile | null> {
+    return this.jockeyModel
+      .findByIdAndUpdate(
+        jockeyProfileId,
+        [
+          {
+            $set: {
+              totalRace: { $add: [{ $ifNull: ['$totalRace', 0] }, 1] },
+              totalWin: {
+                $add: [{ $ifNull: ['$totalWin', 0] }, isWinner ? 1 : 0],
+              },
+            },
+          },
+          // JockeyProfile.winRate lưu thang 0–1 (khác Horse: 0–100)
+          { $set: { winRate: { $divide: ['$totalWin', '$totalRace'] } } },
+        ],
+        { returnDocument: 'after', session, updatePipeline: true  },
+      )
+      .lean()
+      .exec();
+  }  
 }
