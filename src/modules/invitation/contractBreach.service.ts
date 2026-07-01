@@ -283,6 +283,23 @@ export class ContractBreachService {
     const jockeyCompensationLimit =
       (contract.contractAmount * contract.jockeyCompensationRate) / 100;
 
+    // Lấy thông tin profile hiện tại để tính toán điểm uy tín giới hạn max 100
+    const [ownerProfile, jockeyProfile] = await Promise.all([
+      this.horseOwnerProfileModel.findOne({
+        userId: new Types.ObjectId(ownerUserId),
+      }),
+      this.jockeyProfileModel.findOne({
+        userId: new Types.ObjectId(jockeyUserId),
+      }),
+    ]);
+
+    const currentOwnerPoints = ownerProfile?.reputationPoints ?? 0;
+    const currentJockeyPoints = jockeyProfile?.reputationPoints ?? 0;
+
+    // Thuật toán giới hạn trần 100 điểm uy tín
+    const newOwnerPoints = Math.min(100, currentOwnerPoints + 15);
+    const newJockeyPoints = Math.min(100, currentJockeyPoints + 15);
+
     // OWNER: Nhận lại tiền cọc đền bù cam kết của mình, mất tiền thuê jockey thực tế đã giải ngân
     await this.horseOwnerProfileModel.updateOne(
       { userId: new Types.ObjectId(ownerUserId) },
@@ -290,7 +307,7 @@ export class ContractBreachService {
         $inc: {
           balance: ownerCompensationLimit,
           heldBalance: -(contract.contractAmount + ownerCompensationLimit),
-          reputationPoints: 15,
+          reputationPoints: newOwnerPoints,
         },
       },
     );
@@ -302,7 +319,7 @@ export class ContractBreachService {
         $inc: {
           balance: contract.contractAmount + jockeyCompensationLimit,
           heldBalance: -jockeyCompensationLimit,
-          reputationPoints: 15,
+          reputationPoints: newJockeyPoints,
         },
       },
     );
