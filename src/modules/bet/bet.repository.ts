@@ -141,7 +141,7 @@ export class BetRepository {
       .findByIdAndUpdate(
         new Types.ObjectId(id),
         { $set: updateData },
-        { new: true, session },
+        { returnDocument: 'after', session },
       )
       .populate([
         {
