@@ -188,7 +188,7 @@ export class BetService {
           $inc: { pointBalance: -dto.pointsWagered, totalBets: 1 },
           $set: { winRate: newWinRate },
         },
-        { new: true, session },
+        { returnDocument: 'after', session },
       );
 
       if (!updatedSpectator) {
@@ -313,7 +313,7 @@ export class BetService {
       const finalProfile = await this.spectatorModel.findByIdAndUpdate(
         spectator._id,
         { $inc: { pointBalance: -deltaPoints } }, // Trừ đi khoảng chênh lệch
-        { new: true, session },
+        { returnDocument: 'after', session },
       );
 
       if (!finalProfile) {
@@ -461,7 +461,7 @@ export class BetService {
               $inc: { pointBalance: pointsWon, totalPoints: pointsWon },
               $set: { winRate: computedWinRate },
             },
-            { new: true, session },
+            { returnDocument: 'after', session },
           );
 
           if (!updatedSpec) {

@@ -204,7 +204,7 @@ export class RaceAssignService {
           balance: { $gte: entryFee },
         },
         { $inc: { balance: -entryFee } },
-        { new: true },
+        { returnDocument: 'after' },
       );
 
       if (!updatedProfile) {
