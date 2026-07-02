@@ -16,6 +16,7 @@ import {
   SpectatorProfile,
   SpectatorProfileSchema,
 } from '../user/schemas/spectator-profile.schema';
+import { RewardModule } from '../reward/reward.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import {
     RegistrationModule,
     PointsTransactionModule,
     NotificationModule,
+    RewardModule,
   ],
   controllers: [BetController],
   providers: [BetService, BetRepository],
