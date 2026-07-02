@@ -221,7 +221,9 @@ export class RewardService {
       .map((c) => (c.rewardId as any).rewardValue);
 
     const insuranceCardsCount = claims.filter(
-      (c) => (c.rewardId as any).rewardType === RewardType.INSURANCE_CARD,
+      (c) =>
+        (c.rewardId as any).rewardType === RewardType.INSURANCE_CARD &&
+        c.isUsed === false,
     ).length;
 
     return {
