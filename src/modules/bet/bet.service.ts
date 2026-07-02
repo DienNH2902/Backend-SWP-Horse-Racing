@@ -348,8 +348,12 @@ export class BetService {
     // Xác định trạng thái cuối cùng của đơn cược có được bảo hiểm hay không
     // Trạng thái true khi: Đơn cũ đã dùng sẵn rồi HOẶC đơn mới kích hoạt thành công với thẻ mới
     const isInsuranceApplied =
-      bet.isInsuranceCardUsed ||
-      !!(dto.useInsuranceCard && targetInsuranceClaim);
+      dto.useInsuranceCard !== undefined
+        ? !!(
+            dto.useInsuranceCard &&
+            (bet.isInsuranceCardUsed || targetInsuranceClaim)
+          )
+        : bet.isInsuranceCardUsed;
 
     const session = await this.connection.startSession();
     session.startTransaction();
@@ -369,7 +373,7 @@ export class BetService {
       }
 
       // TRƯỜNG HỢP 2: Đơn cũ ĐÃ DÙNG -> Đơn mới KHÔNG MUỐN DÙNG (Hoàn trả thẻ)
-      if (bet.isInsuranceCardUsed && !dto.useInsuranceCard) {
+      if (bet.isInsuranceCardUsed && dto.useInsuranceCard === false) {
         // Tìm đúng 1 thẻ đã dùng (isUsed: true) của user này để hoàn trả lại kho
         const usedInsuranceClaim = await this.rewardRepository[
           'claimedRewardModel'
@@ -377,7 +381,7 @@ export class BetService {
           .findOne({ userId: new Types.ObjectId(userId), isUsed: true })
           .populate('rewardId');
 
-        // Lọc đúng loại thẻ bảo hiểm (đề phòng user có nhiều loại vật phẩm khác nhau đã dùng)
+        // Lọc đúng loại thẻ bảo hiểm
         if (
           usedInsuranceClaim &&
           (usedInsuranceClaim.rewardId as any)?.rewardType ===
