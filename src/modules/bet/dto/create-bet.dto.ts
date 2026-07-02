@@ -1,5 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsString, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
 export class CreateBetDto {
   @ApiProperty({ example: '6a2bb0267070c17ca5757a0d' })
@@ -16,4 +23,13 @@ export class CreateBetDto {
   @IsNumber()
   @Min(1)
   pointsWagered: number;
+
+  @ApiProperty({
+    example: false,
+    description: 'Chủ động sử dụng thẻ bảo hiểm nếu có',
+    required: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  useInsuranceCard?: boolean;
 }

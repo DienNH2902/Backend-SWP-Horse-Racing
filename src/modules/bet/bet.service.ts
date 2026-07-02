@@ -23,6 +23,8 @@ import { BetResultEnum } from 'src/constants/betResultStatusEnum.enum';
 import { PointsTransactionType } from 'src/constants/pointsTransactionTypeEnum.enum';
 import { NotificationTypeEnum } from 'src/constants/notificationTypeEnum.enum';
 import { NotificationTitleEnum } from 'src/constants/notificationTitleEnum.enum';
+import { RewardRepository } from '../reward/reward.repository';
+import { RewardType } from 'src/constants/rewardTypeEnum.enum';
 
 @Injectable()
 export class BetService {
@@ -33,6 +35,7 @@ export class BetService {
     private readonly registrationRepository: RegistrationRepository,
     private readonly pointsTransactionService: PointsTransactionService,
     private readonly notificationRepository: NotificationRepository,
+    private readonly rewardRepository: RewardRepository,
     @InjectModel(SpectatorProfile.name)
     private readonly spectatorModel: Model<SpectatorProfile>,
     @InjectConnection() private readonly connection: Connection,
@@ -160,6 +163,20 @@ export class BetService {
       dto.horseId,
     );
 
+    // 1. Kiểm tra kho đồ thực tế của User
+    const claims = await this.rewardRepository.findClaimsByUserId(userId);
+    const hasInsuranceCardInInventory = claims.some(
+      (c) => (c.rewardId as any)?.rewardType === RewardType.INSURANCE_CARD,
+    );
+
+    // 2. Chỉ kích hoạt bảo hiểm khi User MUỐN DÙNG và THỰC SỰ CÓ THẺ
+    if (dto.useInsuranceCard && !hasInsuranceCardInInventory) {
+      throw new BadRequestException('Bạn không sở hữu thẻ bảo hiểm để sử dụng');
+    }
+    const isInsuranceApplied = !!(
+      dto.useInsuranceCard && hasInsuranceCardInInventory
+    );
+
     const finalOdds = this.calculateOdds(
       horse.winRate || 0,
       totalBettors + 1,
@@ -207,6 +224,7 @@ export class BetService {
           pointsWagered: dto.pointsWagered,
           result: BetResultEnum.PENDING,
           placedAt: new Date(),
+          isInsuranceCardUsed: isInsuranceApplied,
         },
         session,
       );
@@ -293,6 +311,20 @@ export class BetService {
     if (!horse) {
       throw new NotFoundException('Không tìm thấy thông tin chiến mã mới');
     }
+
+    // 1. Kiểm tra kho đồ thực tế của User
+    const claims = await this.rewardRepository.findClaimsByUserId(userId);
+    const hasInsuranceCardInInventory = claims.some(
+      (c) => (c.rewardId as any)?.rewardType === RewardType.INSURANCE_CARD,
+    );
+
+    // 2. Validate request sửa đổi trạng thái bảo hiểm
+    if (dto.useInsuranceCard && !hasInsuranceCardInInventory) {
+      throw new BadRequestException('Bạn không sở hữu thẻ bảo hiểm để sử dụng');
+    }
+    const isInsuranceApplied = !!(
+      dto.useInsuranceCard && hasInsuranceCardInInventory
+    );
 
     const session = await this.connection.startSession();
     session.startTransaction();
@@ -382,6 +414,7 @@ export class BetService {
           bettorsOnHorseAtBet: finalHorseBettors,
           totalBettorsAtBet: finalTotalBettors,
           finalOdds,
+          isInsuranceCardUsed: isInsuranceApplied,
         },
         session,
       );
@@ -428,19 +461,21 @@ export class BetService {
         const specProfile = await this.spectatorModel.findById(bet.spectatorId);
         if (!specProfile) continue;
 
-        // 1. Cập nhật trạng thái của chính đơn cược hiện tại trước
+        // 1. Xác định số điểm thắng cược thực tế
+        const pointsWon = isWinner
+          ? Math.floor(bet.pointsWagered * bet.finalOdds)
+          : 0;
+
         await this.betRepository.updateBet(
           this.resolveId(bet),
           {
             result: isWinner ? BetResultEnum.WIN : BetResultEnum.LOSE,
-            pointsWon: isWinner
-              ? Math.floor(bet.pointsWagered * bet.finalOdds)
-              : 0,
+            pointsWon: pointsWon,
           },
           session,
         );
 
-        // 2. Tính toán số lượng trận thắng thực tế từ lịch sử (đã bao gồm kết quả vừa update)
+        // 2. Tính toán lại tỷ lệ thắng
         const totalWinBets = await this.betRepository['betModel']
           .countDocuments({
             spectatorId: specProfile._id,
@@ -452,9 +487,8 @@ export class BetService {
         const computedWinRate =
           Math.round((totalWinBets / totalBetsCount) * 100 * 100) / 100;
 
+        //Cập nhật điểm cho spectator thắng
         if (isWinner) {
-          const pointsWon = Math.floor(bet.pointsWagered * bet.finalOdds);
-
           const updatedSpec = await this.spectatorModel.findByIdAndUpdate(
             bet.spectatorId,
             {
@@ -464,11 +498,10 @@ export class BetService {
             { returnDocument: 'after', session },
           );
 
-          if (!updatedSpec) {
+          if (!updatedSpec)
             throw new BadRequestException(
               'Đã xảy ra lỗi! Không thể cập nhật cá cược',
             );
-          }
 
           await this.pointsTransactionService.logTransaction({
             userId: this.resolveId(specProfile.userId),
@@ -486,18 +519,48 @@ export class BetService {
             isRead: false,
           });
         } else {
-          // Trường hợp LOSE: Chỉ cần cập nhật lại winRate mới vào profile người xem
-          await this.spectatorModel.findByIdAndUpdate(
-            bet.spectatorId,
-            { $set: { winRate: computedWinRate } },
-            { session },
-          );
+          // TRƯỜNG HỢP LOSE: KIỂM TRA ĐƠN CƯỢC CÓ DÙNG THẺ BẢO HIỂM HAY KHÔNG
+          let currentBalance = specProfile.pointBalance;
+          let insuranceContent = `Đơn cược của bạn tại vòng đua [${raceId}] đã không chuẩn xác. Chúc bạn may mắn hơn ở lần sau!`;
+
+          if (bet.isInsuranceCardUsed) {
+            const refundPoints = Math.floor(bet.pointsWagered * 0.5); // Hoàn lại 50% điểm cược
+            currentBalance += refundPoints;
+
+            // Hoàn tiền vào ví
+            await this.spectatorModel.findByIdAndUpdate(
+              bet.spectatorId,
+              {
+                $inc: { pointBalance: refundPoints },
+                $set: { winRate: computedWinRate },
+              },
+              { session },
+            );
+
+            // Log giao dịch hoàn tiền bảo hiểm
+            await this.pointsTransactionService.logTransaction({
+              userId: this.resolveId(specProfile.userId),
+              type: PointsTransactionType.REFUND, // Hoặc EARN tùy cấu hình hệ thống của bạn
+              amount: refundPoints,
+              balanceAfter: currentBalance,
+              reason: `Hoàn lại 50% điểm cược do sử dụng thẻ bảo hiểm tại vòng đua [${raceId}]`,
+            });
+
+            insuranceContent = `Đơn cược tại vòng đua [${raceId}] đã không chuẩn xác. Tuy nhiên, bạn có sử dụng thẻ bảo hiểm kích hoạt nên đã được hoàn lại 50% số điểm cược (+${refundPoints} điểm) vào tài khoản.`;
+          } else {
+            // Thua thông thường không có bảo hiểm
+            await this.spectatorModel.findByIdAndUpdate(
+              bet.spectatorId,
+              { $set: { winRate: computedWinRate } },
+              { session },
+            );
+          }
 
           await this.notificationRepository.create({
             userId: specProfile.userId,
             type: NotificationTypeEnum.BET_LOSE,
             title: NotificationTitleEnum.BET_LOSE,
-            content: `Đơn cược của bạn tại vòng đua [${raceId}] đã không chuẩn xác. Chúc bạn may mắn hơn ở lần sau!`,
+            content: insuranceContent,
             isRead: false,
           });
         }
