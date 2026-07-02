@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, QueryFilter, Types } from 'mongoose';
+import { ClientSession, Model, QueryFilter, Types } from 'mongoose';
 import { Reward, RewardDocument } from './schemas/reward.schema';
 import { SpectatorProfile } from '../user/schemas/spectator-profile.schema'; // Cập nhật đường dẫn thực tế của bạn
 import {
@@ -108,6 +108,28 @@ export class RewardRepository {
         },
       )
       .exec();
+  }
+
+  // Thêm vào file chứa các method tương tác DB của Reward/ClaimedReward
+  async findUnusedInsuranceCard(userId: string): Promise<any> {
+    return await this.claimedRewardModel
+      .findOne({
+        userId: new Types.ObjectId(userId),
+        isUsed: false,
+      })
+      .populate('rewardId');
+    // Chú ý: Đảm bảo điều kiện populate khớp với logic kiểm tra rewardType bên dưới
+  }
+
+  async useInsuranceCard(
+    claimedRewardId: string,
+    session: ClientSession,
+  ): Promise<void> {
+    await this.claimedRewardModel.findByIdAndUpdate(
+      claimedRewardId,
+      { $set: { isUsed: true } },
+      { session },
+    );
   }
 
   async deleteReward(id: string): Promise<Reward | null> {

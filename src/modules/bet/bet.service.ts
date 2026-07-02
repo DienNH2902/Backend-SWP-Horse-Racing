@@ -23,6 +23,8 @@ import { BetResultEnum } from 'src/constants/betResultStatusEnum.enum';
 import { PointsTransactionType } from 'src/constants/pointsTransactionTypeEnum.enum';
 import { NotificationTypeEnum } from 'src/constants/notificationTypeEnum.enum';
 import { NotificationTitleEnum } from 'src/constants/notificationTitleEnum.enum';
+import { RewardRepository } from '../reward/reward.repository';
+import { RewardType } from 'src/constants/rewardTypeEnum.enum';
 
 @Injectable()
 export class BetService {
@@ -33,6 +35,7 @@ export class BetService {
     private readonly registrationRepository: RegistrationRepository,
     private readonly pointsTransactionService: PointsTransactionService,
     private readonly notificationRepository: NotificationRepository,
+    private readonly rewardRepository: RewardRepository,
     @InjectModel(SpectatorProfile.name)
     private readonly spectatorModel: Model<SpectatorProfile>,
     @InjectConnection() private readonly connection: Connection,
@@ -160,6 +163,24 @@ export class BetService {
       dto.horseId,
     );
 
+    // 1. Tìm tất cả các claims chưa sử dụng của User này
+    const unusedClaims = await this.rewardRepository['claimedRewardModel']
+      .find({ userId: new Types.ObjectId(userId), isUsed: false })
+      .populate('rewardId');
+
+    // 2. Lọc ra thẻ bảo hiểm thực tế chưa dùng
+    const targetInsuranceClaim = unusedClaims.find(
+      (c) => (c.rewardId as any)?.rewardType === RewardType.INSURANCE_CARD,
+    );
+
+    // 3. Chỉ kích hoạt bảo hiểm khi User MUỐN DÙNG và THỰC SỰ CÓ THẺ CHƯA DÙNG
+    if (dto.useInsuranceCard && !targetInsuranceClaim) {
+      throw new BadRequestException(
+        'Bạn không sở hữu thẻ bảo hiểm khả dụng để sử dụng',
+      );
+    }
+    const isInsuranceApplied = !!(dto.useInsuranceCard && targetInsuranceClaim);
+
     const finalOdds = this.calculateOdds(
       horse.winRate || 0,
       totalBettors + 1,
@@ -170,6 +191,15 @@ export class BetService {
     session.startTransaction();
 
     try {
+      // Nếu áp dụng thẻ bảo hiểm, tiến hành đánh dấu đã sử dụng trong session
+      if (isInsuranceApplied && targetInsuranceClaim) {
+        await this.rewardRepository['claimedRewardModel'].findByIdAndUpdate(
+          targetInsuranceClaim._id,
+          { $set: { isUsed: true } },
+          { session },
+        );
+      }
+
       // Đếm số lượng cược thắng hiện tại trong DB để tính lại winRate mới khi totalBets tăng lên 1
       const currentWinBets = await this.betRepository['betModel']
         .countDocuments({
@@ -207,6 +237,7 @@ export class BetService {
           pointsWagered: dto.pointsWagered,
           result: BetResultEnum.PENDING,
           placedAt: new Date(),
+          isInsuranceCardUsed: isInsuranceApplied,
         },
         session,
       );
@@ -294,10 +325,72 @@ export class BetService {
       throw new NotFoundException('Không tìm thấy thông tin chiến mã mới');
     }
 
+    const unusedClaims = await this.rewardRepository['claimedRewardModel']
+      .find({ userId: new Types.ObjectId(userId), isUsed: false })
+      .populate('rewardId');
+
+    const targetInsuranceClaim = unusedClaims.find(
+      (c) => (c.rewardId as any)?.rewardType === RewardType.INSURANCE_CARD,
+    );
+
+    // Validate request sửa đổi trạng thái bảo hiểm
+    // Nếu đơn cũ CHƯA DÙNG, đơn mới MUỐN DÙNG thì bắt buộc phải có thẻ mới trong kho
+    if (
+      !bet.isInsuranceCardUsed &&
+      dto.useInsuranceCard &&
+      !targetInsuranceClaim
+    ) {
+      throw new BadRequestException(
+        'Bạn không sở hữu thẻ bảo hiểm khả dụng để sử dụng',
+      );
+    }
+
+    // Xác định trạng thái cuối cùng của đơn cược có được bảo hiểm hay không
+    // Trạng thái true khi: Đơn cũ đã dùng sẵn rồi HOẶC đơn mới kích hoạt thành công với thẻ mới
+    const isInsuranceApplied =
+      bet.isInsuranceCardUsed ||
+      !!(dto.useInsuranceCard && targetInsuranceClaim);
+
     const session = await this.connection.startSession();
     session.startTransaction();
 
     try {
+      // TRƯỜNG HỢP 1: Đơn cũ CHƯA DÙNG -> Đơn mới MUỐN DÙNG (Tiêu hao thẻ)
+      if (
+        !bet.isInsuranceCardUsed &&
+        dto.useInsuranceCard &&
+        targetInsuranceClaim
+      ) {
+        await this.rewardRepository['claimedRewardModel'].findByIdAndUpdate(
+          targetInsuranceClaim._id,
+          { $set: { isUsed: true } },
+          { session },
+        );
+      }
+
+      // TRƯỜNG HỢP 2: Đơn cũ ĐÃ DÙNG -> Đơn mới KHÔNG MUỐN DÙNG (Hoàn trả thẻ)
+      if (bet.isInsuranceCardUsed && !dto.useInsuranceCard) {
+        // Tìm đúng 1 thẻ đã dùng (isUsed: true) của user này để hoàn trả lại kho
+        const usedInsuranceClaim = await this.rewardRepository[
+          'claimedRewardModel'
+        ]
+          .findOne({ userId: new Types.ObjectId(userId), isUsed: true })
+          .populate('rewardId');
+
+        // Lọc đúng loại thẻ bảo hiểm (đề phòng user có nhiều loại vật phẩm khác nhau đã dùng)
+        if (
+          usedInsuranceClaim &&
+          (usedInsuranceClaim.rewardId as any)?.rewardType ===
+            RewardType.INSURANCE_CARD
+        ) {
+          await this.rewardRepository['claimedRewardModel'].findByIdAndUpdate(
+            usedInsuranceClaim._id,
+            { $set: { isUsed: false } },
+            { session },
+          );
+        }
+      }
+
       // 1. TỐI ƯU DÒNG TIỀN: Tính toán chênh lệch điểm cược (Mới - Cũ)
       // Nếu delta > 0: Bạn cược thêm tiền -> cần kiểm tra xem ví đủ không
       // Nếu delta < 0: Bạn giảm tiền cược -> hệ thống sẽ cộng lại tiền thừa vào ví
@@ -382,6 +475,7 @@ export class BetService {
           bettorsOnHorseAtBet: finalHorseBettors,
           totalBettorsAtBet: finalTotalBettors,
           finalOdds,
+          isInsuranceCardUsed: isInsuranceApplied,
         },
         session,
       );
@@ -428,19 +522,21 @@ export class BetService {
         const specProfile = await this.spectatorModel.findById(bet.spectatorId);
         if (!specProfile) continue;
 
-        // 1. Cập nhật trạng thái của chính đơn cược hiện tại trước
+        // 1. Xác định số điểm thắng cược thực tế
+        const pointsWon = isWinner
+          ? Math.floor(bet.pointsWagered * bet.finalOdds)
+          : 0;
+
         await this.betRepository.updateBet(
           this.resolveId(bet),
           {
             result: isWinner ? BetResultEnum.WIN : BetResultEnum.LOSE,
-            pointsWon: isWinner
-              ? Math.floor(bet.pointsWagered * bet.finalOdds)
-              : 0,
+            pointsWon: pointsWon,
           },
           session,
         );
 
-        // 2. Tính toán số lượng trận thắng thực tế từ lịch sử (đã bao gồm kết quả vừa update)
+        // 2. Tính toán lại tỷ lệ thắng
         const totalWinBets = await this.betRepository['betModel']
           .countDocuments({
             spectatorId: specProfile._id,
@@ -452,9 +548,8 @@ export class BetService {
         const computedWinRate =
           Math.round((totalWinBets / totalBetsCount) * 100 * 100) / 100;
 
+        //Cập nhật điểm cho spectator thắng
         if (isWinner) {
-          const pointsWon = Math.floor(bet.pointsWagered * bet.finalOdds);
-
           const updatedSpec = await this.spectatorModel.findByIdAndUpdate(
             bet.spectatorId,
             {
@@ -464,11 +559,10 @@ export class BetService {
             { returnDocument: 'after', session },
           );
 
-          if (!updatedSpec) {
+          if (!updatedSpec)
             throw new BadRequestException(
               'Đã xảy ra lỗi! Không thể cập nhật cá cược',
             );
-          }
 
           await this.pointsTransactionService.logTransaction({
             userId: this.resolveId(specProfile.userId),
@@ -486,18 +580,48 @@ export class BetService {
             isRead: false,
           });
         } else {
-          // Trường hợp LOSE: Chỉ cần cập nhật lại winRate mới vào profile người xem
-          await this.spectatorModel.findByIdAndUpdate(
-            bet.spectatorId,
-            { $set: { winRate: computedWinRate } },
-            { session },
-          );
+          // TRƯỜNG HỢP LOSE: KIỂM TRA ĐƠN CƯỢC CÓ DÙNG THẺ BẢO HIỂM HAY KHÔNG
+          let currentBalance = specProfile.pointBalance;
+          let insuranceContent = `Đơn cược của bạn tại vòng đua [${raceId}] đã không chuẩn xác. Chúc bạn may mắn hơn ở lần sau!`;
+
+          if (bet.isInsuranceCardUsed) {
+            const refundPoints = Math.floor(bet.pointsWagered * 0.5); // Hoàn lại 50% điểm cược
+            currentBalance += refundPoints;
+
+            // Hoàn tiền vào ví
+            await this.spectatorModel.findByIdAndUpdate(
+              bet.spectatorId,
+              {
+                $inc: { pointBalance: refundPoints },
+                $set: { winRate: computedWinRate },
+              },
+              { session },
+            );
+
+            // Log giao dịch hoàn tiền bảo hiểm
+            await this.pointsTransactionService.logTransaction({
+              userId: this.resolveId(specProfile.userId),
+              type: PointsTransactionType.REFUND, // Hoặc EARN tùy cấu hình hệ thống của bạn
+              amount: refundPoints,
+              balanceAfter: currentBalance,
+              reason: `Hoàn lại 50% điểm cược do sử dụng thẻ bảo hiểm tại vòng đua [${raceId}]`,
+            });
+
+            insuranceContent = `Đơn cược tại vòng đua [${raceId}] đã không chuẩn xác. Tuy nhiên, bạn có sử dụng thẻ bảo hiểm kích hoạt nên đã được hoàn lại 50% số điểm cược (+${refundPoints} điểm) vào tài khoản.`;
+          } else {
+            // Thua thông thường không có bảo hiểm
+            await this.spectatorModel.findByIdAndUpdate(
+              bet.spectatorId,
+              { $set: { winRate: computedWinRate } },
+              { session },
+            );
+          }
 
           await this.notificationRepository.create({
             userId: specProfile.userId,
             type: NotificationTypeEnum.BET_LOSE,
             title: NotificationTitleEnum.BET_LOSE,
-            content: `Đơn cược của bạn tại vòng đua [${raceId}] đã không chuẩn xác. Chúc bạn may mắn hơn ở lần sau!`,
+            content: insuranceContent,
             isRead: false,
           });
         }

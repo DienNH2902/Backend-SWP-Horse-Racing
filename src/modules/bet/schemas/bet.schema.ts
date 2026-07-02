@@ -39,6 +39,9 @@ export class Bet {
 
   @Prop({ type: Date, default: Date.now })
   placedAt: Date;
+
+  @Prop({ default: false })
+  isInsuranceCardUsed: boolean;
 }
 
 export class UserWallet {
