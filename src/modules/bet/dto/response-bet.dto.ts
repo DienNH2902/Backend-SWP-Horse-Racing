@@ -92,4 +92,7 @@ export class ResponseBetDto {
 
   @Expose()
   placedAt: Date;
+
+  @Expose()
+  isInsuranceCardUsed: string;
 }

@@ -13,6 +13,9 @@ export class ClaimedReward {
 
   @Prop({ type: Date, default: Date.now })
   claimedAt: Date;
+
+  @Prop({ type: Boolean, default: false }) // Thêm trường quản lý trạng thái sử dụng
+  isUsed: boolean;
 }
 
 export const ClaimedRewardSchema = SchemaFactory.createForClass(ClaimedReward);

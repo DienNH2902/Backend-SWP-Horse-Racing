@@ -163,19 +163,23 @@ export class BetService {
       dto.horseId,
     );
 
-    // 1. Kiểm tra kho đồ thực tế của User
-    const claims = await this.rewardRepository.findClaimsByUserId(userId);
-    const hasInsuranceCardInInventory = claims.some(
+    // 1. Tìm tất cả các claims chưa sử dụng của User này
+    const unusedClaims = await this.rewardRepository['claimedRewardModel']
+      .find({ userId: new Types.ObjectId(userId), isUsed: false })
+      .populate('rewardId');
+
+    // 2. Lọc ra thẻ bảo hiểm thực tế chưa dùng
+    const targetInsuranceClaim = unusedClaims.find(
       (c) => (c.rewardId as any)?.rewardType === RewardType.INSURANCE_CARD,
     );
 
-    // 2. Chỉ kích hoạt bảo hiểm khi User MUỐN DÙNG và THỰC SỰ CÓ THẺ
-    if (dto.useInsuranceCard && !hasInsuranceCardInInventory) {
-      throw new BadRequestException('Bạn không sở hữu thẻ bảo hiểm để sử dụng');
+    // 3. Chỉ kích hoạt bảo hiểm khi User MUỐN DÙNG và THỰC SỰ CÓ THẺ CHƯA DÙNG
+    if (dto.useInsuranceCard && !targetInsuranceClaim) {
+      throw new BadRequestException(
+        'Bạn không sở hữu thẻ bảo hiểm khả dụng để sử dụng',
+      );
     }
-    const isInsuranceApplied = !!(
-      dto.useInsuranceCard && hasInsuranceCardInInventory
-    );
+    const isInsuranceApplied = !!(dto.useInsuranceCard && targetInsuranceClaim);
 
     const finalOdds = this.calculateOdds(
       horse.winRate || 0,
@@ -187,6 +191,15 @@ export class BetService {
     session.startTransaction();
 
     try {
+      // Nếu áp dụng thẻ bảo hiểm, tiến hành đánh dấu đã sử dụng trong session
+      if (isInsuranceApplied && targetInsuranceClaim) {
+        await this.rewardRepository['claimedRewardModel'].findByIdAndUpdate(
+          targetInsuranceClaim._id,
+          { $set: { isUsed: true } },
+          { session },
+        );
+      }
+
       // Đếm số lượng cược thắng hiện tại trong DB để tính lại winRate mới khi totalBets tăng lên 1
       const currentWinBets = await this.betRepository['betModel']
         .countDocuments({
@@ -312,24 +325,72 @@ export class BetService {
       throw new NotFoundException('Không tìm thấy thông tin chiến mã mới');
     }
 
-    // 1. Kiểm tra kho đồ thực tế của User
-    const claims = await this.rewardRepository.findClaimsByUserId(userId);
-    const hasInsuranceCardInInventory = claims.some(
+    const unusedClaims = await this.rewardRepository['claimedRewardModel']
+      .find({ userId: new Types.ObjectId(userId), isUsed: false })
+      .populate('rewardId');
+
+    const targetInsuranceClaim = unusedClaims.find(
       (c) => (c.rewardId as any)?.rewardType === RewardType.INSURANCE_CARD,
     );
 
-    // 2. Validate request sửa đổi trạng thái bảo hiểm
-    if (dto.useInsuranceCard && !hasInsuranceCardInInventory) {
-      throw new BadRequestException('Bạn không sở hữu thẻ bảo hiểm để sử dụng');
+    // Validate request sửa đổi trạng thái bảo hiểm
+    // Nếu đơn cũ CHƯA DÙNG, đơn mới MUỐN DÙNG thì bắt buộc phải có thẻ mới trong kho
+    if (
+      !bet.isInsuranceCardUsed &&
+      dto.useInsuranceCard &&
+      !targetInsuranceClaim
+    ) {
+      throw new BadRequestException(
+        'Bạn không sở hữu thẻ bảo hiểm khả dụng để sử dụng',
+      );
     }
-    const isInsuranceApplied = !!(
-      dto.useInsuranceCard && hasInsuranceCardInInventory
-    );
+
+    // Xác định trạng thái cuối cùng của đơn cược có được bảo hiểm hay không
+    // Trạng thái true khi: Đơn cũ đã dùng sẵn rồi HOẶC đơn mới kích hoạt thành công với thẻ mới
+    const isInsuranceApplied =
+      bet.isInsuranceCardUsed ||
+      !!(dto.useInsuranceCard && targetInsuranceClaim);
 
     const session = await this.connection.startSession();
     session.startTransaction();
 
     try {
+      // TRƯỜNG HỢP 1: Đơn cũ CHƯA DÙNG -> Đơn mới MUỐN DÙNG (Tiêu hao thẻ)
+      if (
+        !bet.isInsuranceCardUsed &&
+        dto.useInsuranceCard &&
+        targetInsuranceClaim
+      ) {
+        await this.rewardRepository['claimedRewardModel'].findByIdAndUpdate(
+          targetInsuranceClaim._id,
+          { $set: { isUsed: true } },
+          { session },
+        );
+      }
+
+      // TRƯỜNG HỢP 2: Đơn cũ ĐÃ DÙNG -> Đơn mới KHÔNG MUỐN DÙNG (Hoàn trả thẻ)
+      if (bet.isInsuranceCardUsed && !dto.useInsuranceCard) {
+        // Tìm đúng 1 thẻ đã dùng (isUsed: true) của user này để hoàn trả lại kho
+        const usedInsuranceClaim = await this.rewardRepository[
+          'claimedRewardModel'
+        ]
+          .findOne({ userId: new Types.ObjectId(userId), isUsed: true })
+          .populate('rewardId');
+
+        // Lọc đúng loại thẻ bảo hiểm (đề phòng user có nhiều loại vật phẩm khác nhau đã dùng)
+        if (
+          usedInsuranceClaim &&
+          (usedInsuranceClaim.rewardId as any)?.rewardType ===
+            RewardType.INSURANCE_CARD
+        ) {
+          await this.rewardRepository['claimedRewardModel'].findByIdAndUpdate(
+            usedInsuranceClaim._id,
+            { $set: { isUsed: false } },
+            { session },
+          );
+        }
+      }
+
       // 1. TỐI ƯU DÒNG TIỀN: Tính toán chênh lệch điểm cược (Mới - Cũ)
       // Nếu delta > 0: Bạn cược thêm tiền -> cần kiểm tra xem ví đủ không
       // Nếu delta < 0: Bạn giảm tiền cược -> hệ thống sẽ cộng lại tiền thừa vào ví
