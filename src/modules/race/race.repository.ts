@@ -277,4 +277,49 @@ export class RaceRepository {
       .lean()
       .exec();
   }  
+
+    async findUpcomingRaces(): Promise<RaceDocument[]> {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    return this.raceModel
+        .find({ date: { $gte: now } })
+        .populate('tournamentId', 'name')
+        .populate('raceCourseId', 'name')
+        .sort({ date: 1, startTime: 1 })
+        .lean()
+        .exec();
+    }
+
+    async findUpcomingRacesByReferee(refereeId: string): Promise<RaceDocument[]> {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    return this.raceModel
+        .find({
+        refereeId: new Types.ObjectId(refereeId),
+        date: { $gte: now },
+        })
+        .populate('tournamentId', 'name')
+        .populate('raceCourseId', 'name')
+        .sort({ date: 1, startTime: 1 })
+        .lean()
+        .exec();
+    }
+
+    async findUpcomingRacesByIds(raceIds: Types.ObjectId[]): Promise<RaceDocument[]> {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    return this.raceModel
+        .find({
+        _id: { $in: raceIds },
+        date: { $gte: now },
+        })
+        .populate('tournamentId', 'name')
+        .populate('raceCourseId', 'name')
+        .sort({ date: 1, startTime: 1 })
+        .lean()
+        .exec();
+    }  
 }
