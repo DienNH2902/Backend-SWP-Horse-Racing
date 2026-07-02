@@ -286,4 +286,20 @@ export class RegistrationRepository {
       .lean()
       .exec();
   }
+
+  async findRaceIdsByJockey(jockeyId: string): Promise<Types.ObjectId[]> {
+  const docs = await this.registrationModel
+    .find(
+      {
+        jockeyId: new Types.ObjectId(jockeyId),
+        raceId: { $ne: null },
+        status: { $ne: RegistrationStatusEnum.REJECTED },
+      },
+      { raceId: 1 },
+    )
+    .lean()
+    .exec();
+
+  return docs.map((d) => d.raceId).filter(Boolean) as Types.ObjectId[];
+}
 }
