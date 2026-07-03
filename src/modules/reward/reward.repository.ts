@@ -25,7 +25,7 @@ export class RewardRepository {
   }
 
   async findAllRewards(): Promise<RewardDocument[]> {
-    return await this.rewardModel.find().exec();
+    return await this.rewardModel.find().sort({ requiredValue: 1 }).exec();
   }
 
   async findOneReward(filter: QueryFilter<Reward>): Promise<Reward | null> {
