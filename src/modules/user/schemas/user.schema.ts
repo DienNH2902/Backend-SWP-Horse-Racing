@@ -43,8 +43,8 @@ export class User {
   @Prop({ type: String, required: true, default: AccountStatusEnum.ACTIVE })
   status: AccountStatusEnum; // 'Active', 'Inactive', 'Banned'
 
-  // @Prop({ default: null })
-  // refreshToken: string;
+  @Prop({ default: '/goldenhoof-hero.png' })
+  activeBackground: string;
 }
 export const UserSchema = SchemaFactory.createForClass(User);
 
