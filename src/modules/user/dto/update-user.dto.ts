@@ -60,4 +60,8 @@ export class UpdateUserDto {
   @ApiProperty({ example: 1, description: '0: Female, 1: Male, 2: Other' })
   @IsEnum(GenderEnum)
   gender: GenderEnum.MALE;
+
+  @IsOptional()
+  @IsString()
+  activeBackground?: string;
 }
