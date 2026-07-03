@@ -272,6 +272,7 @@ export class ResponseUserDto {
   @Expose() gender: number;
   @Expose() role: string;
   @Expose() status: string;
+  @Expose() activeBackground: string;
   // @Expose() refreshToken: string;
 
   // ==========================================
