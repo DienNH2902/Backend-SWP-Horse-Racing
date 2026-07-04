@@ -22,7 +22,7 @@ export class ScheduleController {
   }
 
   // ── GET /schedule/upcoming/referee/me
-  @Get('upcoming/referee/me')
+  @Get('upcoming/referee')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleEnum.REFEREE)
   @ApiBearerAuth()
@@ -35,7 +35,7 @@ export class ScheduleController {
   }
 
   // ── GET /schedule/upcoming/jockey/me
-  @Get('upcoming/jockey/me')
+  @Get('upcoming/jockey')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleEnum.JOCKEY)
   @ApiBearerAuth()
