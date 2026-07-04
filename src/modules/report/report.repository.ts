@@ -51,7 +51,11 @@ export class ReportRepository {
     if (query.status) filter.status = query.status;
     if (query.category) filter.category = query.category;
 
-    return await this.reportModel.find(filter).sort({ createdAt: -1 }).exec();
+    return await this.reportModel
+      .find(filter)
+      .populate('userId', 'fullName email')
+      .sort({ createdAt: -1 })
+      .exec();
   }
 
   async updateReportStatus(
