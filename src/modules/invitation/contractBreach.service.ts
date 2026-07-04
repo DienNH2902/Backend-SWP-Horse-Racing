@@ -363,7 +363,8 @@ export class ContractBreachService {
     );
 
     return {
-      message: 'Hợp đồng hoàn thành tốt đẹp!',
+      message:
+        'Hợp đồng hoàn thành tốt đẹp, đã hoàn lại tiền bồi thường cho cả hai bên!',
     };
   }
 }

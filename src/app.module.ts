@@ -28,6 +28,7 @@ import { PointsTransactionModule } from './modules/points-transaction/points-tra
 import { RawResultModule } from './modules/raw-result/raw-result.module';
 import { PrizeDistributionModule } from './modules/prize-distribution/prize-distribution.module';
 import { BetModule } from './modules/bet/bet.module';
+import { ReportModule } from './modules/report/report.module';
 
 @Module({
   imports: [
@@ -96,6 +97,7 @@ import { BetModule } from './modules/bet/bet.module';
     RawResultModule,
     PrizeDistributionModule,
     BetModule,
+    ReportModule,
   ],
   controllers: [AppController],
   providers: [AppService],
