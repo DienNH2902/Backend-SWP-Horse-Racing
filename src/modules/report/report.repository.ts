@@ -29,16 +29,23 @@ export class ReportRepository {
   async findOneReport(
     filter: QueryFilter<Report>,
   ): Promise<ReportDocument | null> {
-    return await this.reportModel.findOne(filter).exec();
+    return await this.reportModel
+      .findOne(filter)
+      .populate('userId', 'fullName email')
+      .exec();
   }
 
   async findReportById(id: string): Promise<ReportDocument | null> {
-    return await this.reportModel.findById(new Types.ObjectId(id)).exec();
+    return await this.reportModel
+      .findById(new Types.ObjectId(id))
+      .populate('userId', 'fullName email')
+      .exec();
   }
 
   async findReportsByUserId(userId: string): Promise<ReportDocument[]> {
     return await this.reportModel
       .find({ userId: new Types.ObjectId(userId) })
+      .populate('userId', 'fullName email')
       .sort({ createdAt: -1 })
       .exec();
   }
@@ -51,7 +58,11 @@ export class ReportRepository {
     if (query.status) filter.status = query.status;
     if (query.category) filter.category = query.category;
 
-    return await this.reportModel.find(filter).sort({ createdAt: -1 }).exec();
+    return await this.reportModel
+      .find(filter)
+      .populate('userId', 'fullName email')
+      .sort({ createdAt: -1 })
+      .exec();
   }
 
   async updateReportStatus(
