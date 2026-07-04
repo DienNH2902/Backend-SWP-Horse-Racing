@@ -284,7 +284,7 @@ export class RaceRepository {
 
     return this.raceModel
         .find({ date: { $gte: now } })
-        .populate('tournamentId', 'name')
+        .populate('tournamentId', 'title horsesPerRace')
         .populate('raceCourseId', 'name')
         .sort({ date: 1, startTime: 1 })
         .lean()
@@ -300,7 +300,7 @@ export class RaceRepository {
         refereeId: new Types.ObjectId(refereeId),
         date: { $gte: now },
         })
-        .populate('tournamentId', 'name')
+        .populate('tournamentId', 'title horsesPerRace')
         .populate('raceCourseId', 'name')
         .sort({ date: 1, startTime: 1 })
         .lean()
@@ -316,7 +316,7 @@ export class RaceRepository {
         _id: { $in: raceIds },
         date: { $gte: now },
         })
-        .populate('tournamentId', 'name')
+        .populate('tournamentId', 'title horsesPerRace')
         .populate('raceCourseId', 'name')
         .sort({ date: 1, startTime: 1 })
         .lean()
