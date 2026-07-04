@@ -5,8 +5,21 @@ export class ResponseReportDto {
   @Transform(({ obj }) => obj._id?.toString())
   _id: string;
 
+  //   @Expose()
+  //   @Transform(({ obj }) => obj._id?.toString())
+  //   userId: string;
+
   @Expose()
-  @Transform(({ obj }) => obj._id?.toString())
+  @Transform(({ obj }) => {
+    if (obj.userId && typeof obj.userId === 'object') {
+      return {
+        _id: obj.userId._id?.toString() as string,
+        fullName: obj.userId.fullName as string,
+        email: obj.userId.email as string,
+      };
+    }
+    return obj.userId?.toString();
+  })
   userId: string;
 
   @Expose()
