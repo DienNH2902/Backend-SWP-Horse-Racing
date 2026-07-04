@@ -29,7 +29,7 @@ export class ResponseReportDto {
   description: string;
 
   @Expose()
-  @Transform(({ obj }) => obj.relatedRaceId._id?.toString())
+  @Transform(({ obj }) => obj.relatedRaceId?.toString())
   relatedRaceId?: string;
 
   @Expose()
