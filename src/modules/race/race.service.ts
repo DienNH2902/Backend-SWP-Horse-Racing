@@ -92,7 +92,6 @@ export class RaceService {
     return this.toResponseDto(race);
   }
 
-  // CẬP NHẬT LẠI HÀM NÀY ĐỂ ENDPOINT GET /races/{id} CHẠY ĐÚNG LOGIC MẢNG ẢO
   async getRaceById(id: string): Promise<ResponseRaceDto> {
     const race = await this.raceRepository.findOneRace({ _id: id });
     if (!race) throw new NotFoundException('Không tìm thấy race');

@@ -1,7 +1,7 @@
 // src/modules/horse/horse.repository.ts
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, QueryFilter, Types, UpdateQuery } from 'mongoose';
+import { ClientSession, Model, QueryFilter, Types, UpdateQuery } from 'mongoose';
 import { Horse, HorseDocument } from './schemas/horse.schema';
 import { HorseStatusEnum } from 'src/constants/horseStatusEnum.enum';
 
@@ -62,4 +62,36 @@ export class HorseRepository {
   async deleteHorse(id: string): Promise<Horse | null> {
     return await this.horseModel.findByIdAndDelete(id).exec();
   }
+
+  async incrementHorseRaceStats(
+    horseId: string,
+    isWinner: boolean,
+    session?: ClientSession,
+  ): Promise<Horse | null> {
+    return await this.horseModel
+      .findByIdAndUpdate(
+        horseId,
+        [
+          {
+            $set: {
+              totalRace: { $add: [{ $ifNull: ['$totalRace', 0] }, 1] },
+              totalWin: {
+                $add: [{ $ifNull: ['$totalWin', 0] }, isWinner ? 1 : 0],
+              },
+            },
+          },
+          {
+            $set: {
+              // Horse.winRate lưu thang 0–100
+              winRate: {
+                $multiply: [{ $divide: ['$totalWin', '$totalRace'] }, 100],
+              },
+            },
+          },
+        ],
+        { returnDocument: 'after', session , updatePipeline: true },
+      )
+      .lean()
+      .exec();
+  }  
 }

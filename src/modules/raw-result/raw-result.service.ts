@@ -4,10 +4,15 @@ import {
   BadRequestException,
   Logger,
   ForbiddenException,
+  ConflictException,
 } from '@nestjs/common';
+import { InjectConnection } from '@nestjs/mongoose';
+import { Connection } from 'mongoose';
 import { RawResultRepository } from './raw-result.repository';
 import { RaceRepository } from '../race/race.repository';
-import { RefereeReportService } from '../referee-report/referee-report.service';
+import { HorseRepository } from '../horse/horse.repository';
+import { UsersRepository } from '../user/user.repository';
+
 import { AdvancementService } from '../tournament/round-advancement.service';
 
 import { ConfirmFinalRankDto } from './dto/confirm-final-rank.dto';
@@ -23,9 +28,11 @@ export class RawResultService {
   constructor(
     private readonly rawResultRepository: RawResultRepository,
     private readonly raceRepository: RaceRepository,
-    private readonly refereeReportService: RefereeReportService,
     private readonly advancementService: AdvancementService,
     private readonly betService: BetService,
+    private readonly horseRepository: HorseRepository,
+    private readonly usersRepository: UsersRepository,
+    @InjectConnection() private readonly connection: Connection,
   ) {}
 
   /**
@@ -34,10 +41,12 @@ export class RawResultService {
    *  1. Lấy tất cả RawResult của race, sort theo rawRank ASC
    *  2. Những ngựa trong disqualifiedHorseIds → status = Disqualified, finalRank = null
    *  3. Những ngựa còn lại → re-rank liên tục từ 1 (Option A: shift lên)
-   *  4. bulkWrite vào DB
-   *  5. Tạo RefereeReport type=End
-   *  6. Update Race.status = Finished
-   *  7. Auto advance (round 1) hoặc distribute prize (round 2)
+   *  4. Trong 1 transaction:
+   *     a. Atomic lock race (ONGOING → FINISHED) — chống double-submit
+   *     b. bulkWrite finalRank/status vào RawResult
+   *     c. Cập nhật totalRace/totalWin/winRate cho Horse + JockeyProfile
+   *  5. Trả thưởng cá cược (không chặn luồng chính nếu lỗi)
+   *  6. Auto advance (round 1) hoặc distribute prize (round 2)
    */
   async confirmFinalRank(
     raceId: string,
@@ -140,9 +149,54 @@ export class RawResultService {
       }
     }
 
-    // 5. Bulk update DB
-    await this.rawResultRepository.bulkUpdateFinalRankAndStatus(updates);
+    // 5. Transaction: lock race + bulk update finalRank/status + cập nhật win-stat
+    const session = await this.connection.startSession();
+    try {
+      await session.withTransaction(async () => {
+        // Atomic lock: chỉ 1 request được phép tiếp tục nếu race còn ONGOING.
+        // Nếu request khác đã confirm trước (dù chỉ vài ms) → ném lỗi ngay,
+        // KHÔNG chạy bulkUpdate/win-increment để tránh cộng dồn sai (chống double-submit).
+        const locked = await this.raceRepository.tryTransitionStatus(
+          raceId,
+          RaceStatusEnum.ONGOING,
+          RaceStatusEnum.FINISHED,
+          session,
+        );
+        if (!locked) {
+          throw new ConflictException(
+            'Race đã được confirm bởi một request khác hoặc không còn ở trạng thái Ongoing',
+          );
+        }
+
+        await this.rawResultRepository.bulkUpdateFinalRankAndStatus(
+          updates,
+          session,
+        );
+
+        // Cập nhật totalRace/totalWin/winRate cho từng ngựa & jockey đã đua.
+        // Đã xác nhận với team: DISQUALIFIED vẫn tính totalRace (+1),
+        // chỉ loại khỏi totalWin (isWinner tự động false vì horseIdStr !== winnerHorseId).
+        for (const result of sorted) {
+          const horseIdStr = result.horseId.toString();
+          const isWinner = horseIdStr === winnerHorseId;
+
+          await this.horseRepository.incrementHorseRaceStats(
+            horseIdStr,
+            isWinner,
+            session,
+          );
+          await this.usersRepository.incrementJockeyRaceStats(
+            result.jockeyId.toString(),
+            isWinner,
+            session,
+          );
+        }
+      });
+    } finally {
+      await session.endSession();
+    }
     this.logger.log(`Đã update finalRank cho ${updates.length} ngựa`);
+    this.logger.log(`Race ${raceId} → status Finished`);
 
     // ==========================================
     // BỔ SUNG: KÍCH HOẠT XỬ LÝ TRẢ THƯỞNG CÁ CƯỢC HỆ THỐNG
@@ -163,11 +217,7 @@ export class RawResultService {
     }
     // ==========================================
 
-    // 6. Update Race.status = Finished
-    await this.raceRepository.updateStatus(raceId, RaceStatusEnum.FINISHED);
-    this.logger.log(`Race ${raceId} → status Finished`);
-
-    // 7. Auto advance (round 1) hoặc distribute prize (round 2)
+    // 6. Auto advance (round 1) hoặc distribute prize (round 2)
     await this.advancementService.handlePostConfirm(raceId);
     this.logger.log(`handlePostConfirm done cho race ${raceId}`);
 

@@ -26,7 +26,6 @@ import { RoleEnum } from 'src/constants/roleEnum.enum';
 export class RaceBroadcastController {
   constructor(private readonly broadcastService: RaceBroadcastService) {}
 
-  // ── REFEREE: Live broadcast ───────────────────────────────────────────────
   @Post(':raceId/start')
   @UseGuards(RolesGuard)
   @Roles(RoleEnum.REFEREE)
@@ -46,7 +45,6 @@ export class RaceBroadcastController {
     return await this.broadcastService.startBroadcast(raceId, startFrom);
   }
 
-  // ── ALL ROLES: Replay sau khi race kết thúc ───────────────────────────────
   @Post(':raceId/replay')
   @ApiOperation({
     summary: 'Xem lại race đã kết thúc (tất cả role)',

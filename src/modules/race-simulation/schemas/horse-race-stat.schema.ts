@@ -26,9 +26,14 @@ export class HorseRaceStats {
   @Prop({ required: true })
   stamina: number;
 
-  // snapshot winRate tại thời điểm race — phục vụ audit
   @Prop({ required: true })
   totalWin: number;
+
+  @Prop({ required: true })
+  horseWinRate: number;
+
+  @Prop({ required: true })
+  jockeyWinRate: number;
 }
 
 export const HorseRaceStatsSchema = SchemaFactory.createForClass(HorseRaceStats);

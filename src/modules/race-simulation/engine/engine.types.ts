@@ -11,7 +11,8 @@ export interface HorseInput {
   horseHeight: number;
   horseWinRate: number;
   jockeyWeight: number;
-  totalWin: number; // snapshot từ Horse
+  jockeyWinRate: number;
+  totalWin: number; // from HORSE
 }
 
 // Kết quả tính toán ở Bước 1
@@ -28,6 +29,8 @@ export interface HorseEngineData {
   jockeyId: Types.ObjectId;
   lane: number;
   totalWin: number;
+  horseWinRate: number;
+  jockeyWinRate: number;
   stats: ComputedStats;
   conditionModifier: number; // output Bước 2
 }

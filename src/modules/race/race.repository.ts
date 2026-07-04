@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model, Types, ClientSession } from 'mongoose';
 import { Race, RaceDocument } from './schemas/race.schema';
 import { RaceStatusEnum } from '../../constants/raceStatus.enum';
 
@@ -201,9 +201,11 @@ export class RaceRepository {
       .findByIdAndUpdate(new Types.ObjectId(raceId), {
         status,
         ...(status === RaceStatusEnum.SIMULATED && { simulatedAt: new Date() }),
+        ...(status === RaceStatusEnum.READY && { refereeConfirmedAt: new Date() }),
       })
       .exec();
   }
+
   async assignRaceCourse(
     raceId: string,
     raceCourseId: string,
@@ -254,4 +256,70 @@ export class RaceRepository {
       .lean()
       .exec() as Promise<Race | null>;
   }
+
+  async tryTransitionStatus(
+    raceId: string,
+    fromStatus: RaceStatusEnum,
+    toStatus: RaceStatusEnum,
+    session?: ClientSession,
+  ): Promise<Race | null> {
+    return this.raceModel
+      .findOneAndUpdate(
+        { _id: new Types.ObjectId(raceId), status: fromStatus },
+        {
+          $set: {
+            status: toStatus,
+            ...(toStatus === RaceStatusEnum.FINISHED && { finishedAt: new Date() }),
+          },
+        },
+        { returnDocument: 'after', session },
+      )
+      .lean()
+      .exec();
+  }  
+
+    async findUpcomingRaces(): Promise<RaceDocument[]> {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    return this.raceModel
+        .find({ date: { $gte: now } })
+        .populate('tournamentId', 'name')
+        .populate('raceCourseId', 'name')
+        .sort({ date: 1, startTime: 1 })
+        .lean()
+        .exec();
+    }
+
+    async findUpcomingRacesByReferee(refereeId: string): Promise<RaceDocument[]> {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    return this.raceModel
+        .find({
+        refereeId: new Types.ObjectId(refereeId),
+        date: { $gte: now },
+        })
+        .populate('tournamentId', 'name')
+        .populate('raceCourseId', 'name')
+        .sort({ date: 1, startTime: 1 })
+        .lean()
+        .exec();
+    }
+
+    async findUpcomingRacesByIds(raceIds: Types.ObjectId[]): Promise<RaceDocument[]> {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    return this.raceModel
+        .find({
+        _id: { $in: raceIds },
+        date: { $gte: now },
+        })
+        .populate('tournamentId', 'name')
+        .populate('raceCourseId', 'name')
+        .sort({ date: 1, startTime: 1 })
+        .lean()
+        .exec();
+    }  
 }

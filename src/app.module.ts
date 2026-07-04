@@ -29,6 +29,7 @@ import { RawResultModule } from './modules/raw-result/raw-result.module';
 import { PrizeDistributionModule } from './modules/prize-distribution/prize-distribution.module';
 import { BetModule } from './modules/bet/bet.module';
 import { ReportModule } from './modules/report/report.module';
+import { RaceScheduleModule } from './modules/schedule/schedule.module';
 
 @Module({
   imports: [
@@ -98,6 +99,7 @@ import { ReportModule } from './modules/report/report.module';
     PrizeDistributionModule,
     BetModule,
     ReportModule,
+    RaceScheduleModule,
   ],
   controllers: [AppController],
   providers: [AppService],

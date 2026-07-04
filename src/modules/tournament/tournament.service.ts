@@ -14,6 +14,7 @@ import { plainToInstance } from 'class-transformer';
 import { GetTournamentsQueryDto } from './dto/get-tournament-status-query.dto';
 import { RegistrationRepository } from '../registration/registration.repository';
 import { TOURNAMENT_TOTAL_ROUNDS } from 'src/constants/tournamentStatusEnum.enum';
+import { PrizeRepository } from '../prize-distribution/prize.repository';
 
 export class ParticipantJockeyDto {
   jockeyId: string;
@@ -63,6 +64,7 @@ export class TournamentService {
   constructor(
     private readonly tournamentRepository: TournamentRepository,
     private readonly registrationRepository: RegistrationRepository,
+    private readonly prizeRepository: PrizeRepository
     // private readonly userTournamentRepository: UserTournamentRepository,
   ) {}
 
@@ -183,24 +185,36 @@ export class TournamentService {
   //   return this.toResponse(tournament);
   // }
 
-  async getOneTournament(id: string): Promise<any> {
-    const tournament = await this.tournamentRepository.findTournamentById(id);
-    if (!tournament) {
-      throw new NotFoundException('Không tìm thấy giải đấu yêu cầu');
-    }
+async getOneTournament(id: string): Promise<any> {
+  const tournament = await this.tournamentRepository.findTournamentById(id);
+  if (!tournament) {
+    throw new NotFoundException('Không tìm thấy giải đấu yêu cầu');
+  }
 
-    const plainTournament = tournament.toObject();
-    const availableSlot = await this.calculateAvailableSlot(
-      plainTournament._id.toString(),
+  const plainTournament = tournament.toObject();
+  const tournamentId = plainTournament._id.toString();
+
+  const [availableSlot, prize] = await Promise.all([
+    this.calculateAvailableSlot(
+      tournamentId,
       plainTournament.horsesPerRace,
       plainTournament.totalRaces,
-    );
+    ),
+    this.prizeRepository.findByTournamentId(tournamentId),
+  ]);
 
-    return {
-      ...this.toResponse(plainTournament),
-      availableSlot,
-    };
-  }
+  return {
+    ...this.toResponse(plainTournament),
+    availableSlot,
+    prize: prize
+      ? {
+          _id: prize._id.toString(),
+          name: prize.name,
+          amount: prize.amount
+        }
+      : null,
+  };
+}
 
   async getTournamentParticipants(
     tournamentId: string,

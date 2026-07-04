@@ -37,6 +37,9 @@ export class Horse {
 
   @Prop({ default: 0, min: 0 })
   totalWin: number;
+
+  @Prop({ default: 0, min: 0 })
+  totalRace: number;
 }
 
 export const HorseSchema = SchemaFactory.createForClass(Horse);

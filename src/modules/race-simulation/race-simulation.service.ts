@@ -146,7 +146,7 @@ async runSimulation(raceId: string): Promise<{ message: string }> {
     // Resolve lại đúng JockeyProfile bằng userId để lấy _id và weight thật.
     const jockeyProfileMap = new Map<
       string,
-      { _id: Types.ObjectId; weight: number; height: number }
+      { _id: Types.ObjectId; weight: number; height: number; winRate: number }
     >();
     for (const reg of registrations) {
       const userId =
@@ -164,6 +164,7 @@ async runSimulation(raceId: string): Promise<{ message: string }> {
           _id: (realProfile as any)._id,
           weight: (realProfile as any).weight,
           height: (realProfile as any).height,
+          winRate: (realProfile as any).winRate ?? 0,
         });
         this.logger.log(
           `[SIM] Resolved JockeyProfile thật cho user ${userId}: ` +
@@ -186,7 +187,8 @@ async runSimulation(raceId: string): Promise<{ message: string }> {
         horseWeight: reg.horse.weight,
         horseHeight: reg.horse.height,
         horseWinRate: reg.horse.winRate,
-        jockeyWeight: realProfile.weight, // ← weight thật từ JockeyProfile
+        jockeyWeight: realProfile.weight,
+        jockeyWinRate: realProfile.winRate, 
         totalWin: reg.horse.totalWin ?? 0,
       };
     });
@@ -210,6 +212,8 @@ async runSimulation(raceId: string): Promise<{ message: string }> {
         jockeyId: input.jockeyId,
         lane: input.lane,
         totalWin: input.totalWin,
+        horseWinRate: input.horseWinRate,
+        jockeyWinRate: input.jockeyWinRate,
         stats,
         conditionModifier,
       };
@@ -281,6 +285,8 @@ async runSimulation(raceId: string): Promise<{ message: string }> {
       acceleration: h.stats.acceleration,
       stamina: h.stats.stamina,
       totalWin: h.totalWin,
+      horseWinRate: h.horseWinRate,
+      jockeyWinRate: h.jockeyWinRate,
     }));
 
     // ── 10. Bulk insert trong transaction ─────────────────────────────────────
