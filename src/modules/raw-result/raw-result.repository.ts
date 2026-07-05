@@ -53,4 +53,20 @@ export class RawResultRepository {
     }));
     await this.rawResultModel.bulkWrite(ops, { session });
   }
+
+  async findByHorseId(horseId: string): Promise<RawResult[]> {
+  return this.rawResultModel
+    .find({
+      horseId: new Types.ObjectId(horseId),
+      status: RawResultStatus.CONFIRMED,
+    })
+    .populate({
+      path: 'raceId',
+      select: 'name date tournamentId',
+      populate: { path: 'tournamentId', select: 'title' },
+    })
+    .sort({ finishedTime: -1 })
+    .lean()
+    .exec();
+}
 }
