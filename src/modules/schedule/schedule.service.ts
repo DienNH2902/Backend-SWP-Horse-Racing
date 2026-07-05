@@ -12,20 +12,32 @@ export class ScheduleService {
     private readonly registrationRepo: RegistrationRepository,
   ) {}
 
-  private toDto(race: any): RaceScheduleItemDto {
-    return plainToInstance(RaceScheduleItemDto, race, {
-      excludeExtraneousValues: true,
-    });
+  private async toDto(race: any): Promise<RaceScheduleItemDto> {
+    const totalSlots = race.tournamentId?.horsesPerRace ?? 0;
+    const filledSlots = await this.registrationRepo.countConfirmedByRace(
+      race._id.toString(),
+    );
+
+    return plainToInstance(
+      RaceScheduleItemDto,
+      {
+        ...race,
+        totalSlots,
+        filledSlots,
+        availableSlots: totalSlots - filledSlots,
+      },
+      { excludeExtraneousValues: true },
+    );
   }
 
   async getUpcomingPublicSchedule(): Promise<RaceScheduleItemDto[]> {
     const races = await this.raceRepo.findUpcomingRaces();
-    return races.map((r) => this.toDto(r));
+    return Promise.all(races.map((r) => this.toDto(r)));
   }
 
   async getUpcomingRefereeSchedule(refereeId: string): Promise<RaceScheduleItemDto[]> {
     const races = await this.raceRepo.findUpcomingRacesByReferee(refereeId);
-    return races.map((r) => this.toDto(r));
+    return Promise.all(races.map((r) => this.toDto(r)));
   }
 
   async getUpcomingJockeySchedule(jockeyId: string): Promise<RaceScheduleItemDto[]> {
@@ -33,6 +45,6 @@ export class ScheduleService {
     if (!raceIds.length) return [];
 
     const races = await this.raceRepo.findUpcomingRacesByIds(raceIds);
-    return races.map((r) => this.toDto(r));
+    return Promise.all(races.map((r) => this.toDto(r)));
   }
 }
