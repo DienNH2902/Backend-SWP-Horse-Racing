@@ -6,6 +6,8 @@ export type RegistrationDocument = Registration & Document;
 
 @Schema({ timestamps: true })
 export class Registration {
+  _id: Types.ObjectId;
+
   @Prop({ type: Types.ObjectId, ref: 'JockeyInvitation', required: true })
   jockeyInvitationId: Types.ObjectId;
 

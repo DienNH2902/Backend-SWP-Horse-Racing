@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types, ClientSession } from 'mongoose';
 import { Bet, BetDocument } from './schemas/bet.schema';
+import { BetResultEnum } from 'src/constants/betResultStatusEnum.enum';
 
 @Injectable()
 export class BetRepository {
@@ -115,6 +116,16 @@ export class BetRepository {
     return this.betModel.find({ raceId: new Types.ObjectId(raceId) }).exec();
   }
 
+  //Lấy tất cả bet nhưng không có trạng thái là refunded vì tránh cập nhật trạng thái lose cho refunded
+  async findAllPendingBetsByRaceId(raceId: string): Promise<BetDocument[]> {
+    return this.betModel
+      .find({
+        raceId: new Types.ObjectId(raceId),
+        result: { $ne: BetResultEnum.REFUNDED },
+      })
+      .exec();
+  }
+
   async countBettorsOnHorse(raceId: string, horseId: string): Promise<number> {
     return this.betModel
       .countDocuments({
@@ -163,5 +174,26 @@ export class BetRepository {
         },
       ])
       .exec();
+  }
+
+  async findPendingBetsByRaceAndHorse(
+    raceId: string,
+    horseId: string,
+  ): Promise<any[]> {
+    return this.betModel
+      .find({
+        raceId: new Types.ObjectId(raceId),
+        horseId: new Types.ObjectId(horseId),
+        result: BetResultEnum.PENDING,
+      })
+      .exec();
+  }
+
+  async updateBetResult(betId: string, result: BetResultEnum): Promise<any> {
+    return this.betModel.findByIdAndUpdate(
+      betId,
+      { $set: { result } },
+      { returnDocument: 'after' },
+    );
   }
 }

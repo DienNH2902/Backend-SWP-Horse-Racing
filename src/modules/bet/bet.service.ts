@@ -514,7 +514,7 @@ export class BetService {
     raceId: string,
     winnerHorseId: string,
   ): Promise<void> {
-    const allBets = await this.betRepository.findByRaceId(raceId);
+    const allBets = await this.betRepository.findAllPendingBetsByRaceId(raceId);
     if (!allBets || allBets.length === 0) return;
 
     for (const bet of allBets) {
@@ -636,6 +636,90 @@ export class BetService {
         if (err) throw new BadRequestException(err);
       } finally {
         session.endSession();
+      }
+    }
+  }
+
+  async refundBetsForDisqualifiedHorse(
+    raceId: string,
+    horseId: string, // Khớp định dạng ClientSession đồng bộ từ Service cha
+  ): Promise<void> {
+    // 1. Tìm toàn bộ các đơn cược PENDING của con ngựa này trong trận đấu
+    const activeBets = await this.betRepository.findPendingBetsByRaceAndHorse(
+      raceId,
+      horseId,
+    );
+
+    for (const bet of activeBets) {
+      // 2. Chuyển trạng thái đơn cược thành REFUNDED trong session
+      await this.betRepository.updateBetResult(
+        bet._id.toString(),
+        BetResultEnum.REFUNDED,
+      );
+
+      // 3. Tìm hồ sơ Spectator để hoàn tiền
+      const spectator = await this.spectatorModel.findById(bet.spectatorId);
+
+      if (spectator) {
+        // Tính toán lại WinRate ảo do tổng số đơn cược bị giảm đi 1
+        const currentWinBets = await this.betRepository[
+          'betModel'
+        ].countDocuments({
+          spectatorId: spectator._id,
+          result: BetResultEnum.WIN,
+        });
+
+        const newTotalBets = Math.max(0, (spectator.totalBets || 0) - 1);
+        const newWinRate =
+          newTotalBets > 0
+            ? Math.round((currentWinBets / newTotalBets) * 100 * 100) / 100
+            : 0;
+
+        // Hoàn trả 100% số điểm đã cược ban đầu vào ví
+        await this.spectatorModel.findByIdAndUpdate(spectator._id, {
+          $inc: { pointBalance: bet.pointsWagered, totalBets: -1 },
+          $set: { winRate: newWinRate },
+        });
+
+        // 4. Khôi phục lại Thẻ bảo hiểm cược nếu Spectator có áp dụng trong đơn cược này
+        if (bet.isInsuranceCardUsed) {
+          // Tìm đúng 1 thẻ đã dùng (isUsed: true) của user này để hoàn trả lại kho
+          const usedInsuranceClaim = await this.rewardRepository[
+            'claimedRewardModel'
+          ]
+            .findOne({ userId: spectator.userId, isUsed: true })
+            .populate('rewardId');
+
+          // Lọc chính xác loại thẻ bảo hiểm để khôi phục trạng thái chưa sử dụng
+          if (
+            usedInsuranceClaim &&
+            (usedInsuranceClaim.rewardId as any)?.rewardType ===
+              RewardType.INSURANCE_CARD
+          ) {
+            await this.rewardRepository['claimedRewardModel'].findByIdAndUpdate(
+              usedInsuranceClaim._id,
+              { $set: { isUsed: false } },
+            );
+          }
+        }
+
+        // 5. Ghi nhận lịch sử giao dịch cộng điểm (Points Transaction)
+        await this.pointsTransactionService.logTransaction({
+          userId: spectator.userId.toString(),
+          type: PointsTransactionType.REFUND,
+          amount: bet.pointsWagered as number,
+          balanceAfter: (spectator.pointBalance + bet.pointsWagered) as number,
+          reason: `Hoàn trả 100% điểm cược trận đấu [${raceId}] do chiến mã bị hủy tư cách thi đấu`,
+        });
+
+        // 6. Gửi thông báo cho Spectator biết
+        await this.notificationRepository.create({
+          userId: spectator.userId,
+          type: NotificationTypeEnum.REFUND,
+          title: NotificationTitleEnum.REFUND,
+          content: `Đơn cược ${bet.pointsWagered} điểm của bạn tại trận đấu [${raceId}] đã được hoàn trả thành công do ngựa đua gặp sự cố vi phạm kỹ thuật trước giờ khởi tranh.`,
+          isRead: false,
+        });
       }
     }
   }

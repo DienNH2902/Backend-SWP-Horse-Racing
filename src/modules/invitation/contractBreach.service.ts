@@ -27,11 +27,18 @@ import {
   SystemWallet,
   SystemWalletDocument,
 } from '../payment/schemas/systemWallet.schema';
+import { BetService } from '../bet/bet.service';
+import { RegistrationRepository } from '../registration/registration.repository';
+import { RaceStatusEnum } from 'src/constants/raceStatus.enum';
+import { RaceRepository } from '../race/race.repository';
 
 @Injectable()
 export class ContractBreachService {
   constructor(
     private readonly breachRepository: ContractBreachRepository,
+    private readonly raceRepository: RaceRepository,
+    private readonly betService: BetService,
+    private readonly registrationRepository: RegistrationRepository,
     private readonly contractRepository: ContractRepository,
     private readonly notificationRepository: NotificationRepository,
     private readonly transactionRepository: TransactionRepository,
@@ -60,6 +67,8 @@ export class ContractBreachService {
       contract.horseOwnerId?.toString();
     const jockeyUserId =
       contract.jockeyId?._id?.toString() || contract.jockeyId?.toString();
+    const horseIdStr =
+      contract.horseId?._id?.toString() || contract.horseId?.toString();
 
     // Giá trị cốt lõi dòng tiền cấu thành
     const contractAmount = contract.contractAmount;
@@ -246,8 +255,50 @@ export class ContractBreachService {
       ContractStatusEnum.BREACHED,
     );
 
-    const horseIdStr =
-      contract.horseId?._id?.toString() || contract.horseId?.toString();
+    // ===== LUỒNG PHỤ: HỦY CÁC CƯỢC LIÊN QUAN ĐẾN NGỰA BỊ VI PHẠM HỢP ĐỒNG =====
+    const tournamentIdStr =
+      contract.tournamentId?._id?.toString() ||
+      contract.tournamentId?.toString();
+
+    // Tìm Registration của ngựa này để lấy raceId
+    const registration =
+      await this.registrationRepository.findActiveByTournamentAndHorse(
+        tournamentIdStr,
+        horseIdStr,
+      );
+
+    if (registration) {
+      const registrationIdStr = registration._id.toString();
+      const rejectReason = 'Hủy đăng ký do vi phạm hoặc chấm dứt hợp đồng';
+
+      await this.registrationRepository.updateStatusToRejected(
+        registrationIdStr,
+        rejectReason,
+      );
+
+      // 2. Xử lý hoàn tiền cược nếu đơn đăng ký này đã được xếp vào trận đấu (có raceId)
+      if (registration.raceId) {
+        const raceIdStr =
+          registration.raceId?._id?.toString() ||
+          registration.raceId?.toString();
+
+        const race = await this.raceRepository.findById(raceIdStr);
+        if (!race) {
+          throw new NotFoundException(
+            `Không tìm thấy race với ID: ${raceIdStr}`,
+          );
+        } else if (race.status === RaceStatusEnum.SCHEDULED) {
+          await this.betService.refundBetsForDisqualifiedHorse(
+            raceIdStr,
+            horseIdStr,
+          );
+        }
+      }
+    }
+    // ===== KẾT THÚC LUỒNG PHỤ =====
+
+    // const horseIdStr =
+    //   contract.horseId?._id?.toString() || contract.horseId?.toString();
     await this.horseRepository.updateHorseStatus(
       horseIdStr,
       HorseStatusEnum.IDLE,

@@ -18,11 +18,11 @@ export class RaceRepository {
   ) {}
 
   async createMany(data: Partial<Race>[]): Promise<Race[]> {
-    return this.raceModel.insertMany(data) as unknown as Race[];
+    return (await this.raceModel.insertMany(data)) as unknown as Race[];
   }
 
   async create(data: Partial<Race>): Promise<Race> {
-    return new this.raceModel(data).save() as unknown as Race;
+    return (await new this.raceModel(data).save()) as unknown as Race;
   }
 
   async createBatch(
@@ -201,7 +201,9 @@ export class RaceRepository {
       .findByIdAndUpdate(new Types.ObjectId(raceId), {
         status,
         ...(status === RaceStatusEnum.SIMULATED && { simulatedAt: new Date() }),
-        ...(status === RaceStatusEnum.READY && { refereeConfirmedAt: new Date() }),
+        ...(status === RaceStatusEnum.READY && {
+          refereeConfirmedAt: new Date(),
+        }),
       })
       .exec();
   }
@@ -269,57 +271,61 @@ export class RaceRepository {
         {
           $set: {
             status: toStatus,
-            ...(toStatus === RaceStatusEnum.FINISHED && { finishedAt: new Date() }),
+            ...(toStatus === RaceStatusEnum.FINISHED && {
+              finishedAt: new Date(),
+            }),
           },
         },
         { returnDocument: 'after', session },
       )
       .lean()
       .exec();
-  }  
+  }
 
-    async findUpcomingRaces(): Promise<RaceDocument[]> {
+  async findUpcomingRaces(): Promise<RaceDocument[]> {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
 
     return this.raceModel
-        .find({ date: { $gte: now } })
-        .populate('tournamentId', 'title horsesPerRace')
-        .populate('raceCourseId', 'name')
-        .sort({ date: 1, startTime: 1 })
-        .lean()
-        .exec();
-    }
+      .find({ date: { $gte: now } })
+      .populate('tournamentId', 'name')
+      .populate('raceCourseId', 'name')
+      .sort({ date: 1, startTime: 1 })
+      .lean()
+      .exec();
+  }
 
-    async findUpcomingRacesByReferee(refereeId: string): Promise<RaceDocument[]> {
+  async findUpcomingRacesByReferee(refereeId: string): Promise<RaceDocument[]> {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
 
     return this.raceModel
-        .find({
+      .find({
         refereeId: new Types.ObjectId(refereeId),
         date: { $gte: now },
-        })
-        .populate('tournamentId', 'title horsesPerRace')
-        .populate('raceCourseId', 'name')
-        .sort({ date: 1, startTime: 1 })
-        .lean()
-        .exec();
-    }
+      })
+      .populate('tournamentId', 'name')
+      .populate('raceCourseId', 'name')
+      .sort({ date: 1, startTime: 1 })
+      .lean()
+      .exec();
+  }
 
-    async findUpcomingRacesByIds(raceIds: Types.ObjectId[]): Promise<RaceDocument[]> {
+  async findUpcomingRacesByIds(
+    raceIds: Types.ObjectId[],
+  ): Promise<RaceDocument[]> {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
 
     return this.raceModel
-        .find({
+      .find({
         _id: { $in: raceIds },
         date: { $gte: now },
-        })
-        .populate('tournamentId', 'title horsesPerRace')
-        .populate('raceCourseId', 'name')
-        .sort({ date: 1, startTime: 1 })
-        .lean()
-        .exec();
-    }  
+      })
+      .populate('tournamentId', 'name')
+      .populate('raceCourseId', 'name')
+      .sort({ date: 1, startTime: 1 })
+      .lean()
+      .exec();
+  }
 }

@@ -27,4 +27,5 @@ export enum NotificationTitleEnum {
   UPDATE_BET_SUCCESS = 'Thay đổi cược thành công',
   BET_WIN = 'Chúc mừng thắng cược',
   BET_LOSE = 'Kết quả đặt cược',
+  REFUND = 'Hoàn lại điểm cược',
 }
