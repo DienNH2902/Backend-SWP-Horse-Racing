@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JockeyInvitationController } from './invitation.controller';
 import { JockeyInvitationService } from './invitation.service';
@@ -20,6 +20,9 @@ import {
 } from './schemas/contractBreach.schema';
 import { ContractBreachService } from './contractBreach.service';
 import { ContractBreachRepository } from './contractBreach.repository';
+import { RegistrationModule } from '../registration/registration.module';
+import { BetModule } from '../bet/bet.module';
+import { RaceModule } from '../race/race.module';
 
 @Module({
   imports: [
@@ -32,6 +35,9 @@ import { ContractBreachRepository } from './contractBreach.repository';
     UserModule,
     NotificationModule,
     PaymentModule,
+    BetModule,
+    RaceModule,
+    forwardRef(() => RegistrationModule),
   ],
   controllers: [JockeyInvitationController],
   providers: [

@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, QueryFilter, Types, UpdateQuery } from 'mongoose';
+import {
+  ClientSession,
+  Model,
+  QueryFilter,
+  Types,
+  UpdateQuery,
+} from 'mongoose';
 import {
   Registration,
   RegistrationDocument,
@@ -288,18 +294,46 @@ export class RegistrationRepository {
   }
 
   async findRaceIdsByJockey(jockeyId: string): Promise<Types.ObjectId[]> {
-  const docs = await this.registrationModel
-    .find(
-      {
-        jockeyId: new Types.ObjectId(jockeyId),
-        raceId: { $ne: null },
-        status: { $ne: RegistrationStatusEnum.REJECTED },
-      },
-      { raceId: 1 },
-    )
-    .lean()
-    .exec();
+    const docs = await this.registrationModel
+      .find(
+        {
+          jockeyId: new Types.ObjectId(jockeyId),
+          raceId: { $ne: null },
+          status: { $ne: RegistrationStatusEnum.REJECTED },
+        },
+        { raceId: 1 },
+      )
+      .lean()
+      .exec();
 
-  return docs.map((d) => d.raceId).filter(Boolean) as Types.ObjectId[];
-}
+    return docs.map((d) => d.raceId).filter(Boolean) as Types.ObjectId[];
+  }
+
+  async findByInvitationId(
+    invitationId: string,
+    session: ClientSession,
+  ): Promise<any> {
+    return this.registrationModel
+      .findOne({ jockeyInvitationId: new Types.ObjectId(invitationId) })
+      .session(session)
+      .lean()
+      .exec();
+  }
+
+  async rejectRegistrationWithSession(
+    id: string,
+    reason: string,
+    session: ClientSession,
+  ): Promise<any> {
+    return this.registrationModel.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          status: RegistrationStatusEnum.REJECTED,
+          rejectReason: reason,
+        },
+      },
+      { session, new: true },
+    );
+  }
 }

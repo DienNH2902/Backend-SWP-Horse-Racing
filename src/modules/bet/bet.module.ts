@@ -1,5 +1,5 @@
 // src/bet/bet.module.ts
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { BetController } from './bet.controller';
 import { BetService } from './bet.service';
@@ -26,7 +26,7 @@ import { RewardModule } from '../reward/reward.module';
     ]),
     RaceModule,
     HorseModule,
-    RegistrationModule,
+    forwardRef(() => RegistrationModule),
     PointsTransactionModule,
     NotificationModule,
     RewardModule,

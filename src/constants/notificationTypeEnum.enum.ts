@@ -37,4 +37,5 @@ export enum NotificationTypeEnum {
   UPDATE_BET_SUCCESS = 'Update_bet_success',
   BET_WIN = 'Bet_win',
   BET_LOSE = 'Bet_lose',
+  REFUND = 'Refund',
 }
