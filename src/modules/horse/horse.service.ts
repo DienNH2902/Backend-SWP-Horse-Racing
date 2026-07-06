@@ -1,9 +1,12 @@
 import {
+  forwardRef,
+  Inject,
   Injectable,
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
 import { HorseRepository } from './horse.repository';
+import { RawResultRepository } from '../raw-result/raw-result.repository';
 import { CreateHorseDto } from './dto/create-horse.dto';
 import { UpdateHorseDto } from './dto/update-horse.dto';
 import { ResponseHorseDto } from './dto/response-horse.dto';
@@ -12,7 +15,11 @@ import { Types } from 'mongoose';
 
 @Injectable()
 export class HorseService {
-  constructor(private readonly horseRepository: HorseRepository) {}
+  constructor(
+    private readonly horseRepository: HorseRepository,
+    private readonly rawResultRepository: RawResultRepository,
+
+  ) {}
 
   private toResponse(data: any) {
     return plainToInstance(ResponseHorseDto, data, {
@@ -69,7 +76,18 @@ export class HorseService {
   async findOneHorse(id: string): Promise<ResponseHorseDto> {
     const horse = await this.horseRepository.findOneHorse({ _id: id });
     if (!horse) throw new NotFoundException('Horse not found');
-    return this.toResponse(horse);
+
+    const rawResults = await this.rawResultRepository.findByHorseId(id);
+
+    const horseObj: any = { ...horse };
+    horseObj.stats = {
+      winRate: horse.winRate ?? 0,
+      totalWin: horse.totalWin ?? 0,
+      totalRace: horse.totalRace ?? 0,
+    };
+    horseObj.historyRace = rawResults;
+
+    return this.toResponse(horseObj);
   }
 
   async updateHorse(

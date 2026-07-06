@@ -460,6 +460,48 @@ export class ResponseUserDto {
   })
   reputationPoints?: number;
 
+  // ==========================================
+  // 6. LỊCH SỬ ĐUA (HISTORY RACE) — JOCKEY & HORSE OWNER
+  // Map thủ công trong @Transform (không dùng @Type) để tránh lộ
+  // toàn bộ field raw từ MongoDB document (_id, status, finishedTime, __v...)
+  // ==========================================
+
+  @Expose()
+  @Transform(({ obj }) => {
+    if (obj.role !== 'Jockey') return undefined;
+    return (obj.historyRace || []).map((r: any) => ({
+      raceId: r.raceId?._id?.toString(),
+      raceName: r.raceId?.name,
+      tournamentId: r.raceId?.tournamentId?._id?.toString(),
+      tournamentName: r.raceId?.tournamentId?.title,
+      date: r.raceId?.date,
+      finalRank: r.finalRank,
+      jockeyProfileId: r.jockeyId?._id?.toString(),
+      jockeyName: r.jockeyId?.userId?.fullName,
+      horseOwnerId: r.horseId?.userId?._id?.toString(),
+      horseOwnerName: r.horseId?.userId?.fullName,      
+    }));
+  })
+  historyRaceJockey?: Record<string, any>[];
+
+  @Expose()
+  @Transform(({ obj }) => {
+    if (obj.role !== 'Horse Owner') return undefined;
+    return (obj.historyRace || []).map((r: any) => ({
+      raceId: r.raceId?._id?.toString(),
+      raceName: r.raceId?.name,
+      tournamentId: r.raceId?.tournamentId?._id?.toString(),
+      tournamentName: r.raceId?.tournamentId?.title,
+      date: r.raceId?.date,
+      finalRank: r.finalRank,
+      jockeyProfileId: r.jockeyId?._id?.toString(),
+      jockeyName: r.jockeyId?.userId?.fullName,
+      horseId: r.horseId?._id?.toString(),
+      horseName: r.horseId?.name,
+    }));
+  })
+  historyRaceOwner?: Record<string, any>[];
+
   @Exclude()
   password: string;
 
