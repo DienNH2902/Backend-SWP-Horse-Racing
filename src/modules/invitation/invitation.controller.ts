@@ -123,10 +123,8 @@ export class JockeyInvitationController {
 
   // Admin xử lý vi phạm hợp đồng liên quan đến lời mời/hợp đồng này
   @Post('contracts/report-breach')
-  @UseGuards(RolesGuard)
-  @Roles(RoleEnum.ADMIN, RoleEnum.REFEREE)
   @ApiOperation({
-    summary: 'Admin xử lý và lập biên bản vi phạm điều khoản hợp đồng',
+    summary: 'Hủy hợp đồng',
     description:
       'Khấu trừ tiền phạt đền bù, trích thu 10% về ví hệ thống và hoàn trả số dư đóng băng hợp lệ.',
   })
