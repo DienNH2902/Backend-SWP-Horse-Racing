@@ -1,7 +1,13 @@
 // src/modules/horse/horse.repository.ts
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { ClientSession, Model, QueryFilter, Types, UpdateQuery } from 'mongoose';
+import {
+  ClientSession,
+  Model,
+  QueryFilter,
+  Types,
+  UpdateQuery,
+} from 'mongoose';
 import { Horse, HorseDocument } from './schemas/horse.schema';
 import { HorseStatusEnum } from 'src/constants/horseStatusEnum.enum';
 
@@ -89,9 +95,32 @@ export class HorseRepository {
             },
           },
         ],
-        { returnDocument: 'after', session , updatePipeline: true },
+        { returnDocument: 'after', session, updatePipeline: true },
       )
       .lean()
       .exec();
-  }  
+  }
+
+  async getHorseStats(): Promise<
+    {
+      total: { count: number }[];
+      byStatus: { _id: string; count: number }[];
+    }[]
+  > {
+    return await (this.horseModel
+      .aggregate([
+        {
+          $facet: {
+            total: [{ $count: 'count' }],
+            byStatus: [{ $group: { _id: '$horseStatus', count: { $sum: 1 } } }],
+          },
+        },
+      ])
+      .exec() as Promise<
+      {
+        total: { count: number }[];
+        byStatus: { _id: string; count: number }[];
+      }[]
+    >);
+  }
 }

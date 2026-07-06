@@ -723,4 +723,28 @@ export class BetService {
       }
     }
   }
+
+  async getBetDashboardStatistics(): Promise<{
+    totalBets: number;
+    statuses: Record<string, number>;
+  }> {
+    const stats = await this.betRepository.getBetStats();
+
+    // Kết quả của $facet luôn là mảng chứa 1 phần tử đầu tiên
+    const betAgg = stats[0];
+
+    const statuses = betAgg.byStatus.reduce<Record<string, number>>(
+      (acc, curr) => {
+        const statusKey = curr._id ? String(curr._id) : 'UNKNOWN';
+        acc[statusKey] = curr.count;
+        return acc;
+      },
+      {},
+    );
+
+    return {
+      totalBets: betAgg.total[0]?.count || 0,
+      statuses,
+    };
+  }
 }

@@ -29,7 +29,6 @@ import {
 } from './dto';
 import { RegistrationStatusEnum } from 'src/constants/registrationStatus.enum';
 
-
 @ApiTags('Registrations')
 @Controller('registrations')
 @UseGuards(JwtAuthGuard)
@@ -64,6 +63,14 @@ export class RegistrationController {
       req.user._id as string,
       tournamentId,
     );
+  }
+
+  @Get('admin/dashboard/stats')
+  async getRegistrationDashboardStatistics(): Promise<{
+    totalRegistrations: number;
+    statuses: Record<string, number>;
+  }> {
+    return await this.registrationService.getRegistrationDashboardStatistics();
   }
 
   @Get(':id')

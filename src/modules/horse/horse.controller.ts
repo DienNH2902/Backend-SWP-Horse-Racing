@@ -54,6 +54,14 @@ export class HorseController {
     return this.horseService.findAllMyHorses(userId);
   }
 
+  @Get('admin/dashboard/stats')
+  async getHorseDashboardStatistics(): Promise<{
+    totalHorses: number;
+    statuses: Record<string, number>;
+  }> {
+    return await this.horseService.getHorseDashboardStatistics();
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Lấy chi tiết thông tin một con ngựa bằng ID' })
   findOne(@Param('id') id: string): Promise<ResponseHorseDto> {

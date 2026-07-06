@@ -8,4 +8,3 @@ export enum TournamentStatusEnum {
 }
 
 export const TOURNAMENT_TOTAL_ROUNDS = 2;
-

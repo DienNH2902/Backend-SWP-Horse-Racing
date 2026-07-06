@@ -322,9 +322,47 @@ export class UsersRepository {
           // JockeyProfile.winRate lưu thang 0–1 (khác Horse: 0–100)
           { $set: { winRate: { $divide: ['$totalWin', '$totalRace'] } } },
         ],
-        { returnDocument: 'after', session, updatePipeline: true  },
+        { returnDocument: 'after', session, updatePipeline: true },
       )
       .lean()
       .exec();
-  }  
+  }
+
+  async getAdminDashboardStats(): Promise<{
+    userStats: {
+      total: { count: number }[];
+      byRole: { _id: string; count: number }[];
+      byStatus: { _id: string; count: number }[];
+    }[];
+    jockeyStats: { _id: string; count: number }[];
+  }> {
+    const [userStats, jockeyStats] = await Promise.all([
+      this.userModel
+        .aggregate([
+          {
+            $facet: {
+              total: [{ $count: 'count' }],
+              byRole: [{ $group: { _id: '$role', count: { $sum: 1 } } }],
+              byStatus: [{ $group: { _id: '$status', count: { $sum: 1 } } }],
+            },
+          },
+        ])
+        .exec() as Promise<
+        {
+          total: { count: number }[];
+          byRole: { _id: string; count: number }[];
+          byStatus: { _id: string; count: number }[];
+        }[]
+      >,
+      this.jockeyModel
+        .aggregate([
+          {
+            $group: { _id: '$jockeyStatus', count: { $sum: 1 } },
+          },
+        ])
+        .exec() as Promise<{ _id: string; count: number }[]>,
+    ]);
+
+    return { userStats, jockeyStats };
+  }
 }

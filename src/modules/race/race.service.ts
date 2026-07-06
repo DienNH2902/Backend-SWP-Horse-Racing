@@ -86,6 +86,30 @@ export class RaceService {
     });
   }
 
+  async getRaceDashboardStatistics(): Promise<{
+    totalRaces: number;
+    statuses: Record<string, number>;
+  }> {
+    const stats = await this.raceRepository.getRaceStats();
+
+    // Kết quả của $facet luôn là mảng chứa 1 phần tử đầu tiên
+    const raceAgg = stats[0];
+
+    const statuses = raceAgg.byStatus.reduce<Record<string, number>>(
+      (acc, curr) => {
+        const statusKey = curr._id ? String(curr._id) : 'UNKNOWN';
+        acc[statusKey] = curr.count;
+        return acc;
+      },
+      {},
+    );
+
+    return {
+      totalRaces: raceAgg.total[0]?.count || 0,
+      statuses,
+    };
+  }
+
   async getOneRace(id: string): Promise<ResponseRaceDto> {
     const race = await this.raceRepository.findOneRace({ _id: id });
     if (!race) throw new NotFoundException('Không tìm thấy trận đấu');

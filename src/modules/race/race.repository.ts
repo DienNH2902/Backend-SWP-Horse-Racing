@@ -328,4 +328,27 @@ export class RaceRepository {
       .lean()
       .exec();
   }
+
+  async getRaceStats(): Promise<
+    {
+      total: { count: number }[];
+      byStatus: { _id: string; count: number }[];
+    }[]
+  > {
+    return await (this.raceModel
+      .aggregate([
+        {
+          $facet: {
+            total: [{ $count: 'count' }],
+            byStatus: [{ $group: { _id: '$status', count: { $sum: 1 } } }],
+          },
+        },
+      ])
+      .exec() as Promise<
+      {
+        total: { count: number }[];
+        byStatus: { _id: string; count: number }[];
+      }[]
+    >);
+  }
 }

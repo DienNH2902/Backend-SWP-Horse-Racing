@@ -18,7 +18,6 @@ import {
 } from '@nestjs/swagger';
 import { TournamentService } from './tournament.service';
 import { AdvancementService } from './round-advancement.service';
-import { PrizeService } from '../prize-distribution/prize.service';
 import { CreateTournamentDto } from './dto/create-tournament.dto';
 import { UpdateTournamentDto } from './dto/update-tournament.dto';
 import { UpdateTournamentStatusDto } from './dto/update-tournament-status.dto';
@@ -69,6 +68,14 @@ export class TournamentController {
   })
   async getAllTournament(@Query() query: GetTournamentsQueryDto) {
     return await this.tournamentService.getAllTournament(query);
+  }
+
+  @Get('admin/dashboard/stats')
+  async getTournamentDashboardStatistics(): Promise<{
+    totalTournaments: number;
+    statuses: Record<string, number>;
+  }> {
+    return await this.tournamentService.getTournamentDashboardStatistics();
   }
 
   // @Get('my-tournaments')
