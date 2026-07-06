@@ -75,6 +75,16 @@ export class UsersController {
     return await this.userService.searchUsersByName(query.fullName as string);
   }
 
+  @Get('admin/dashboard/stats')
+  async getDashboardStatistics(): Promise<{
+    totalUsers: number;
+    roles: Record<string, number>;
+    accountStatuses: Record<string, number>;
+    jockeyStatuses: Record<string, number>;
+  }> {
+    return await this.userService.getDashboardStatistics();
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get user by ID' })
   findOne(@Param('id') id: string) {
