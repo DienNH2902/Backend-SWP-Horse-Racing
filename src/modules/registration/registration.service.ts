@@ -553,4 +553,27 @@ export class RegistrationService {
 
     return this.toResponse(updated);
   }
+
+  async getRegistrationDashboardStatistics(): Promise<{
+    totalRegistrations: number;
+    statuses: Record<string, number>;
+  }> {
+    const stats = await this.registrationRepository.getRegistrationStats();
+
+    // Kết quả $facet luôn nằm ở phần tử đầu tiên của mảng
+    const regAgg = stats[0];
+
+    const statuses = regAgg.byStatus.reduce<Record<string, number>>(
+      (acc, curr) => {
+        acc[String(curr._id)] = curr.count;
+        return acc;
+      },
+      {},
+    );
+
+    return {
+      totalRegistrations: regAgg.total[0]?.count || 0,
+      statuses,
+    };
+  }
 }
