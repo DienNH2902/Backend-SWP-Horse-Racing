@@ -58,8 +58,7 @@ export class RaceController {
   @UseGuards(RolesGuard)
   @Roles(RoleEnum.ADMIN)
   @ApiOperation({
-    summary:
-      'Tạo RACE vòng 2',
+    summary: 'Tạo RACE vòng 2',
   })
   @ApiParam({ name: 'tournamentId', description: 'Tournament ID' })
   @ApiQuery({ name: 'startTime', example: '2026-07-20T08:00:00.000Z' })
@@ -106,14 +105,25 @@ export class RaceController {
     return this.service.getRacesByReferee(req.user._id as string);
   }
 
+  @Get('admin/dashboard/stats')
+  async getRaceDashboardStatistics(): Promise<{
+    totalRaces: number;
+    statuses: Record<string, number>;
+  }> {
+    return await this.service.getRaceDashboardStatistics();
+  }
+
   @Get('tournament/:tournamentId')
-  @ApiOperation({ summary: 'Xem toàn bộ RACE của một TOURNAMENT, lọc theo status' })
+  @ApiOperation({
+    summary: 'Xem toàn bộ RACE của một TOURNAMENT, lọc theo status',
+  })
   @ApiParam({ name: 'tournamentId' })
   @ApiQuery({
     name: 'status',
     required: false,
     enum: RaceStatusEnum,
-    description: 'Lọc theo status: Scheduled | Ready | Simulated | Ongoing | Finished | Cancelled',
+    description:
+      'Lọc theo status: Scheduled | Ready | Simulated | Ongoing | Finished | Cancelled',
   })
   getByTournament(
     @Param('tournamentId') tournamentId: string,
@@ -124,7 +134,7 @@ export class RaceController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Xem chi tiết một race' })
-  @ApiParam({ name:  'id', description: 'Race ID' })
+  @ApiParam({ name: 'id', description: 'Race ID' })
   getOne(@Param('id') id: string): Promise<ResponseRaceDto> {
     return this.service.getRaceById(id);
   }
