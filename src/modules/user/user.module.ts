@@ -20,6 +20,13 @@ import {
   HorseOwnerProfile,
   HorseOwnerProfileSchema,
 } from './schemas/horse-owner-profile.schema';
+import { Horse, HorseSchema } from '../horse/schemas/horse.schema';
+import {
+  RawResult,
+  RawResultSchema,
+} from '../raw-result/schemas/raw-result.schema';
+import { HorseRepository } from '../horse/horse.repository';
+import { RawResultRepository } from '../raw-result/raw-result.repository';
 
 @Module({
   imports: [
@@ -29,10 +36,17 @@ import {
       { name: SpectatorProfile.name, schema: SpectatorProfileSchema },
       { name: RefereeProfile.name, schema: RefereeProfileSchema },
       { name: HorseOwnerProfile.name, schema: HorseOwnerProfileSchema },
+      { name: Horse.name, schema: HorseSchema },
+      { name: RawResult.name, schema: RawResultSchema },
     ]),
   ],
   controllers: [UsersController],
-  providers: [UsersService, UsersRepository],
+  providers: [
+    UsersService,
+    UsersRepository,
+    HorseRepository,
+    RawResultRepository,
+  ],
   exports: [MongooseModule, UsersService, UsersRepository],
 })
 export class UserModule {}

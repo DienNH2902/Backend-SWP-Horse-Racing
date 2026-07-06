@@ -69,4 +69,53 @@ export class RawResultRepository {
     .lean()
     .exec();
 }
+
+async findByJockeyId(jockeyProfileId: string): Promise<RawResult[]> {
+  return this.rawResultModel
+    .find({
+      jockeyId: new Types.ObjectId(jockeyProfileId),
+      status: RawResultStatus.CONFIRMED,
+    })
+    .populate({
+      path: 'raceId',
+      select: 'name date tournamentId',
+      populate: { path: 'tournamentId', select: 'title' },
+    })
+    .populate({
+      path: 'jockeyId',
+      select: 'userId',
+      populate: { path: 'userId', select: 'fullName' },
+    })
+    .populate({
+      path: 'horseId',
+      select: 'userId',
+      populate: { path: 'userId', select: 'fullName' },
+    })
+    .sort({ finishedTime: -1 })
+    .lean()
+    .exec();
+}
+
+async findByHorseIds(horseIds: Types.ObjectId[]): Promise<RawResult[]> {
+  if (!horseIds.length) return [];
+  return this.rawResultModel
+    .find({
+      horseId: { $in: horseIds },
+      status: RawResultStatus.CONFIRMED,
+    })
+    .populate({
+      path: 'raceId',
+      select: 'name date tournamentId',
+      populate: { path: 'tournamentId', select: 'title' },
+    })
+    .populate({ path: 'horseId', select: 'name' })
+    .populate({
+      path: 'jockeyId',
+      select: 'userId',
+      populate: { path: 'userId', select: 'fullName' },
+    })
+    .sort({ finishedTime: -1 })
+    .lean()
+    .exec();
+}
 }

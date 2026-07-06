@@ -17,10 +17,16 @@ import { RoleEnum } from 'src/constants/roleEnum.enum';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { JockeyStatusEnum } from 'src/constants/jockeyStatusEnum.enum';
 import { AccountStatusEnum } from 'src/constants/accountStatusEnum.enum';
+import { HorseRepository } from '../horse/horse.repository';
+import { RawResultRepository } from '../raw-result/raw-result.repository';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly userRepository: UsersRepository) {}
+  constructor(
+    private readonly userRepository: UsersRepository,
+    private readonly horseRepository: HorseRepository,
+    private readonly rawResultRepository: RawResultRepository,
+  ) {}
 
   private toResponse(data: any) {
     return plainToInstance(ResponseUserDto, data, {
@@ -64,9 +70,32 @@ export class UsersService {
     return users.map((u) => this.toResponse(u));
   }
 
+  // async findOneUser(id: string): Promise<ResponseUserDto> {
+  //   const user = await this.userRepository.findOneUser({ _id: id });
+  //   if (!user) throw new NotFoundException('User not found');
+  //   return this.toResponse(user);
+  // }
+
   async findOneUser(id: string): Promise<ResponseUserDto> {
-    const user = await this.userRepository.findOneUser({ _id: id });
+    const user: any = await this.userRepository.findOneUser({ _id: id });
     if (!user) throw new NotFoundException('User not found');
+
+    const role = user.role?.toLowerCase();
+
+    if (role === 'jockey' && user.jockeyProfile?._id) {
+      user.historyRace = await this.rawResultRepository.findByJockeyId(
+        user.jockeyProfile._id.toString(),
+      );
+    }
+
+    if (role === 'horse owner' || role === 'horseowner') {
+      const horses = await this.horseRepository.findAllMyHorse(id);
+      const horseIds = horses.map((h: any) => h._id);
+      user.historyRace = await this.rawResultRepository.findByHorseIds(
+        horseIds,
+      );
+    }
+
     return this.toResponse(user);
   }
 
@@ -272,4 +301,6 @@ export class UsersService {
   async removeUser(id: string): Promise<any> {
     return this.userRepository.deleteUser(id);
   }
+
+  
 }
