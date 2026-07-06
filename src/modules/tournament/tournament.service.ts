@@ -64,7 +64,7 @@ export class TournamentService {
   constructor(
     private readonly tournamentRepository: TournamentRepository,
     private readonly registrationRepository: RegistrationRepository,
-    private readonly prizeRepository: PrizeRepository
+    private readonly prizeRepository: PrizeRepository,
     // private readonly userTournamentRepository: UserTournamentRepository,
   ) {}
 
@@ -177,6 +177,29 @@ export class TournamentService {
     return result;
   }
 
+  async getTournamentDashboardStatistics(): Promise<{
+    totalTournaments: number;
+    statuses: Record<string, number>;
+  }> {
+    const stats = await this.tournamentRepository.getTournamentStats();
+
+    // Kết quả của $facet luôn nằm ở phần tử đầu tiên của mảng
+    const tournamentAgg = stats[0];
+
+    const statuses = tournamentAgg.byStatus.reduce<Record<string, number>>(
+      (acc, curr) => {
+        acc[String(curr._id)] = curr.count;
+        return acc;
+      },
+      {},
+    );
+
+    return {
+      totalTournaments: tournamentAgg.total[0]?.count || 0,
+      statuses,
+    };
+  }
+
   // async getOneTournament(id: string): Promise<ResponseTournamentDto> {
   //   const tournament = await this.tournamentRepository.findTournamentById(id);
   //   if (!tournament) {
@@ -185,36 +208,36 @@ export class TournamentService {
   //   return this.toResponse(tournament);
   // }
 
-async getOneTournament(id: string): Promise<any> {
-  const tournament = await this.tournamentRepository.findTournamentById(id);
-  if (!tournament) {
-    throw new NotFoundException('Không tìm thấy giải đấu yêu cầu');
+  async getOneTournament(id: string): Promise<any> {
+    const tournament = await this.tournamentRepository.findTournamentById(id);
+    if (!tournament) {
+      throw new NotFoundException('Không tìm thấy giải đấu yêu cầu');
+    }
+
+    const plainTournament = tournament.toObject();
+    const tournamentId = plainTournament._id.toString();
+
+    const [availableSlot, prize] = await Promise.all([
+      this.calculateAvailableSlot(
+        tournamentId,
+        plainTournament.horsesPerRace,
+        plainTournament.totalRaces,
+      ),
+      this.prizeRepository.findByTournamentId(tournamentId),
+    ]);
+
+    return {
+      ...this.toResponse(plainTournament),
+      availableSlot,
+      prize: prize
+        ? {
+            _id: prize._id.toString(),
+            name: prize.name,
+            amount: prize.amount,
+          }
+        : null,
+    };
   }
-
-  const plainTournament = tournament.toObject();
-  const tournamentId = plainTournament._id.toString();
-
-  const [availableSlot, prize] = await Promise.all([
-    this.calculateAvailableSlot(
-      tournamentId,
-      plainTournament.horsesPerRace,
-      plainTournament.totalRaces,
-    ),
-    this.prizeRepository.findByTournamentId(tournamentId),
-  ]);
-
-  return {
-    ...this.toResponse(plainTournament),
-    availableSlot,
-    prize: prize
-      ? {
-          _id: prize._id.toString(),
-          name: prize.name,
-          amount: prize.amount
-        }
-      : null,
-  };
-}
 
   async getTournamentParticipants(
     tournamentId: string,

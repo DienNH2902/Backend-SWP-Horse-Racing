@@ -88,4 +88,27 @@ export class TournamentRepository {
       })
       .exec();
   }
+
+  async getTournamentStats(): Promise<
+    {
+      total: { count: number }[];
+      byStatus: { _id: string; count: number }[];
+    }[]
+  > {
+    return await (this.tournamentModel
+      .aggregate([
+        {
+          $facet: {
+            total: [{ $count: 'count' }],
+            byStatus: [{ $group: { _id: '$status', count: { $sum: 1 } } }],
+          },
+        },
+      ])
+      .exec() as Promise<
+      {
+        total: { count: number }[];
+        byStatus: { _id: string; count: number }[];
+      }[]
+    >);
+  }
 }
