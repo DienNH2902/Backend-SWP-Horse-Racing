@@ -196,4 +196,27 @@ export class BetRepository {
       { returnDocument: 'after' },
     );
   }
+
+  async getBetStats(): Promise<
+    {
+      total: { count: number }[];
+      byStatus: { _id: string; count: number }[];
+    }[]
+  > {
+    return await (this.betModel
+      .aggregate([
+        {
+          $facet: {
+            total: [{ $count: 'count' }],
+            byStatus: [{ $group: { _id: '$result', count: { $sum: 1 } } }],
+          },
+        },
+      ])
+      .exec() as Promise<
+      {
+        total: { count: number }[];
+        byStatus: { _id: string; count: number }[];
+      }[]
+    >);
+  }
 }

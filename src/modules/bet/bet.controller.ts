@@ -56,6 +56,14 @@ export class BetController {
     return this.betService.findAllMyBets(userId);
   }
 
+  @Get('admin/dashboard/stats')
+  async getBetDashboardStatistics(): Promise<{
+    totalBets: number;
+    statuses: Record<string, number>;
+  }> {
+    return await this.betService.getBetDashboardStatistics();
+  }
+
   @Get(':id')
   @ApiOperation({
     summary: 'Lấy bet bằng id',

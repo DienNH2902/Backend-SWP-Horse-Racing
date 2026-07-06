@@ -229,6 +229,46 @@ export class UsersService {
     return { message: 'Đổi mật khẩu thành công' };
   }
 
+  async getDashboardStatistics(): Promise<{
+    totalUsers: number;
+    roles: Record<string, number>;
+    accountStatuses: Record<string, number>;
+    jockeyStatuses: Record<string, number>;
+  }> {
+    const stats = await this.userRepository.getAdminDashboardStats();
+
+    // Aggregate $facet luôn trả về mảng 1 phần tử
+    const userAgg = stats.userStats[0];
+
+    const roles = userAgg.byRole.reduce<Record<string, number>>((acc, curr) => {
+      acc[String(curr._id)] = curr.count;
+      return acc;
+    }, {});
+
+    const accountStatuses = userAgg.byStatus.reduce<Record<string, number>>(
+      (acc, curr) => {
+        acc[String(curr._id)] = curr.count;
+        return acc;
+      },
+      {},
+    );
+
+    const jockeyStatuses = stats.jockeyStats.reduce<Record<string, number>>(
+      (acc, curr) => {
+        acc[String(curr._id)] = curr.count;
+        return acc;
+      },
+      {},
+    );
+
+    return {
+      totalUsers: userAgg.total[0]?.count || 0,
+      roles,
+      accountStatuses,
+      jockeyStatuses,
+    };
+  }
+
   async removeUser(id: string): Promise<any> {
     return this.userRepository.deleteUser(id);
   }

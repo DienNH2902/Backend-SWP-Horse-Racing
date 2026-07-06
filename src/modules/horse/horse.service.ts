@@ -43,6 +43,31 @@ export class HorseService {
     return horses.map((h) => this.toResponse(h));
   }
 
+  async getHorseDashboardStatistics(): Promise<{
+    totalHorses: number;
+    statuses: Record<string, number>;
+  }> {
+    const stats = await this.horseRepository.getHorseStats();
+
+    // Kết quả của $facet luôn là mảng chứa 1 phần tử đầu tiên
+    const horseAgg = stats[0];
+
+    const statuses = horseAgg.byStatus.reduce<Record<string, number>>(
+      (acc, curr) => {
+        // Ép kiểu _id thành string, nếu null/undefined sẽ là "unknown"
+        const statusKey = curr._id ? String(curr._id) : 'UNKNOWN';
+        acc[statusKey] = curr.count;
+        return acc;
+      },
+      {},
+    );
+
+    return {
+      totalHorses: horseAgg.total[0]?.count || 0,
+      statuses,
+    };
+  }
+
   async findAllMyHorses(userId: string): Promise<ResponseHorseDto[]> {
     const horses = await this.horseRepository.findAllMyHorse(userId);
     return horses.map((h) => this.toResponse(h));
