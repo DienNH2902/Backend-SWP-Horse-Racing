@@ -7,6 +7,7 @@ import {
   Body,
   UseGuards,
   Request,
+  Req,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -128,8 +129,9 @@ export class JockeyInvitationController {
     description:
       'Khấu trừ tiền phạt đền bù, trích thu 10% về ví hệ thống và hoàn trả số dư đóng băng hợp lệ.',
   })
-  reportContractBreach(@Body() dto: CreateContractBreachDto) {
-    return this.contractBreachService.reportBreach(dto);
+  reportContractBreach(@Req() req: any, @Body() dto: CreateContractBreachDto) {
+    const userId = req.user._id as string;
+    return this.contractBreachService.reportBreach(userId, dto);
   }
 
   // Admin nghiệm thu và giải ngân hợp đồng sau khi giải đấu kết thúc tốt đẹp
