@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -51,7 +52,7 @@ export class ContractBreachService {
     private readonly systemWalletModel: Model<SystemWalletDocument>,
   ) {}
 
-  async reportBreach(dto: CreateContractBreachDto) {
+  async reportBreach(userId: string, dto: CreateContractBreachDto) {
     const contract = await this.contractRepository.findById(dto.contractId);
     if (!contract)
       throw new NotFoundException('Không tìm thấy thông tin hợp đồng');
@@ -69,6 +70,12 @@ export class ContractBreachService {
       contract.jockeyId?._id?.toString() || contract.jockeyId?.toString();
     const horseIdStr =
       contract.horseId?._id?.toString() || contract.horseId?.toString();
+
+    if (userId !== ownerUserId && userId !== jockeyUserId) {
+      throw new ForbiddenException(
+        'You do not have permission to access this contract',
+      );
+    }
 
     // Giá trị cốt lõi dòng tiền cấu thành
     const contractAmount = contract.contractAmount;
