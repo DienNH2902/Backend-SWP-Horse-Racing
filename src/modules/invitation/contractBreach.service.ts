@@ -77,6 +77,26 @@ export class ContractBreachService {
       );
     }
 
+    // 2. Jockey chỉ được báo cáo Owner vi phạm
+    if (
+      userId === jockeyUserId &&
+      dto.breachingParty !== BreachingPartyEnum.HORSE_OWNER
+    ) {
+      throw new ForbiddenException(
+        'Jockey can only report breach against Horse Owner',
+      );
+    }
+
+    // 3. Horse Owner chỉ được báo cáo Jockey vi phạm
+    if (
+      userId === ownerUserId &&
+      dto.breachingParty !== BreachingPartyEnum.JOCKEY
+    ) {
+      throw new ForbiddenException(
+        'Horse Owner can only report breach against Jockey',
+      );
+    }
+
     // Giá trị cốt lõi dòng tiền cấu thành
     const contractAmount = contract.contractAmount;
     const ownerCompensationLimit =
