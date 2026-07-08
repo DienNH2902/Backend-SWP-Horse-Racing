@@ -32,6 +32,7 @@ import { BetService } from '../bet/bet.service';
 import { RegistrationRepository } from '../registration/registration.repository';
 import { RaceStatusEnum } from 'src/constants/raceStatus.enum';
 import { RaceRepository } from '../race/race.repository';
+import { BreachActionTypeEnum } from 'src/constants/breachingTypeEnum.enum';
 
 @Injectable()
 export class ContractBreachService {
@@ -77,24 +78,45 @@ export class ContractBreachService {
       );
     }
 
-    // 2. Jockey chỉ được báo cáo Owner vi phạm
-    if (
-      userId === jockeyUserId &&
-      dto.breachingParty !== BreachingPartyEnum.HORSE_OWNER
-    ) {
-      throw new ForbiddenException(
-        'Jockey can only report breach against Horse Owner',
-      );
-    }
+    // 2. Kiểm tra logic phân quyền dựa trên actionType
+    if (dto.actionType === BreachActionTypeEnum.SELF_CANCEL) {
+      // LUỒNG TỰ HỦY: Bên nào bấm hủy thì bên đó PHẢI là bên vi phạm
+      if (
+        userId === jockeyUserId &&
+        dto.breachingParty !== BreachingPartyEnum.JOCKEY
+      ) {
+        throw new ForbiddenException(
+          'Jockey can only self-cancel with JOCKEY as breaching party',
+        );
+      }
 
-    // 3. Horse Owner chỉ được báo cáo Jockey vi phạm
-    if (
-      userId === ownerUserId &&
-      dto.breachingParty !== BreachingPartyEnum.JOCKEY
-    ) {
-      throw new ForbiddenException(
-        'Horse Owner can only report breach against Jockey',
-      );
+      if (
+        userId === ownerUserId &&
+        dto.breachingParty !== BreachingPartyEnum.HORSE_OWNER
+      ) {
+        throw new ForbiddenException(
+          'Horse Owner can only self-cancel with HORSE_OWNER as breaching party',
+        );
+      }
+    } else if (dto.actionType === BreachActionTypeEnum.REPORT_OPPONENT) {
+      // LUỒNG TỐ CÁO ĐỐI PHƯƠNG: Chỉ được báo cáo bên còn lại vi phạm
+      if (
+        userId === jockeyUserId &&
+        dto.breachingParty !== BreachingPartyEnum.HORSE_OWNER
+      ) {
+        throw new ForbiddenException(
+          'Jockey can only report breach against Horse Owner',
+        );
+      }
+
+      if (
+        userId === ownerUserId &&
+        dto.breachingParty !== BreachingPartyEnum.JOCKEY
+      ) {
+        throw new ForbiddenException(
+          'Horse Owner can only report breach against Jockey',
+        );
+      }
     }
 
     // Giá trị cốt lõi dòng tiền cấu thành

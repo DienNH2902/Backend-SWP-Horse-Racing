@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsNotEmpty, IsString } from 'class-validator';
 import { BreachingPartyEnum } from 'src/constants/breachingPartyEnum.enum';
+import { BreachActionTypeEnum } from 'src/constants/breachingTypeEnum.enum';
 
 export class CreateContractBreachDto {
   @ApiProperty({
@@ -10,6 +11,18 @@ export class CreateContractBreachDto {
   @IsString()
   @IsNotEmpty({ message: 'ID hợp đồng không được để trống' })
   contractId: string;
+
+  @ApiProperty({
+    description:
+      'Loại hành động: SELF_CANCEL (Tự hủy) hoặc REPORT_OPPONENT (Tố cáo đối phương)',
+    enum: BreachActionTypeEnum,
+    example: BreachActionTypeEnum.SELF_CANCEL,
+  })
+  @IsEnum(BreachActionTypeEnum, {
+    message: 'Loại hành động phải là SELF_CANCEL hoặc REPORT_OPPONENT',
+  })
+  @IsNotEmpty({ message: 'Loại hành động không được để trống' })
+  actionType: BreachActionTypeEnum;
 
   @ApiProperty({
     description: 'Bên vi phạm hợp đồng (Horse Owner hoặc Jockey)',
