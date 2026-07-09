@@ -26,7 +26,10 @@ export class NotificationRepository {
   async findByUserId(userId: string): Promise<Notification[]> {
     return this.notificationModel
       .find({ userId: new Types.ObjectId(userId) })
-      .sort({ createdAt: -1 })
+      .sort({
+        isRead: 1, // false (chưa đọc) đứng trước true (đã đọc)
+        createdAt: -1, // Mới nhất lên trên
+      })
       .lean()
       .exec();
   }
