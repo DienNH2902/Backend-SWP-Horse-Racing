@@ -15,6 +15,12 @@ import { RaceEventRepository } from '../race-simulation/repositories/race-event.
 import { RawResultRepository } from '../race-simulation/repositories/raw-result.repository';
 import { RaceRepository } from '../race/race.repository';
 import { RaceStatusEnum } from 'src/constants/raceStatus.enum';
+import { NotificationRepository } from '../notification/notification.repository';
+import { NotificationTypeEnum } from 'src/constants/notificationTypeEnum.enum';
+import { NotificationTitleEnum } from 'src/constants/notificationTitleEnum.enum';
+import { InjectModel } from '@nestjs/mongoose';
+import { SpectatorProfile } from '../user/schemas/spectator-profile.schema';
+import { Model } from 'mongoose';
 
 const TICK_INTERVAL_MS = 500;
 
@@ -34,6 +40,9 @@ export class RaceBroadcastService implements OnModuleInit {
     private readonly raceEventRepo: RaceEventRepository,
     private readonly rawResultRepo: RawResultRepository,
     private readonly raceRepo: RaceRepository,
+    private readonly notificationRepository: NotificationRepository,
+    @InjectModel(SpectatorProfile.name)
+    private readonly spectatorProfileModel: Model<SpectatorProfile>,
   ) {}
 
   onModuleInit() {
@@ -67,16 +76,39 @@ export class RaceBroadcastService implements OnModuleInit {
     await this.raceRepo.updateStatus(raceId, RaceStatusEnum.ONGOING);
     this.activeBroadcasts.add(raceId);
 
+    // 1. Lấy danh sách tất cả các user có vai trò SPECTATOR
+    const spectators = await this.spectatorProfileModel.find().lean();
+
+    // 2. Map dữ liệu tạo notification cho từng Spectator
+    if (spectators.length > 0) {
+      const notifications = spectators.map((spectator) => ({
+        userId: spectator.userId,
+        type: NotificationTypeEnum.RACE_BROADCAST_STARTED,
+        title: NotificationTitleEnum.RACE_BROADCAST_STARTED,
+        content: `Cuộc đua ${race.name || raceId} đã chính thức bắt đầu trực tiếp!`,
+        isRead: false,
+      }));
+
+      // 3. Insert hàng loạt vào DB
+      await this.notificationRepository.createMany(notifications);
+    }
+
     this.logger.log(
       `[BROADCAST] Live race ${raceId} từ tick ${fromTick}/${maxTick}`,
     );
 
     // Chạy async — không block response
-    this.runBroadcastLoop(raceId, maxTick, tickMap, eventMap, fromTick, 'live')
-      .catch((err: any) => {
-        this.logger.error(`[BROADCAST] ❌ ${raceId}: ${err?.message}`);
-        this.cleanup(raceId);
-      });
+    this.runBroadcastLoop(
+      raceId,
+      maxTick,
+      tickMap,
+      eventMap,
+      fromTick,
+      'live',
+    ).catch((err: any) => {
+      this.logger.error(`[BROADCAST] ❌ ${raceId}: ${err?.message}`);
+      this.cleanup(raceId);
+    });
 
     const remaining = maxTick - fromTick + 1;
     return {
@@ -96,9 +128,7 @@ export class RaceBroadcastService implements OnModuleInit {
       RaceStatusEnum.SIMULATED,
     ];
     if (!replayableStatuses.includes(race.status as RaceStatusEnum)) {
-      throw new BadRequestException(
-        'Race chưa có dữ liệu để replay',
-      );
+      throw new BadRequestException('Race chưa có dữ liệu để replay');
     }
 
     const { tickMap, eventMap, maxTick } = await this.loadRaceData(raceId);
@@ -107,10 +137,16 @@ export class RaceBroadcastService implements OnModuleInit {
 
     // Replay dùng namespace riêng để không conflict với live
     // Chạy async
-    this.runBroadcastLoop(raceId, maxTick, tickMap, eventMap, 0, 'replay')
-      .catch((err: any) => {
-        this.logger.error(`[REPLAY] ❌ ${raceId}: ${err?.message}`);
-      });
+    this.runBroadcastLoop(
+      raceId,
+      maxTick,
+      tickMap,
+      eventMap,
+      0,
+      'replay',
+    ).catch((err: any) => {
+      this.logger.error(`[REPLAY] ❌ ${raceId}: ${err?.message}`);
+    });
 
     return {
       message: `Replay bắt đầu. ~${Math.round((maxTick + 1) * 0.5)}s`,
@@ -159,17 +195,17 @@ export class RaceBroadcastService implements OnModuleInit {
     mode: 'live' | 'replay',
   ): Promise<void> {
     for (let t = startFrom; t <= maxTick; t++) {
-      const frameTicks  = tickMap.get(t)  ?? [];
+      const frameTicks = tickMap.get(t) ?? [];
       const frameEvents = eventMap.get(t) ?? [];
 
       // Build tick frame
       const tickFrame: RaceTickFrame = {
         tickNumber: t,
         horses: frameTicks.map((tick) => ({
-          horseId:      tick.horseId.toString(),
-          progress:     tick.progress,
+          horseId: tick.horseId.toString(),
+          progress: tick.progress,
           currentSpeed: tick.currentSpeed,
-          lane:         tick.lane,
+          lane: tick.lane,
         })),
       };
 
@@ -183,9 +219,9 @@ export class RaceBroadcastService implements OnModuleInit {
       // Emit events tại tick này
       for (const event of frameEvents) {
         const eventFrame: RaceEventFrame = {
-          tickNumber:       t,
-          eventType:        event.eventType,
-          primaryHorseId:   event.primaryHorseId.toString(),
+          tickNumber: t,
+          eventType: event.eventType,
+          primaryHorseId: event.primaryHorseId.toString(),
           secondaryHorseId: event.secondaryHorseId?.toString() ?? null,
         };
         this.gateway.emitRaceEvent(raceId, eventFrame);
@@ -204,8 +240,8 @@ export class RaceBroadcastService implements OnModuleInit {
       this.gateway.emitRaceFinished(raceId, {
         raceId,
         results: results.map((r) => ({
-          horseId:      r.horseId.toString(),
-          rawRank:      r.rawRank,
+          horseId: r.horseId.toString(),
+          rawRank: r.rawRank,
           finishedTime: r.finishedTime,
         })),
       });
@@ -220,8 +256,8 @@ export class RaceBroadcastService implements OnModuleInit {
     this.gateway.emitRaceFinished(raceId, {
       raceId,
       results: results.map((r) => ({
-        horseId:      r.horseId.toString(),
-        rawRank:      r.rawRank,
+        horseId: r.horseId.toString(),
+        rawRank: r.rawRank,
         finishedTime: r.finishedTime,
       })),
     });
