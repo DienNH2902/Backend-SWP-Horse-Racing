@@ -28,4 +28,5 @@ export enum NotificationTitleEnum {
   BET_WIN = 'Chúc mừng thắng cược',
   BET_LOSE = 'Kết quả đặt cược',
   REFUND = 'Hoàn lại điểm cược',
+  RACE_BROADCAST_STARTED = 'Trận đấu đang diễn ra',
 }

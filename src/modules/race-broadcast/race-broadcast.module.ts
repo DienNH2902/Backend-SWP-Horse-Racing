@@ -9,6 +9,12 @@ import { RaceBroadcastController } from './race-broadcast.controller';
 
 import { RaceSimulationModule } from '../race-simulation/race-simulation.module';
 import { RaceModule } from '../race/race.module';
+import { NotificationModule } from '../notification/notification.module';
+import { MongooseModule } from '@nestjs/mongoose';
+import {
+  SpectatorProfile,
+  SpectatorProfileSchema,
+} from '../user/schemas/spectator-profile.schema';
 
 @Module({
   imports: [
@@ -20,15 +26,15 @@ import { RaceModule } from '../race/race.module';
       }),
       inject: [ConfigService],
     }),
+    MongooseModule.forFeature([
+      { name: SpectatorProfile.name, schema: SpectatorProfileSchema },
+    ]),
     RaceSimulationModule,
     RaceModule,
+    NotificationModule,
   ],
   controllers: [RaceBroadcastController],
-  providers: [
-    RaceBroadcastGateway,
-    RaceBroadcastService,
-    WsJwtGuard,
-  ],
+  providers: [RaceBroadcastGateway, RaceBroadcastService, WsJwtGuard],
   exports: [RaceBroadcastService, RaceBroadcastGateway],
 })
 export class RaceBroadcastModule {}

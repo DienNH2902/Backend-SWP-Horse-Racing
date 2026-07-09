@@ -17,6 +17,12 @@ export class NotificationRepository {
     return new this.notificationModel(data).save();
   }
 
+  // Thêm hàm này vào NotificationRepository để lưu thông báo hàng loạt tối ưu hiệu năng
+  async createMany(data: Partial<Notification>[]): Promise<Notification[]> {
+    const result = await this.notificationModel.insertMany(data);
+    return result as unknown as Notification[];
+  }
+
   async findByUserId(userId: string): Promise<Notification[]> {
     return this.notificationModel
       .find({ userId: new Types.ObjectId(userId) })
