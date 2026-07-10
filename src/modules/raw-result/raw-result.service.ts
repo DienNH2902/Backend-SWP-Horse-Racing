@@ -277,17 +277,43 @@ export class RawResultService {
     return this.rawResultRepository.findByRaceIdSortedByRawRank(raceId);
   }
 
-  async getFinalResults(raceId: string): Promise<any[]> {
-    const race = await this.raceRepository.findOneRace({ _id: raceId });
-    if (!race) throw new NotFoundException('Race not found');
+async getFinalResults(raceId: string): Promise<any[]> {
+  const race = await this.raceRepository.findOneRace({ _id: raceId });
+  if (!race) throw new NotFoundException('Race not found');
 
-    const results = await this.rawResultRepository.findByRaceId(raceId);
-    return results
-      .filter((r) => r.status !== RawResultStatus.PENDING)
-      .sort((a, b) => {
-        if (a.finalRank === null) return 1;
-        if (b.finalRank === null) return -1;
-        return a.finalRank - b.finalRank;
-      });
-  }
+  const results = await this.rawResultRepository.findFinalResultsByRaceId(raceId);
+
+  return results
+    .filter((r) => r.status !== RawResultStatus.PENDING)
+    .sort((a, b) => {
+      if (a.finalRank === null) return 1;
+      if (b.finalRank === null) return -1;
+      return a.finalRank - b.finalRank;
+    })
+    .map((r: any) => ({
+      raceId: r.raceId?._id?.toString() ?? r.raceId?.toString(),
+      raceName: r.raceId?.name ?? null,
+
+      horseId: r.horseId?._id?.toString() ?? r.horseId?.toString(),
+      horseName: r.horseId?.name ?? null,
+
+      jockeyId: r.jockeyId?._id?.toString() ?? r.jockeyId?.toString(),
+      jockeyName: r.jockeyId?.userId?.fullName ?? null,
+
+      horseOwnerId:
+        r.horseId?.userId?._id?.toString() ??
+        r.horseId?.userId?.toString() ??
+        null,
+      horseOwnerName: r.horseId?.userId?.fullName ?? null,
+
+      rawRank: r.rawRank,
+      finalRank: r.finalRank,
+      status: r.status,
+
+      finishedTime: r.finishedTime,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+
+    }));
+}
 }

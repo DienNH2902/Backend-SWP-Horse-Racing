@@ -118,4 +118,22 @@ async findByHorseIds(horseIds: Types.ObjectId[]): Promise<RawResult[]> {
     .lean()
     .exec();
 }
+
+async findFinalResultsByRaceId(raceId: string): Promise<RawResult[]> {
+  return this.rawResultModel
+    .find({ raceId: new Types.ObjectId(raceId) })
+    .populate({ path: 'raceId', select: 'name' })
+    .populate({
+      path: 'horseId',
+      select: 'name userId',
+      populate: { path: 'userId', select: 'fullName' }, // chủ ngựa (User)
+    })
+    .populate({
+      path: 'jockeyId',
+      select: 'userId',
+      populate: { path: 'userId', select: 'fullName' }, // jockey (User)
+    })
+    .lean()
+    .exec();
+}
 }
