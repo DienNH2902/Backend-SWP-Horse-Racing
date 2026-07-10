@@ -10,17 +10,24 @@ import { TournamentModule } from '../tournament/tournament.module';
 import { BetModule } from '../bet/bet.module';
 import { HorseModule } from '../horse/horse.module';
 import { UserModule } from '../user/user.module';
+import { NotificationModule } from '../notification/notification.module';
+import {
+  SpectatorProfile,
+  SpectatorProfileSchema,
+} from '../user/schemas/spectator-profile.schema';
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: RawResult.name, schema: RawResultSchema },
+      { name: SpectatorProfile.name, schema: SpectatorProfileSchema },
     ]),
     forwardRef(() => RaceModule),
     forwardRef(() => RefereeReportModule),
     forwardRef(() => TournamentModule),
     BetModule,
     HorseModule,
-    UserModule
+    UserModule,
+    NotificationModule,
   ],
   controllers: [RawResultController],
   providers: [RawResultService, RawResultRepository],
