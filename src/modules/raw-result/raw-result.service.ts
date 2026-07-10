@@ -6,8 +6,8 @@ import {
   ForbiddenException,
   ConflictException,
 } from '@nestjs/common';
-import { InjectConnection } from '@nestjs/mongoose';
-import { Connection } from 'mongoose';
+import { InjectConnection, InjectModel } from '@nestjs/mongoose';
+import { Connection, Model } from 'mongoose';
 import { RawResultRepository } from './raw-result.repository';
 import { RaceRepository } from '../race/race.repository';
 import { HorseRepository } from '../horse/horse.repository';
@@ -20,6 +20,10 @@ import { RawResult } from './schemas/raw-result.schema';
 import { RawResultStatus } from '../../constants/rawResultStatus.enum';
 import { RaceStatusEnum } from '../../constants/raceStatus.enum';
 import { BetService } from '../bet/bet.service';
+import { NotificationTypeEnum } from 'src/constants/notificationTypeEnum.enum';
+import { NotificationTitleEnum } from 'src/constants/notificationTitleEnum.enum';
+import { SpectatorProfile } from '../user/schemas/spectator-profile.schema';
+import { NotificationRepository } from '../notification/notification.repository';
 
 @Injectable()
 export class RawResultService {
@@ -32,6 +36,9 @@ export class RawResultService {
     private readonly betService: BetService,
     private readonly horseRepository: HorseRepository,
     private readonly usersRepository: UsersRepository,
+    private readonly notificationRepository: NotificationRepository,
+    @InjectModel(SpectatorProfile.name)
+    private readonly spectatorProfileModel: Model<SpectatorProfile>,
     @InjectConnection() private readonly connection: Connection,
   ) {}
 
@@ -216,6 +223,23 @@ export class RawResultService {
       }
     }
     // ==========================================
+
+    // 1. Lấy danh sách tất cả các user có vai trò SPECTATOR
+    const spectators = await this.spectatorProfileModel.find().lean();
+
+    // 2. Map dữ liệu tạo notification cho từng Spectator
+    if (spectators.length > 0) {
+      const notifications = spectators.map((spectator) => ({
+        userId: spectator.userId,
+        type: NotificationTypeEnum.RACE_BROADCAST_END,
+        title: NotificationTitleEnum.RACE_BROADCAST_END,
+        content: `Cuộc đua ${race.name || raceId} đã kết thúc!`,
+        isRead: false,
+      }));
+
+      // 3. Insert hàng loạt vào DB
+      await this.notificationRepository.createMany(notifications);
+    }
 
     // 6. Auto advance (round 1) hoặc distribute prize (round 2)
     await this.advancementService.handlePostConfirm(raceId);
