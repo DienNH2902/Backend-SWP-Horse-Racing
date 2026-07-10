@@ -24,4 +24,5 @@ export class PrizeRepository {
       .lean()
       .exec();
   }
+  
 }

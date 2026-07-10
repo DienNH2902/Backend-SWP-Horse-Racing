@@ -478,6 +478,8 @@ export class ResponseUserDto {
       finalRank: r.finalRank,
       jockeyProfileId: r.jockeyId?._id?.toString(),
       jockeyName: r.jockeyId?.userId?.fullName,
+      horseId: r.horseId?._id?.toString(), 
+      horseName: r.horseId?.name, 
       horseOwnerId: r.horseId?.userId?._id?.toString(),
       horseOwnerName: r.horseId?.userId?.fullName,      
     }));

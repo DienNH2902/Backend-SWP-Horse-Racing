@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Param,
   Body,
   UseGuards,
@@ -162,4 +163,19 @@ export class RaceController {
     const refereeId = req.user._id as string;
     return await this.service.confirmReady(id, refereeId);
   }
+
+  // @Delete(':raceId/horses/:horseId')
+  // @UseGuards(RolesGuard)
+  // @Roles(RoleEnum.ADMIN)
+  // @ApiOperation({
+  //   summary: 'ADMIN xóa ngựa khỏi RACE trước khi confirm-ready, tự động hoàn tiền entryFee',
+  // })
+  // @ApiParam({ name: 'raceId', description: 'Race ID' })
+  // @ApiParam({ name: 'horseId', description: 'Horse ID cần xóa' })
+  // removeHorseFromRace(
+  //   @Param('raceId') raceId: string,
+  //   @Param('horseId') horseId: string,
+  // ): Promise<{ message: string }> {
+  //   // return this.assignService.removeHorseFromRace(raceId, horseId);
+  // }
 }

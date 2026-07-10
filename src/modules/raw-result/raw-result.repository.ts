@@ -88,7 +88,7 @@ async findByJockeyId(jockeyProfileId: string): Promise<RawResult[]> {
     })
     .populate({
       path: 'horseId',
-      select: 'userId',
+      select: 'name userId',
       populate: { path: 'userId', select: 'fullName' },
     })
     .sort({ finishedTime: -1 })
