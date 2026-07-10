@@ -39,4 +39,5 @@ export enum NotificationTypeEnum {
   BET_LOSE = 'Bet_lose',
   REFUND = 'Refund',
   RACE_BROADCAST_STARTED = 'Race_broadcast-started',
+  RACE_BROADCAST_END = 'Race_broadcast-end',
 }
