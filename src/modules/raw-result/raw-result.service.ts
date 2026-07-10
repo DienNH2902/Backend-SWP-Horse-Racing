@@ -206,6 +206,26 @@ export class RawResultService {
     this.logger.log(`Race ${raceId} → status Finished`);
 
     // ==========================================
+    // BỔ SUNG: KÍCH HOẠT THÔNG BÁO
+    // ==========================================
+    // 1. Lấy danh sách tất cả các user có vai trò SPECTATOR
+    const spectators = await this.spectatorProfileModel.find().lean();
+
+    // 2. Map dữ liệu tạo notification cho từng Spectator
+    if (spectators.length > 0) {
+      const notifications = spectators.map((spectator) => ({
+        userId: spectator.userId,
+        type: NotificationTypeEnum.RACE_BROADCAST_END,
+        title: NotificationTitleEnum.RACE_BROADCAST_END,
+        content: `Cuộc đua ${race.name || raceId} đã kết thúc!`,
+        isRead: false,
+      }));
+
+      // 3. Insert hàng loạt vào DB
+      await this.notificationRepository.createMany(notifications);
+    }
+
+    // ==========================================
     // BỔ SUNG: KÍCH HOẠT XỬ LÝ TRẢ THƯỞNG CÁ CƯỢC HỆ THỐNG
     // ==========================================
     if (winnerHorseId) {
@@ -225,21 +245,21 @@ export class RawResultService {
     // ==========================================
 
     // 1. Lấy danh sách tất cả các user có vai trò SPECTATOR
-    const spectators = await this.spectatorProfileModel.find().lean();
+    // const spectators = await this.spectatorProfileModel.find().lean();
 
     // 2. Map dữ liệu tạo notification cho từng Spectator
-    if (spectators.length > 0) {
-      const notifications = spectators.map((spectator) => ({
-        userId: spectator.userId,
-        type: NotificationTypeEnum.RACE_BROADCAST_END,
-        title: NotificationTitleEnum.RACE_BROADCAST_END,
-        content: `Cuộc đua ${race.name || raceId} đã kết thúc!`,
-        isRead: false,
-      }));
+    // if (spectators.length > 0) {
+    //   const notifications = spectators.map((spectator) => ({
+    //     userId: spectator.userId,
+    //     type: NotificationTypeEnum.RACE_BROADCAST_END,
+    //     title: NotificationTitleEnum.RACE_BROADCAST_END,
+    //     content: `Cuộc đua ${race.name || raceId} đã kết thúc!`,
+    //     isRead: false,
+    //   }));
 
-      // 3. Insert hàng loạt vào DB
-      await this.notificationRepository.createMany(notifications);
-    }
+    //   3. Insert hàng loạt vào DB
+    //   await this.notificationRepository.createMany(notifications);
+    // }
 
     // 6. Auto advance (round 1) hoặc distribute prize (round 2)
     await this.advancementService.handlePostConfirm(raceId);
