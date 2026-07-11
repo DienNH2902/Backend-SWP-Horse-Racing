@@ -359,4 +359,84 @@ export class RegistrationRepository {
       }[]
     >);
   }
+
+  async findRaceIdsByOwner(ownerId: string): Promise<Types.ObjectId[]> {
+    const docs = await this.registrationModel
+      .find(
+        {
+          ownerId: new Types.ObjectId(ownerId),
+          raceId: { $ne: null },
+          status: { $ne: RegistrationStatusEnum.REJECTED },
+        },
+        { raceId: 1 },
+      )
+      .lean()
+      .exec();
+
+    return docs.map((d) => d.raceId).filter(Boolean) as Types.ObjectId[];
+  }
+
+  async findConfirmedRegistrationsByOwnerAndRaces(
+    ownerId: string,
+    raceIds: Types.ObjectId[],
+  ): Promise<Registration[]> {
+    return this.registrationModel
+      .find({
+        ownerId: new Types.ObjectId(ownerId),
+        raceId: { $in: raceIds },
+        status: RegistrationStatusEnum.CONFIRMED,
+      })
+      .populate('horseId', 'name')
+      .populate('jockeyId', 'fullName')
+      .lean()
+      .exec();
+  }
+
+  async findConfirmedRegistrationsByJockeyAndRaces(
+    jockeyId: string,
+    raceIds: Types.ObjectId[],
+  ): Promise<Registration[]> {
+    return this.registrationModel
+      .find({
+        jockeyId: new Types.ObjectId(jockeyId),
+        raceId: { $in: raceIds },
+        status: RegistrationStatusEnum.CONFIRMED,
+      })
+      .populate('horseId', 'name')
+      .lean()
+      .exec();
+  }  
+
+  async findConfirmedByRaceAndHorse(
+    raceId: string,
+    horseId: string,
+  ): Promise<Registration | null> {
+    return this.registrationModel
+      .findOne({
+        raceId: new Types.ObjectId(raceId),
+        horseId: new Types.ObjectId(horseId),
+        status: RegistrationStatusEnum.CONFIRMED,
+      })
+      .lean()
+      .exec();
+  }
+ 
+  async updateStatusToRemoved(id: string): Promise<Registration | null> {
+    return this.registrationModel
+      .findByIdAndUpdate(
+        id,
+        {
+          $set: {
+            status: RegistrationStatusEnum.REJECTED,
+            rejectedReason: 'Bị loại khỏi race bởi REFEREE',
+            rejectedAt: new Date(),
+            raceId: null,
+            gateNumber: null,
+          },
+        },
+        { returnDocument: 'after' },
+      )
+      .lean()
+      .exec();
+  }
 }

@@ -164,7 +164,7 @@ export class RaceController {
     return await this.service.confirmReady(id, refereeId);
   }
 
-  // @Delete(':raceId/horses/:horseId')
+  // @Delete(':raceId/remove-horse-from-race/:horseId')
   // @UseGuards(RolesGuard)
   // @Roles(RoleEnum.ADMIN)
   // @ApiOperation({
