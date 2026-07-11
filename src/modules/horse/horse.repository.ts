@@ -22,13 +22,19 @@ export class HorseRepository {
   }
 
   async findAllHorse(): Promise<Horse[]> {
-    return await this.horseModel.find().populate('userId').lean().exec();
+    return await this.horseModel
+      .find()
+      .populate('userId')
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec();
   }
 
   async findAllMyHorse(userId: string): Promise<Horse[]> {
     return await this.horseModel
       .find({ userId: new Types.ObjectId(userId) })
       .populate('userId')
+      .sort({ createdAt: -1 })
       .lean()
       .exec();
   }
