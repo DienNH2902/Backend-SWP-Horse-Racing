@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { HorseRepository } from './horse.repository';
 import { RawResultRepository } from '../raw-result/raw-result.repository';
@@ -12,6 +13,7 @@ import { UpdateHorseDto } from './dto/update-horse.dto';
 import { ResponseHorseDto } from './dto/response-horse.dto';
 import { plainToInstance } from 'class-transformer';
 import { Types } from 'mongoose';
+import { HorseStatusEnum } from 'src/constants/horseStatusEnum.enum';
 
 @Injectable()
 export class HorseService {
@@ -124,6 +126,11 @@ export class HorseService {
   async removeHorse(id: string, userId: string): Promise<{ message: string }> {
     const horse = await this.horseRepository.findOneHorse({ _id: id });
     if (!horse) throw new NotFoundException('Horse not found');
+
+    if (horse.horseStatus !== HorseStatusEnum.IDLE)
+      throw new BadRequestException(
+        `Ngựa này đang ở trạng thái ${horse.horseStatus}, không thể xóa`,
+      );
 
     // Kiểm tra tính chính chủ trước khi thực hiện xóa
     // if (horse.userId.toString() !== userId) {
