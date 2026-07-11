@@ -11,6 +11,7 @@ import { PrizeRepository } from './prize.repository';
 import { CreatePrizeDto } from './dto/create-prize.dto';
 import { PrizeResponseDto } from './dto/prize-response.dto';
 import { TournamentRepository } from '../tournament/tournament.repository';
+import { RegistrationRepository } from '../registration/registration.repository';   
 import { TournamentStatusEnum } from 'src/constants/tournamentStatusEnum.enum';
 
 @Injectable()
@@ -18,6 +19,7 @@ export class PrizeService {
   constructor(
     private readonly prizeRepo: PrizeRepository,
     private readonly tournamentRepo: TournamentRepository,
+    private readonly registrationRepo: RegistrationRepository,
   ) {}
 
   private toResponse(data: any): PrizeResponseDto {
@@ -39,7 +41,7 @@ export class PrizeService {
       tournament.status !== TournamentStatusEnum.REGISTRATION
     ) {
       throw new BadRequestException(
-        'Tournament phải ở trạng thái "PREPARING" hoặc "REGISTRATION" để tạo prize',
+        'Tournament   phải ở trạng thái "PREPARING" hoặc "REGISTRATION" để tạo prize',
       );
     }
 
@@ -47,6 +49,18 @@ export class PrizeService {
     const existed = await this.prizeRepo.findByTournamentId(dto.tournamentId);
     if (existed) {
       throw new ConflictException('Prize đã tồn tại cho tournament này');
+    }
+
+    const totalRegisteredHorses =
+      await this.registrationRepo.countActiveRegistrationsByTournament(
+        dto.tournamentId,
+      );
+    const minPrizePool = totalRegisteredHorses * tournament.entryFee * 0.8;
+
+    if (dto.amount <= minPrizePool) {
+      throw new BadRequestException(
+        `Tiền giải (${dto.amount.toLocaleString('vi-VN')}) phải lớn hơn (Total Registered Horses × Entry Fee) × 80% = ${minPrizePool.toLocaleString('vi-VN')}`,
+      );
     }
 
     const prize = await this.prizeRepo.create({

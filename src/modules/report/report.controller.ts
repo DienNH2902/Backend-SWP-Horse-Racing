@@ -113,7 +113,7 @@ export class ReportController {
 
   @Delete(':id')
   @ApiOperation({
-    summary: 'Xóa một bản ghi đơn thư tố cáo (Hệ thống dọn dẹp dữ liệu)',
+    summary: 'Xóa một đơn thư tố cáo (Hệ thống dọn dẹp dữ liệu)',
   })
   async remove(@Param('id') id: string) {
     return await this.reportService.removeReport(id);
