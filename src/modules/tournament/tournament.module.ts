@@ -10,8 +10,14 @@ import { TournamentRepository } from './tournament.repository';
 import { RoundAdvancementRepository } from './round-advancement.repository';
 import { PrizeDistributionRepository } from '../prize-distribution/prize-distribution.repository';
 import { Tournament, TournamentSchema } from './schemas/tournament.schema';
-import { RoundAdvancement, RoundAdvancementSchema } from './schemas/round-advancement.schema';
-import { PrizeDistribution, PrizeDistributionSchema } from '../prize-distribution/schemas/prize-distribution.schema';
+import {
+  RoundAdvancement,
+  RoundAdvancementSchema,
+} from './schemas/round-advancement.schema';
+import {
+  PrizeDistribution,
+  PrizeDistributionSchema,
+} from '../prize-distribution/schemas/prize-distribution.schema';
 
 import { RegistrationModule } from '../registration/registration.module';
 import { RawResultModule } from '../raw-result/raw-result.module';
