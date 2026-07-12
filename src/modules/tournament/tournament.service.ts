@@ -15,6 +15,7 @@ import { GetTournamentsQueryDto } from './dto/get-tournament-status-query.dto';
 import { RegistrationRepository } from '../registration/registration.repository';
 import { TOURNAMENT_TOTAL_ROUNDS } from 'src/constants/tournamentStatusEnum.enum';
 import { PrizeRepository } from '../prize-distribution/prize.repository';
+import { RaceRepository } from '../race/race.repository';
 
 export class ParticipantJockeyDto {
   jockeyId: string;
@@ -64,6 +65,7 @@ export class TournamentService {
   constructor(
     private readonly tournamentRepository: TournamentRepository,
     private readonly registrationRepository: RegistrationRepository,
+    private readonly raceRepository: RaceRepository,
     private readonly prizeRepository: PrizeRepository,
     // private readonly userTournamentRepository: UserTournamentRepository,
   ) {}
@@ -349,6 +351,13 @@ export class TournamentService {
     if (!tournament) {
       throw new NotFoundException('Không tìm thấy giải đấu để xóa');
     }
+
+    const hasRace = await this.raceRepository.findByTournament(id);
+    if (hasRace && hasRace.length > 0)
+      throw new BadRequestException(
+        `Vui lòng xóa các race liên quan trước khi xóa giải`,
+      );
+
     await this.tournamentRepository.deleteTournament(id);
     return { message: 'Xóa giải đấu thành công' };
   }
