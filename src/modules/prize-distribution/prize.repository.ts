@@ -25,4 +25,12 @@ export class PrizeRepository {
       .exec();
   }
   
+  async findManyByTournamentIds(tournamentIds: string[]): Promise<Prize[]> {
+    if (!tournamentIds.length) return [];
+    return this.prizeModel
+      .find({ tournamentId: { $in: tournamentIds.map(id => new Types.ObjectId(id)) } })
+      .lean()
+      .exec();
+  }
+
 }

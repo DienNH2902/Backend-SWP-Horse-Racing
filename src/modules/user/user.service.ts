@@ -19,6 +19,7 @@ import { JockeyStatusEnum } from 'src/constants/jockeyStatusEnum.enum';
 import { AccountStatusEnum } from 'src/constants/accountStatusEnum.enum';
 import { HorseRepository } from '../horse/horse.repository';
 import { RawResultRepository } from '../raw-result/raw-result.repository';
+import { PrizeRepository } from '../prize-distribution/prize.repository';
 import { AdjustPointsDto } from './dto/admin-adjust-points.dto';
 import { AdjustReputationPointsDto } from './dto/admin-adjust-reputation.dto';
 
@@ -28,6 +29,7 @@ export class UsersService {
     private readonly userRepository: UsersRepository,
     private readonly horseRepository: HorseRepository,
     private readonly rawResultRepository: RawResultRepository,
+    private readonly prizeRepository: PrizeRepository,
   ) {}
 
   private toResponse(data: any) {
@@ -93,8 +95,24 @@ export class UsersService {
     if (role === 'horse owner' || role === 'horseowner') {
       const horses = await this.horseRepository.findAllMyHorse(id);
       const horseIds = horses.map((h: any) => h._id);
-      user.historyRace =
-        await this.rawResultRepository.findByHorseIds(horseIds);
+      user.historyRace = await this.rawResultRepository.findByHorseIds(horseIds);
+    }
+
+    if (user.historyRace?.length) {
+      const tournamentIds = [
+        ...new Set<string>(
+          user.historyRace
+            .map((r: any) => r.raceId?.tournamentId?._id?.toString())
+            .filter(Boolean),
+        ),
+      ];
+      const prizes = await this.prizeRepository.findManyByTournamentIds(tournamentIds);
+      const prizeMap = new Map(prizes.map((p: any) => [p.tournamentId.toString(), p]));
+
+      user.historyRace = user.historyRace.map((r: any) => ({
+        ...r,
+        prize: prizeMap.get(r.raceId?.tournamentId?._id?.toString()) ?? null,
+      }));
     }
 
     return this.toResponse(user);

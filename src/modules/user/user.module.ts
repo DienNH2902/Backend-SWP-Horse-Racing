@@ -25,8 +25,11 @@ import {
   RawResult,
   RawResultSchema,
 } from '../raw-result/schemas/raw-result.schema';
+import { Prize, PrizeSchema } from '../prize-distribution/schemas/prize.schema';
+
 import { HorseRepository } from '../horse/horse.repository';
 import { RawResultRepository } from '../raw-result/raw-result.repository';
+import { PrizeRepository } from '../prize-distribution/prize.repository';
 
 @Module({
   imports: [
@@ -38,6 +41,8 @@ import { RawResultRepository } from '../raw-result/raw-result.repository';
       { name: HorseOwnerProfile.name, schema: HorseOwnerProfileSchema },
       { name: Horse.name, schema: HorseSchema },
       { name: RawResult.name, schema: RawResultSchema },
+      { name: Prize.name, schema: PrizeSchema },
+
     ]),
   ],
   controllers: [UsersController],
@@ -46,6 +51,7 @@ import { RawResultRepository } from '../raw-result/raw-result.repository';
     UsersRepository,
     HorseRepository,
     RawResultRepository,
+    PrizeRepository,
   ],
   exports: [MongooseModule, UsersService, UsersRepository],
 })

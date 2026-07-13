@@ -270,6 +270,8 @@ export class ResponseUserDto {
       horseName: r.horseId?.name, 
       horseOwnerId: r.horseId?.userId?._id?.toString(),
       horseOwnerName: r.horseId?.userId?.fullName,
+      prizeName: r.prize?.name ?? null,
+      prizeAmount: r.prize?.amount ?? 0,
     }));
   })
   historyRaceJockey?: Record<string, any>[];
@@ -288,6 +290,8 @@ export class ResponseUserDto {
       jockeyName: r.jockeyId?.userId?.fullName,
       horseId: r.horseId?._id?.toString(),
       horseName: r.horseId?.name,
+      prizeName: r.prize?.name ?? null,
+      prizeAmount: r.prize?.amount ?? 0,
     }));
   })
   historyRaceOwner?: Record<string, any>[];
