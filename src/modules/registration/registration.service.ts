@@ -457,7 +457,10 @@ export class RegistrationService {
   ): Promise<ResponseRegistrationDto> {
     const reg = await this.registrationRepository.findById(id);
     if (!reg) throw new NotFoundException('Không tìm thấy đăng ký');
-    if (reg.status !== RegistrationStatusEnum.PENDING) {
+    if (
+      reg.status !== RegistrationStatusEnum.PENDING &&
+      reg.status !== RegistrationStatusEnum.CONFIRMED
+    ) {
       throw new ConflictException(
         `Đăng ký đang ở trạng thái "${reg.status}", không thể từ chối`,
       );

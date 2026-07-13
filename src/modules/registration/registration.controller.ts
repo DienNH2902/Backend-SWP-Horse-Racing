@@ -138,8 +138,10 @@ export class AdminRegistrationController {
   }
 
   @Patch(':id/reject')
+  @Roles(RoleEnum.ADMIN, RoleEnum.REFEREE)
   @ApiOperation({
-    summary: 'Admin từ chối đăng ký kèm lý do, gửi notification cho owner',
+    summary:
+      'Admin/Referee từ chối đăng ký kèm lý do, gửi notification cho owner',
   })
   @ApiParam({ name: 'id', description: 'Registration ID' })
   reject(
