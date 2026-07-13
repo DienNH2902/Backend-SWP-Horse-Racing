@@ -245,6 +245,14 @@ export class RegistrationService {
     }
 
     // 3. Kiểm tra xem cổng xuất phát này trong trận đấu đã có ai chiếm giữ chưa
+    const maxCapacity = tournament.horsesPerRace || 10;
+
+    if (dto.gateNumber < 1 || dto.gateNumber > maxCapacity) {
+      throw new BadRequestException(
+        `Cổng chạy số [${dto.gateNumber}] không hợp lệ. Vui lòng chọn cổng từ 1 đến ${maxCapacity}`,
+      );
+    }
+
     const usedGates = await this.registrationRepository.getUsedGateNumbers(
       dto.raceId,
     );
@@ -257,7 +265,7 @@ export class RegistrationService {
     // 4. Kiểm tra số lượng slot tối đa của trận đấu
     const currentConfirmedCount =
       await this.registrationRepository.countConfirmedByRace(dto.raceId);
-    const maxCapacity = tournament.horsesPerRace || 10;
+    // const maxCapacity = tournament.horsesPerRace || 10;
     if (currentConfirmedCount >= maxCapacity) {
       throw new BadRequestException(
         'Trận đấu hiện tại đã đủ số lượng ngựa tham gia chạy, không thể duyệt thêm',
