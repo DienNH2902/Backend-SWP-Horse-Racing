@@ -82,7 +82,12 @@ import {
   Res,
   Param,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { PaymentService } from './payment.service';
 import { CreateVnPayPaymentDto } from './dto/create-vnpay-payment.dto';
@@ -95,6 +100,8 @@ import { ConfigService } from '@nestjs/config';
 import { VnPayQueryDto } from './dto/vnpay-query.dto';
 import { ApproveWithdrawalDto } from './dto/approval-withdrawal.dto';
 import { CreateWithdrawalDto } from './dto/create-withdrawal.dto';
+import { SystemWalletOverviewDto } from './dto/system-wallet.dto';
+import { SystemWalletService } from './system-wallet.service';
 
 interface RequestWithUser extends Request {
   user: {
@@ -108,6 +115,7 @@ interface RequestWithUser extends Request {
 export class PaymentController {
   constructor(
     private readonly paymentService: PaymentService,
+    private readonly systemWalletService: SystemWalletService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -137,6 +145,23 @@ export class PaymentController {
       dto.bankCode,
     );
     return { success: true, paymentUrl };
+  }
+
+  @Get('system-wallet/overview')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleEnum.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Admin xem tổng quan ví hệ thống, phân rã nguồn thu và dữ liệu biểu đồ theo tháng',
+  })
+  @ApiResponse({
+    status: 200,
+    type: SystemWalletOverviewDto,
+    description: 'Chi tiết tài chính hệ thống phục vụ Dashboard Admin',
+  })
+  async getSystemWalletOverview(): Promise<SystemWalletOverviewDto> {
+    return this.systemWalletService.getSystemWalletOverview();
   }
 
   @Get('vnpay/callback')
