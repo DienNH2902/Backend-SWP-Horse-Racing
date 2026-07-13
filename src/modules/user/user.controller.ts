@@ -16,6 +16,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiOperation,
   ApiParam,
   ApiQuery,
@@ -33,6 +34,8 @@ import { UpdateAccountStatusDto } from './dto/update-account-status.dto';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { SearchUserDto } from './dto/search-user.dto';
+import { AdjustPointsDto } from './dto/admin-adjust-points.dto';
+import { AdjustReputationPointsDto } from './dto/admin-adjust-reputation.dto';
 
 @ApiTags('Users')
 @Controller('users')
@@ -171,6 +174,84 @@ export class UsersController {
     @Body() dto: UpdateAccountStatusDto,
   ): Promise<ResponseUserDto> {
     return await this.userService.updateAccountStatus(id, dto.accountStatus);
+  }
+
+  @Patch('spectator/:userId/adjust-points')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleEnum.ADMIN)
+  @ApiOperation({
+    summary: 'Cập nhật điểm (pointBalance) cho Spectator',
+    description:
+      'API dành cho Admin thực hiện cộng/trừ số dư pointBalance của spectator theo userId.',
+  })
+  @ApiParam({
+    name: 'userId',
+    description: 'ID của User (Spectator) cần điều chỉnh điểm',
+  })
+  @ApiBody({
+    type: AdjustPointsDto,
+    description: 'Dữ liệu số điểm cần điều chỉnh',
+  })
+  async adjustPointBalance(
+    @Param('userId') userId: string,
+    @Body() adjustPointsDto: AdjustPointsDto,
+  ) {
+    return await this.userService.adjustPointBalance(userId, adjustPointsDto);
+  }
+
+  @Patch('jockey/:userId/adjust-reputation')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleEnum.ADMIN)
+  @ApiOperation({
+    summary: 'Cập nhật điểm uy tín (reputationPoints) cho Jockey',
+    description:
+      'API dành cho Admin thực hiện cộng/trừ số điểm uy tín của Jockey theo userId.',
+  })
+  @ApiParam({
+    name: 'userId',
+    description: 'ID của User (Jockey) cần điều chỉnh điểm uy tín',
+  })
+  @ApiBody({
+    type: AdjustReputationPointsDto,
+    description: 'Dữ liệu số điểm uy tín cần điều chỉnh',
+  })
+  async adjustJockeyReputationPoints(
+    @Param('userId') userId: string,
+    @Body() adjustReputationDto: AdjustReputationPointsDto,
+  ) {
+    return await this.userService.adjustJockeyReputationPoints(
+      userId,
+      adjustReputationDto,
+    );
+  }
+
+  @Patch('horse-owner/:userId/adjust-reputation')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleEnum.ADMIN)
+  @ApiOperation({
+    summary: 'Cập nhật điểm uy tín (reputationPoints) cho Horse Owner',
+    description:
+      'API dành cho Admin thực hiện cộng/trừ số điểm uy tín của Horse Owner theo userId.',
+  })
+  @ApiParam({
+    name: 'userId',
+    description: 'ID của User (Horse Owner) cần điều chỉnh điểm uy tín',
+  })
+  @ApiBody({
+    type: AdjustReputationPointsDto,
+    description: 'Dữ liệu số điểm uy tín cần điều chỉnh',
+  })
+  async adjustOwnerReputationPoints(
+    @Param('userId') userId: string,
+    @Body() adjustReputationDto: AdjustReputationPointsDto,
+  ) {
+    return await this.userService.adjustOwnerReputationPoints(
+      userId,
+      adjustReputationDto,
+    );
   }
 
   @Delete(':id')
