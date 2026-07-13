@@ -164,18 +164,18 @@ export class RaceController {
     return await this.service.confirmReady(id, refereeId);
   }
 
-  // @Delete(':raceId/remove-horse-from-race/:horseId')
-  // @UseGuards(RolesGuard)
-  // @Roles(RoleEnum.ADMIN)
-  // @ApiOperation({
-  //   summary: 'ADMIN xóa ngựa khỏi RACE trước khi confirm-ready, tự động hoàn tiền entryFee',
-  // })
-  // @ApiParam({ name: 'raceId', description: 'Race ID' })
-  // @ApiParam({ name: 'horseId', description: 'Horse ID cần xóa' })
-  // removeHorseFromRace(
-  //   @Param('raceId') raceId: string,
-  //   @Param('horseId') horseId: string,
-  // ): Promise<{ message: string }> {
-  //   // return this.assignService.removeHorseFromRace(raceId, horseId);
-  // }
+  @Delete(':raceId/remove-horse-from-race/:horseId')
+  @UseGuards(RolesGuard)
+  @Roles(RoleEnum.ADMIN)
+  @ApiOperation({
+    summary: 'REFEREE xóa ngựa khỏi RACE trước khi confirm-ready, sẽ hoàn tiền entryFee',
+  })
+  @ApiParam({ name: 'raceId', description: 'Race ID' })
+  @ApiParam({ name: 'horseId', description: 'Horse ID cần xóa' })
+  removeHorseFromRace(
+    @Param('raceId') raceId: string,
+    @Param('horseId') horseId: string,
+  ): Promise<{ message: string }> {
+    return this.assignService.removeHorseFromRace(raceId, horseId);
+  }
 }

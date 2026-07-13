@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  Logger 
 } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { Types } from 'mongoose';
@@ -17,6 +18,8 @@ import { RaceRepository } from '../race/race.repository';
 import { RegistrationRepository } from '../registration/registration.repository';
 import { TransactionRepository } from '../payment/transaction.repository';
 import { NotificationRepository } from '../notification/notification.repository';
+import { UsersRepository } from '../user/user.repository';
+import { SystemWalletRepository } from '../payment/system-wallet.repository';
 
 import { RegistrationStatusEnum } from 'src/constants/registrationStatus.enum';
 import {
@@ -34,11 +37,15 @@ import { RaceStatusEnum } from 'src/constants/raceStatus.enum';
 
 @Injectable()
 export class RaceAssignService {
+  private readonly logger = new Logger(RaceAssignService.name);
+
   constructor(
     private readonly raceRepository: RaceRepository,
     private readonly registrationRepository: RegistrationRepository,
     private readonly transactionRepository: TransactionRepository,
     private readonly notificationRepository: NotificationRepository,
+    private readonly usersRepository: UsersRepository, 
+    private readonly systemWalletRepository: SystemWalletRepository,    
     @InjectModel(HorseOwnerProfile.name)
     private readonly horseOwnerProfileModel: Model<HorseOwnerProfileDocument>,
   ) {}
@@ -259,4 +266,84 @@ export class RaceAssignService {
       gateAssignments,
     };
   }
+
+// Thêm vào RaceAssignService (hoặc RaceService tùy cấu trúc của bạn)
+// Cần inject thêm: UsersRepository, TransactionRepository, SystemWalletRepository
+
+  async removeHorseFromRace(
+    raceId: string,
+    horseId: string,
+  ): Promise<{ message: string }> {
+    // 1. Validate race tồn tại và chưa confirm-ready
+    const race = await this.raceRepository.findById(raceId);
+    if (!race) throw new NotFoundException('Không tìm thấy race');
+
+    const allowedStatuses = [RaceStatusEnum.SCHEDULED];
+    if (!allowedStatuses.includes(race.status as RaceStatusEnum)) {
+      throw new BadRequestException(
+        `Chỉ có thể xóa ngựa khi race ở trạng thái Scheduled. ` +
+        `Hiện tại: ${race.status}`,
+      );
+    }
+
+    // 2. Tìm registration CONFIRMED của horse trong race này
+    const registration =
+      await this.registrationRepository.findConfirmedByRaceAndHorse(
+        raceId,
+        horseId,
+      );
+    if (!registration) {
+      throw new NotFoundException(
+        'Không tìm thấy đăng ký đã xác nhận của ngựa này trong race',
+      );
+    }
+
+    const entryFee = registration.entryFee ?? 0;
+    const ownerId = registration.ownerId?.toString();
+
+    // 3. Update registration → Rejected + clear raceId, gateNumber
+    await this.registrationRepository.updateStatusToRemoved(
+      registration._id.toString(),
+    );
+    this.logger.log(
+      `Registration ${registration._id} → Rejected (removed from race)`,
+    );
+
+    // 4. Hoàn tiền nếu entryFee > 0
+    if (entryFee > 0 && ownerId) {
+      // 4a. Tìm HorseOwnerProfile để lấy profileId
+      const ownerProfile =
+        await this.usersRepository.findHorseOwnerProfileByUserId(ownerId);
+      if (!ownerProfile) {
+        this.logger.warn(
+          `Không tìm thấy HorseOwnerProfile cho ownerId ${ownerId} — bỏ qua refund`,
+        );
+      } else {
+        // 4b. Cộng lại balance cho owner
+        await this.usersRepository.incrementHorseOwnerBalance(
+          ownerProfile._id.toString(),
+          entryFee,
+        );
+        this.logger.log(
+          `Hoàn tiền ${entryFee} cho HorseOwner ${ownerProfile._id}`,
+        );
+
+        // 4c. Trừ ví hệ thống
+        await this.systemWalletRepository.decreaseBalance(entryFee);
+        this.logger.log(`SystemWallet -${entryFee} (refund)`);
+
+        // 4d. Insert Transaction (system → owner)
+        await this.transactionRepository.create({
+          senderId: null, // system
+          receiverId: new Types.ObjectId(ownerId),
+          amount: entryFee,
+          type: TransactionTypeEnum.REFUND,
+          content: `${TransactionTitleEnum.REFUND} - Ngựa bị loại khỏi race`,
+        });
+        this.logger.log(`Transaction REFUND inserted cho owner ${ownerId}`);
+      }
+    }
+
+    return { message: 'Đã xóa ngựa khỏi race và hoàn tiền thành công' };
+  }  
 }

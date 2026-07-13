@@ -37,6 +37,9 @@ import {
   RaceCourseSchema,
 } from './race-course/schemas/race-course.schema';
 import { RaceCourseRepository } from './race-course/race-course.repository';
+
+import { UserModule } from '../user/user.module'; 
+import { PaymentModule } from '../payment/payment.module';
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -51,6 +54,8 @@ import { RaceCourseRepository } from './race-course/race-course.repository';
     RaceCourseModule,
     RaceConditionModule,
     forwardRef(() => RefereeReportModule),
+    UserModule,
+    PaymentModule
   ],
   controllers: [RaceController],
   providers: [
