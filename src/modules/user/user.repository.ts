@@ -17,6 +17,7 @@ import { UpdateRefereeProfileDto } from './dto/update-referee-profile.dto';
 import { RoleEnum } from 'src/constants/roleEnum.enum';
 import { JockeyStatusEnum } from 'src/constants/jockeyStatusEnum.enum';
 import { AccountStatusEnum } from 'src/constants/accountStatusEnum.enum';
+import { SpectatorProfile } from './schemas/spectator-profile.schema';
 
 @Injectable()
 export class UsersRepository {
@@ -28,6 +29,8 @@ export class UsersRepository {
     private horseOwnerModel: Model<HorseOwnerProfile>,
     @InjectModel(RefereeProfile.name)
     private refereeModel: Model<RefereeProfile>,
+    @InjectModel(SpectatorProfile.name)
+    private spectatorModel: Model<SpectatorProfile>,
   ) {}
 
   async createUser(user: Partial<User>): Promise<User> {
@@ -364,5 +367,27 @@ export class UsersRepository {
     ]);
 
     return { userStats, jockeyStats };
+  }
+
+  async findSpectatorProfileByUserId(
+    userId: string,
+  ): Promise<SpectatorProfile | null> {
+    return await this.spectatorModel
+      .findOne({ userId: new Types.ObjectId(userId) })
+      .lean()
+      .exec();
+  }
+
+  async updatePointBalance(
+    userId: string,
+    amount: number,
+  ): Promise<SpectatorProfile | null> {
+    return await this.spectatorModel
+      .findOneAndUpdate(
+        { userId: new Types.ObjectId(userId) },
+        { $inc: { pointBalance: amount } },
+        { returnDocument: 'after' },
+      )
+      .exec();
   }
 }

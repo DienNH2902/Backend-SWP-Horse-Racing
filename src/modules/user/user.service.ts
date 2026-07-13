@@ -19,6 +19,7 @@ import { JockeyStatusEnum } from 'src/constants/jockeyStatusEnum.enum';
 import { AccountStatusEnum } from 'src/constants/accountStatusEnum.enum';
 import { HorseRepository } from '../horse/horse.repository';
 import { RawResultRepository } from '../raw-result/raw-result.repository';
+import { AdjustPointsDto } from './dto/admin-adjust-points.dto';
 
 @Injectable()
 export class UsersService {
@@ -91,9 +92,8 @@ export class UsersService {
     if (role === 'horse owner' || role === 'horseowner') {
       const horses = await this.horseRepository.findAllMyHorse(id);
       const horseIds = horses.map((h: any) => h._id);
-      user.historyRace = await this.rawResultRepository.findByHorseIds(
-        horseIds,
-      );
+      user.historyRace =
+        await this.rawResultRepository.findByHorseIds(horseIds);
     }
 
     return this.toResponse(user);
@@ -258,6 +258,42 @@ export class UsersService {
     return { message: 'Đổi mật khẩu thành công' };
   }
 
+  async getSpectatorProfileByUserId(userId: string) {
+    const profile =
+      await this.userRepository.findSpectatorProfileByUserId(userId);
+    if (!profile) {
+      throw new NotFoundException('Không tìm thấy profile người xem này');
+    }
+    return profile;
+  }
+
+  async adjustPointBalance(userId: string, adjustPointsDto: AdjustPointsDto) {
+    const { amount } = adjustPointsDto;
+
+    const profile =
+      await this.userRepository.findSpectatorProfileByUserId(userId);
+    if (!profile) {
+      throw new NotFoundException('Không tìm thấy profile người xem này');
+    }
+
+    // Nếu là thao tác trừ điểm, kiểm tra xem số dư có đủ không
+    if (amount < 0 && profile.pointBalance + amount < 0) {
+      throw new BadRequestException(
+        'Số dư pointBalance không đủ để thực hiện trừ điểm',
+      );
+    }
+
+    const updatedProfile = await this.userRepository.updatePointBalance(
+      userId,
+      amount,
+    );
+
+    return {
+      message: 'Cập nhật pointBalance thành công',
+      data: updatedProfile,
+    };
+  }
+
   async getDashboardStatistics(): Promise<{
     totalUsers: number;
     roles: Record<string, number>;
@@ -301,6 +337,4 @@ export class UsersService {
   async removeUser(id: string): Promise<any> {
     return this.userRepository.deleteUser(id);
   }
-
-  
 }

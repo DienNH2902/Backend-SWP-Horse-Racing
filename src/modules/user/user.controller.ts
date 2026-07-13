@@ -16,6 +16,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiOperation,
   ApiParam,
   ApiQuery,
@@ -33,6 +34,7 @@ import { UpdateAccountStatusDto } from './dto/update-account-status.dto';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { SearchUserDto } from './dto/search-user.dto';
+import { AdjustPointsDto } from './dto/admin-adjust-points.dto';
 
 @ApiTags('Users')
 @Controller('users')
@@ -171,6 +173,31 @@ export class UsersController {
     @Body() dto: UpdateAccountStatusDto,
   ): Promise<ResponseUserDto> {
     return await this.userService.updateAccountStatus(id, dto.accountStatus);
+  }
+
+  @Patch(':userId/adjust-points')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleEnum.ADMIN)
+  @ApiOperation({
+    summary: 'Cập nhật điểm (pointBalance) cho Spectator',
+    description:
+      'API dành cho Admin thực hiện cộng/trừ số dư pointBalance của spectator theo userId.',
+  })
+  @ApiParam({
+    name: 'userId',
+    description: 'ID của User (Spectator) cần điều chỉnh điểm',
+  })
+  @ApiBody({
+    type: AdjustPointsDto,
+    description: 'Dữ liệu số điểm cần điều chỉnh',
+  })
+  // @Roles(RoleEnum.ADMIN) // Chỉ cho phép Admin gọi API này
+  async adjustPointBalance(
+    @Param('userId') userId: string,
+    @Body() adjustPointsDto: AdjustPointsDto,
+  ) {
+    return await this.userService.adjustPointBalance(userId, adjustPointsDto);
   }
 
   @Delete(':id')
