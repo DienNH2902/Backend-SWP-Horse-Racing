@@ -20,6 +20,7 @@ import { AccountStatusEnum } from 'src/constants/accountStatusEnum.enum';
 import { HorseRepository } from '../horse/horse.repository';
 import { RawResultRepository } from '../raw-result/raw-result.repository';
 import { AdjustPointsDto } from './dto/admin-adjust-points.dto';
+import { AdjustReputationPointsDto } from './dto/admin-adjust-reputation.dto';
 
 @Injectable()
 export class UsersService {
@@ -290,6 +291,36 @@ export class UsersService {
 
     return {
       message: 'Cập nhật pointBalance thành công',
+      data: updatedProfile,
+    };
+  }
+
+  async adjustJockeyReputationPoints(
+    userId: string,
+    adjustReputationDto: AdjustReputationPointsDto,
+  ) {
+    const { amount } = adjustReputationDto;
+
+    const profile = await this.userRepository.findJockeyProfileByUserId(userId);
+    if (!profile) {
+      throw new NotFoundException(
+        'Không tìm thấy profile nài ngựa (Jockey) này',
+      );
+    }
+
+    const newPoints = (profile.reputationPoints || 0) + amount;
+
+    if (newPoints < 0 || newPoints > 100) {
+      throw new BadRequestException(
+        'Điểm uy tín sau khi cập nhật phải nằm trong khoảng từ 0 đến 100',
+      );
+    }
+
+    const updatedProfile =
+      await this.userRepository.updateJockeyReputationPoints(userId, amount);
+
+    return {
+      message: 'Cập nhật điểm uy tín Jockey thành công',
       data: updatedProfile,
     };
   }

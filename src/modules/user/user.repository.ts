@@ -390,4 +390,17 @@ export class UsersRepository {
       )
       .exec();
   }
+
+  async updateJockeyReputationPoints(
+    userId: string,
+    amount: number,
+  ): Promise<JockeyProfile | null> {
+    return await this.jockeyModel
+      .findOneAndUpdate(
+        { userId: new Types.ObjectId(userId) },
+        { $inc: { reputationPoints: amount } },
+        { returnDocument: 'after' },
+      )
+      .exec();
+  }
 }
