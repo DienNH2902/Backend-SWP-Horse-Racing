@@ -58,18 +58,16 @@ export class RefereeReportService {
     refereeId: string,
     dto: CreateEndReportDto,
   ): Promise<RefereeReportResponseDto> {
-    // Validate race tồn tại và đã simulated/finished
     const race = await this.raceRepo.findById(raceId);
     if (!race) throw new NotFoundException('Không tìm thấy race');
 
-    const allowedStatuses = [RaceStatusEnum.FINISHED];
+    const allowedStatuses = [RaceStatusEnum.ONGOING];
     if (!allowedStatuses.includes(race.status as RaceStatusEnum)) {
       throw new BadRequestException(
-        'Race phải ở trạng thái "FINISHED" để tạo end report',
+        'Race phải ở trạng thái "ONGOING" để tạo end report',
       );
     }
 
-    // Chống duplicate end report
     const existed = await this.reportRepo.existsByRaceIdAndType(
       raceId,
       RefereeReportType.END,
@@ -89,13 +87,11 @@ export class RefereeReportService {
     return this.toResponse(report);
   }
 
-  // ── Lấy tất cả report của một race ────────────────────────────────────────
   async getReportsByRace(raceId: string): Promise<RefereeReportResponseDto[]> {
     const reports = await this.reportRepo.findByRaceId(raceId);
     return reports.map((r) => this.toResponse(r));
   }
 
-  // ── Lấy start report của race ──────────────────────────────────────────────
   async getStartReport(raceId: string): Promise<RefereeReportResponseDto> {
     const report = await this.reportRepo.findByRaceIdAndType(
       raceId,
