@@ -25,6 +25,7 @@ import {
   WithdrawalRequestSchema,
 } from './schemas/withdrawal.schema';
 import { WithdrawalRepository } from './withdrawal.repository';
+import { SystemWalletService } from './system-wallet.service';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { WithdrawalRepository } from './withdrawal.repository';
   providers: [
     PaymentService,
     VnPayService,
+    SystemWalletService,
     TransactionRepository,
     SystemWalletRepository,
     WithdrawalRepository,
