@@ -227,6 +227,33 @@ export class UsersController {
     );
   }
 
+  @Patch('horse-owner/:userId/adjust-reputation')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleEnum.ADMIN)
+  @ApiOperation({
+    summary: 'Cập nhật điểm uy tín (reputationPoints) cho Horse Owner',
+    description:
+      'API dành cho Admin thực hiện cộng/trừ số điểm uy tín của Horse Owner theo userId.',
+  })
+  @ApiParam({
+    name: 'userId',
+    description: 'ID của User (Horse Owner) cần điều chỉnh điểm uy tín',
+  })
+  @ApiBody({
+    type: AdjustReputationPointsDto,
+    description: 'Dữ liệu số điểm uy tín cần điều chỉnh',
+  })
+  async adjustOwnerReputationPoints(
+    @Param('userId') userId: string,
+    @Body() adjustReputationDto: AdjustReputationPointsDto,
+  ) {
+    return await this.userService.adjustOwnerReputationPoints(
+      userId,
+      adjustReputationDto,
+    );
+  }
+
   @Delete(':id')
   @ApiOperation({ summary: 'Delete user' })
   remove(@Param('id') id: string) {

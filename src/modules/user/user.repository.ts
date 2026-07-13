@@ -403,4 +403,17 @@ export class UsersRepository {
       )
       .exec();
   }
+
+  async updateOwnerReputationPoints(
+    userId: string,
+    amount: number,
+  ): Promise<HorseOwnerProfile | null> {
+    return await this.horseOwnerModel
+      .findOneAndUpdate(
+        { userId: new Types.ObjectId(userId) },
+        { $inc: { reputationPoints: amount } },
+        { returnDocument: 'after' },
+      )
+      .exec();
+  }
 }

@@ -325,6 +325,37 @@ export class UsersService {
     };
   }
 
+  async adjustOwnerReputationPoints(
+    userId: string,
+    adjustReputationDto: AdjustReputationPointsDto,
+  ) {
+    const { amount } = adjustReputationDto;
+
+    const profile =
+      await this.userRepository.findHorseOwnerProfileByUserId(userId);
+    if (!profile) {
+      throw new NotFoundException(
+        'Không tìm thấy profile chủ ngựa (Horse Owner) này',
+      );
+    }
+
+    const newPoints = (profile.reputationPoints || 0) + amount;
+
+    if (newPoints < 0 || newPoints > 100) {
+      throw new BadRequestException(
+        'Điểm uy tín sau khi cập nhật phải nằm trong khoảng từ 0 đến 100',
+      );
+    }
+
+    const updatedProfile =
+      await this.userRepository.updateOwnerReputationPoints(userId, amount);
+
+    return {
+      message: 'Cập nhật điểm uy tín Horse Owner thành công',
+      data: updatedProfile,
+    };
+  }
+
   async getDashboardStatistics(): Promise<{
     totalUsers: number;
     roles: Record<string, number>;
