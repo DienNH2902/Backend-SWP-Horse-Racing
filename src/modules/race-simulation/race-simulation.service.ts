@@ -29,6 +29,7 @@ import { HorseEngineData, HorseInput } from './engine/engine.types';
 
 import { CreateRawResultDto } from './repositories/raw-result.repository';
 import { CreateHorseRaceStatsDto } from './repositories/horse-race-stat.repository';
+import { JockeyStatusEnum } from 'src/constants/jockeyStatusEnum.enum';
 
 const TICK_DURATION_MS = 500;
 
@@ -51,12 +52,27 @@ export class RaceSimulationService {
     private readonly raceConditionRepo: RaceConditionRepository,
     private readonly registrationRepo: RegistrationRepository,
     private readonly usersRepo: UsersRepository,
-
   ) {}
 
   // ── [DEV] Reset để chạy lại simulation nhiều lần ─────────────────────────
   async resetSimulation(raceId: string): Promise<{ message: string }> {
     this.logger.warn(`[RESET] Xóa simulation data của race ${raceId}`);
+
+    // 1. Tìm các rawResult trước khi xóa để lấy danh sách jockeyId (hoặc query từ race/assignment)
+    const rawResults = await this.rawResultRepo.findByRaceId(raceId);
+
+    if (rawResults && rawResults.length > 0) {
+      const jockeyIds = Array.from(new Set(rawResults.map((r) => r.jockeyId)));
+
+      // 2. Trả trạng thái của các Jockey về AVAILABLE
+      await this.usersRepo.updateManyStatus(
+        jockeyIds,
+        JockeyStatusEnum.AVAILABLE,
+      );
+      this.logger.warn(
+        `[RESET] Đã trả trạng thái ${jockeyIds.length} Jockey về AVAILABLE`,
+      );
+    }
 
     await this.raceTickRepo.deleteByRaceId(raceId);
     await this.raceEventRepo.deleteByRaceId(raceId);
@@ -65,11 +81,13 @@ export class RaceSimulationService {
     await this.raceRepo.updateStatus(raceId, RaceStatusEnum.READY);
 
     this.logger.warn(`[RESET] Done — race ${raceId} reset về "Ready"`);
-    return { message: 'Đã xóa simulation data, race reset về trạng thái Ready' };
+    return {
+      message: 'Đã xóa simulation data, race reset về trạng thái Ready',
+    };
   }
 
   // ── Main: chạy simulation ─────────────────────────────────────────────────
-async runSimulation(raceId: string): Promise<{ message: string }> {
+  async runSimulation(raceId: string): Promise<{ message: string }> {
     this.logger.log(`[SIM] ═══ Bắt đầu simulation race ${raceId} ═══`);
 
     // ── 1. Load + validate ────────────────────────────────────────────────────
@@ -94,7 +112,9 @@ async runSimulation(raceId: string): Promise<{ message: string }> {
         ? race.raceCourseId
         : (race.raceCourseId as any)._id;
 
-    const raceCourse = await this.raceCourseRepo.findById(raceCourseId.toString());
+    const raceCourse = await this.raceCourseRepo.findById(
+      raceCourseId.toString(),
+    );
     if (!raceCourse) throw new NotFoundException('Không tìm thấy RaceCourse');
 
     this.logger.log(
@@ -103,36 +123,41 @@ async runSimulation(raceId: string): Promise<{ message: string }> {
 
     const condition = await this.raceConditionRepo.findByRaceId(raceId);
     if (!condition) {
-      throw new NotFoundException('Chưa có RaceCondition — Referee cần nhập điều kiện trước');
+      throw new NotFoundException(
+        'Chưa có RaceCondition — Referee cần nhập điều kiện trước',
+      );
     }
 
     this.logger.log(
       `[SIM] RaceCondition: weather=${(condition as any).weather}, ` +
-      `trackCondition=${(condition as any).trackCondition}, ` +
-      `windSpeed=${(condition as any).windSpeed}`,
+        `trackCondition=${(condition as any).trackCondition}, ` +
+        `windSpeed=${(condition as any).windSpeed}`,
     );
 
     // ── 2. Load registrations confirmed ──────────────────────────────────────
-    const registrations = await this.registrationRepo.findConfirmedWithDetails(raceId);
+    const registrations =
+      await this.registrationRepo.findConfirmedWithDetails(raceId);
     this.logger.log(`[SIM] Số registration confirmed: ${registrations.length}`);
 
     if (registrations.length < 2) {
-      throw new BadRequestException('Cần ít nhất 2 ngựa đã confirmed để chạy simulation');
+      throw new BadRequestException(
+        'Cần ít nhất 2 ngựa đã confirmed để chạy simulation',
+      );
     }
 
     // ── 3. Log dữ liệu raw từng ngựa ─────────────────────────────────────────
     registrations.forEach((reg, i) => {
       this.logger.log(
         `[SIM] Ngựa ${i + 1}: ` +
-        `horse=${JSON.stringify({
-          id: reg.horse?._id,
-          weight: reg.horse?.weight,
-          height: reg.horse?.height,
-          winRate: reg.horse?.winRate,
-          totalWin: reg.horse?.totalWin,
-        })} | ` +
-        `jockey=${JSON.stringify({ id: reg.jockeyProfile?._id, weight: reg.jockeyProfile?.weight })} | ` +
-        `gate=${reg.gateNumber}`,
+          `horse=${JSON.stringify({
+            id: reg.horse?._id,
+            weight: reg.horse?.weight,
+            height: reg.horse?.height,
+            winRate: reg.horse?.winRate,
+            totalWin: reg.horse?.totalWin,
+          })} | ` +
+          `jockey=${JSON.stringify({ id: reg.jockeyProfile?._id, weight: reg.jockeyProfile?.weight })} | ` +
+          `gate=${reg.gateNumber}`,
       );
     });
 
@@ -154,7 +179,8 @@ async runSimulation(raceId: string): Promise<{ message: string }> {
         (reg.jockeyProfile as any)?.toString();
 
       if (!jockeyProfileMap.has(userId)) {
-        const realProfile = await this.usersRepo.findJockeyProfileByUserId(userId);
+        const realProfile =
+          await this.usersRepo.findJockeyProfileByUserId(userId);
         if (!realProfile) {
           throw new NotFoundException(
             `Không tìm thấy JockeyProfile cho user ${userId} (registration ${reg._id})`,
@@ -168,7 +194,7 @@ async runSimulation(raceId: string): Promise<{ message: string }> {
         });
         this.logger.log(
           `[SIM] Resolved JockeyProfile thật cho user ${userId}: ` +
-          `profileId=${(realProfile as any)._id}, weight=${(realProfile as any).weight}`,
+            `profileId=${(realProfile as any)._id}, weight=${(realProfile as any).weight}`,
         );
       }
     }
@@ -188,7 +214,7 @@ async runSimulation(raceId: string): Promise<{ message: string }> {
         horseHeight: reg.horse.height,
         horseWinRate: reg.horse.winRate,
         jockeyWeight: realProfile.weight,
-        jockeyWinRate: realProfile.winRate, 
+        jockeyWinRate: realProfile.winRate,
         totalWin: reg.horse.totalWin ?? 0,
       };
     });
@@ -196,15 +222,19 @@ async runSimulation(raceId: string): Promise<{ message: string }> {
     // ── 5. Tính stats + conditionModifier ────────────────────────────────────
     const horsesData: HorseEngineData[] = horseInputs.map((input) => {
       const stats = calcHorseRaceStats(input);
-      const conditionModifier = calcConditionModifier(condition, raceCourse, input.horseWeight);
+      const conditionModifier = calcConditionModifier(
+        condition,
+        raceCourse,
+        input.horseWeight,
+      );
 
       this.logger.log(
         `[SIM] Stats horse ${input.horseId}: ` +
-        `baseSpeed=${stats.baseSpeed.toFixed(3)}, ` +
-        `accel=${stats.acceleration.toFixed(3)}, ` +
-        `stamina=${stats.stamina.toFixed(3)}, ` +
-        `totalLoad=${stats.totalLoad}, ` +
-        `condMod=${conditionModifier.toFixed(3)}`,
+          `baseSpeed=${stats.baseSpeed.toFixed(3)}, ` +
+          `accel=${stats.acceleration.toFixed(3)}, ` +
+          `stamina=${stats.stamina.toFixed(3)}, ` +
+          `totalLoad=${stats.totalLoad}, ` +
+          `condMod=${conditionModifier.toFixed(3)}`,
       );
 
       return {
@@ -229,8 +259,8 @@ async runSimulation(raceId: string): Promise<{ message: string }> {
 
       this.logger.log(
         `[SIM] Horse ${horse.horseId}: ` +
-        `${ticks.length} ticks, finishTick=${finishTick}, ` +
-        `${events.length} events (stumble/burst)`,
+          `${ticks.length} ticks, finishTick=${finishTick}, ` +
+          `${events.length} events (stumble/burst)`,
       );
 
       allTicks.push(...ticks);
@@ -242,14 +272,22 @@ async runSimulation(raceId: string): Promise<{ message: string }> {
 
     // ── 7. Pass 2 — detect overtake + lead_change ────────────────────────────
     const horseIds = horsesData.map((h) => h.horseId);
-    const passEvents = detectOvertakeAndLead(raceObjectId, horseIds, allTicks, finishTickMap);
-    this.logger.log(`[SIM] Pass 2 events (overtake/lead_change): ${passEvents.length}`);
+    const passEvents = detectOvertakeAndLead(
+      raceObjectId,
+      horseIds,
+      allTicks,
+      finishTickMap,
+    );
+    this.logger.log(
+      `[SIM] Pass 2 events (overtake/lead_change): ${passEvents.length}`,
+    );
     allEvents.push(...passEvents);
 
     // ── 8. Tính rawRank từ finishTick tăng dần ───────────────────────────────
     const sortedByFinish = [...horsesData].sort(
       (a, b) =>
-        finishTickMap[a.horseId.toString()] - finishTickMap[b.horseId.toString()],
+        finishTickMap[a.horseId.toString()] -
+        finishTickMap[b.horseId.toString()],
     );
 
     this.logger.log('[SIM] Thứ hạng cuối:');
@@ -259,21 +297,23 @@ async runSimulation(raceId: string): Promise<{ message: string }> {
       );
     });
 
-    const rawResults: CreateRawResultDto[] = sortedByFinish.map((horse, index) => {
-      const finishTick = finishTickMap[horse.horseId.toString()];
-      const finishedTime = new Date(
-        race.startTime.getTime() + finishTick * TICK_DURATION_MS,
-      );
-      return {
-        raceId: raceObjectId,
-        horseId: horse.horseId,
-        jockeyId: horse.jockeyId,
-        rawRank: index + 1,
-        finalRank: index + 1,
-        status: RawResultStatus.PENDING,
-        finishedTime,
-      };
-    });
+    const rawResults: CreateRawResultDto[] = sortedByFinish.map(
+      (horse, index) => {
+        const finishTick = finishTickMap[horse.horseId.toString()];
+        const finishedTime = new Date(
+          race.startTime.getTime() + finishTick * TICK_DURATION_MS,
+        );
+        return {
+          raceId: raceObjectId,
+          horseId: horse.horseId,
+          jockeyId: horse.jockeyId,
+          rawRank: index + 1,
+          finalRank: index + 1,
+          status: RawResultStatus.PENDING,
+          finishedTime,
+        };
+      },
+    );
 
     // ── 9. Build HorseRaceStats snapshot ─────────────────────────────────────
     const statsSnapshots: CreateHorseRaceStatsDto[] = horsesData.map((h) => ({
@@ -292,7 +332,12 @@ async runSimulation(raceId: string): Promise<{ message: string }> {
     // ── 10. Bulk insert trong transaction ─────────────────────────────────────
     this.logger.log(
       `[SIM] Transaction: ${allTicks.length} ticks | ${allEvents.length} events | ` +
-      `${rawResults.length} results | ${statsSnapshots.length} stats`,
+        `${rawResults.length} results | ${statsSnapshots.length} stats`,
+    );
+
+    // Lấy danh sách ID của các JockeyProfile thật tham gia trận đua
+    const jockeyProfileIds = Array.from(jockeyProfileMap.values()).map(
+      (profile) => profile._id,
     );
 
     const session = await this.connection.startSession();
@@ -308,13 +353,26 @@ async runSimulation(raceId: string): Promise<{ message: string }> {
         this.logger.log(`[SIM] ✅ Inserted ${rawResults.length} raw_results`);
 
         await this.horseRaceStatsRepo.bulkInsert(statsSnapshots);
-        this.logger.log(`[SIM] ✅ Inserted ${statsSnapshots.length} horse_race_stats`);
+        this.logger.log(
+          `[SIM] ✅ Inserted ${statsSnapshots.length} horse_race_stats`,
+        );
 
+        // 🟢 CẬP NHẬT TRẠNG THÁI JOCKEY THÀNH BUSY
+        await this.usersRepo.updateManyStatus(
+          jockeyProfileIds,
+          JockeyStatusEnum.BUSY,
+        );
+        this.logger.log(
+          `[SIM] ✅ Cập nhật status ${jockeyProfileIds.length} jockey thành BUSY`,
+        );
         await this.raceRepo.updateStatus(raceId, RaceStatusEnum.SIMULATED);
         this.logger.log(`[SIM] ✅ Race status → simulated`);
       });
     } catch (err: any) {
-      this.logger.error(`[SIM] ❌ Transaction failed: ${err?.message ?? err}`, err?.stack);
+      this.logger.error(
+        `[SIM] ❌ Transaction failed: ${err?.message ?? err}`,
+        err?.stack,
+      );
       throw err;
     } finally {
       await session.endSession();
