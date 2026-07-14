@@ -260,6 +260,8 @@ export class JockeyInvitationService {
       (invitation.proposeContractAmount * invitation.jockeyCompensationRate) /
       100;
 
+    const horseIdStr = this.resolveId(invitation.horseId);
+
     // Xử lý kịch bản ACCEPTED (Chấp nhận giao kèo)
     if (dto.status === JockeyInvitationEnum.ACCEPTED) {
       const hasContract =
@@ -378,6 +380,12 @@ export class JockeyInvitationService {
           'Jockey đã từ chối lời mời hợp tác của bạn. Tiền ký quỹ đã được hoàn về ví khả dụng.',
         isRead: false,
       });
+
+      // 4. Đổi trạng thái ngựa về lại IDLE nếu Jockey từ chối
+      await this.horseRepository.updateHorseStatus(
+        horseIdStr,
+        HorseStatusEnum.IDLE,
+      );
     }
 
     const updated = await this.jockeyInvitationRepository.updateStatus(
@@ -404,7 +412,7 @@ export class JockeyInvitationService {
       });
 
       // Đổi trạng thái ngựa sang REGISTERED sau khi hợp đồng kích hoạt thành công
-      const horseIdStr = this.resolveId(invitation.horseId);
+      // const horseIdStr = this.resolveId(invitation.horseId);
       await this.horseRepository.updateHorseStatus(
         horseIdStr,
         HorseStatusEnum.REGISTERED,
