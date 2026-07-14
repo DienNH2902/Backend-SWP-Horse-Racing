@@ -141,7 +141,7 @@ export class AdminRegistrationController {
   @Roles(RoleEnum.ADMIN, RoleEnum.REFEREE)
   @ApiOperation({
     summary:
-      'Admin/Referee từ chối đăng ký kèm lý do, gửi notification cho owner',
+      'Admin/Referee từ chối đăng ký, nếu đơn đã status CONFIRMED thì vẫn REJECTED được và loại ngựa ra khỏi race, kèm lý do, gửi notification cho owner',
   })
   @ApiParam({ name: 'id', description: 'Registration ID' })
   reject(
