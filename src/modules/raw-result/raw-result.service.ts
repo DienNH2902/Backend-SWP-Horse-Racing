@@ -7,7 +7,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
-import { Connection, Model } from 'mongoose';
+import { Connection, Model, Types } from 'mongoose';
 import { RawResultRepository } from './raw-result.repository';
 import { RaceRepository } from '../race/race.repository';
 import { HorseRepository } from '../horse/horse.repository';
@@ -24,6 +24,7 @@ import { NotificationTypeEnum } from 'src/constants/notificationTypeEnum.enum';
 import { NotificationTitleEnum } from 'src/constants/notificationTitleEnum.enum';
 import { SpectatorProfile } from '../user/schemas/spectator-profile.schema';
 import { NotificationRepository } from '../notification/notification.repository';
+import { JockeyStatusEnum } from 'src/constants/jockeyStatusEnum.enum';
 
 @Injectable()
 export class RawResultService {
@@ -180,12 +181,17 @@ export class RawResultService {
           session,
         );
 
+        const jockeyIdsToFree: string[] = [];
+
         // Cập nhật totalRace/totalWin/winRate cho từng ngựa & jockey đã đua.
         // Đã xác nhận với team: DISQUALIFIED vẫn tính totalRace (+1),
         // chỉ loại khỏi totalWin (isWinner tự động false vì horseIdStr !== winnerHorseId).
         for (const result of sorted) {
           const horseIdStr = result.horseId.toString();
+          const jockeyIdStr = result.jockeyId.toString();
           const isWinner = horseIdStr === winnerHorseId;
+
+          jockeyIdsToFree.push(jockeyIdStr);
 
           await this.horseRepository.incrementHorseRaceStats(
             horseIdStr,
@@ -196,6 +202,18 @@ export class RawResultService {
             result.jockeyId.toString(),
             isWinner,
             session,
+          );
+        }
+
+        // 🟢 CẬP NHẬT TRẠNG THÁI CÁC JOCKEY VỀ AVAILABLE
+        if (jockeyIdsToFree.length > 0) {
+          await this.usersRepository.updateManyStatus(
+            jockeyIdsToFree.map((id) => new Types.ObjectId(id)),
+            JockeyStatusEnum.AVAILABLE,
+            session, // Truyền session vào để đảm bảo tính nguyên tử
+          );
+          this.logger.log(
+            `[CONFIRM] ✅ Đã trả trạng thái ${jockeyIdsToFree.length} Jockey về AVAILABLE`,
           );
         }
       });
@@ -277,43 +295,43 @@ export class RawResultService {
     return this.rawResultRepository.findByRaceIdSortedByRawRank(raceId);
   }
 
-async getFinalResults(raceId: string): Promise<any[]> {
-  const race = await this.raceRepository.findOneRace({ _id: raceId });
-  if (!race) throw new NotFoundException('Race not found');
+  async getFinalResults(raceId: string): Promise<any[]> {
+    const race = await this.raceRepository.findOneRace({ _id: raceId });
+    if (!race) throw new NotFoundException('Race not found');
 
-  const results = await this.rawResultRepository.findFinalResultsByRaceId(raceId);
+    const results =
+      await this.rawResultRepository.findFinalResultsByRaceId(raceId);
 
-  return results
-    .filter((r) => r.status !== RawResultStatus.PENDING)
-    .sort((a, b) => {
-      if (a.finalRank === null) return 1;
-      if (b.finalRank === null) return -1;
-      return a.finalRank - b.finalRank;
-    })
-    .map((r: any) => ({
-      raceId: r.raceId?._id?.toString() ?? r.raceId?.toString(),
-      raceName: r.raceId?.name ?? null,
+    return results
+      .filter((r) => r.status !== RawResultStatus.PENDING)
+      .sort((a, b) => {
+        if (a.finalRank === null) return 1;
+        if (b.finalRank === null) return -1;
+        return a.finalRank - b.finalRank;
+      })
+      .map((r: any) => ({
+        raceId: r.raceId?._id?.toString() ?? r.raceId?.toString(),
+        raceName: r.raceId?.name ?? null,
 
-      horseId: r.horseId?._id?.toString() ?? r.horseId?.toString(),
-      horseName: r.horseId?.name ?? null,
+        horseId: r.horseId?._id?.toString() ?? r.horseId?.toString(),
+        horseName: r.horseId?.name ?? null,
 
-      jockeyId: r.jockeyId?._id?.toString() ?? r.jockeyId?.toString(),
-      jockeyName: r.jockeyId?.userId?.fullName ?? null,
+        jockeyId: r.jockeyId?._id?.toString() ?? r.jockeyId?.toString(),
+        jockeyName: r.jockeyId?.userId?.fullName ?? null,
 
-      horseOwnerId:
-        r.horseId?.userId?._id?.toString() ??
-        r.horseId?.userId?.toString() ??
-        null,
-      horseOwnerName: r.horseId?.userId?.fullName ?? null,
+        horseOwnerId:
+          r.horseId?.userId?._id?.toString() ??
+          r.horseId?.userId?.toString() ??
+          null,
+        horseOwnerName: r.horseId?.userId?.fullName ?? null,
 
-      rawRank: r.rawRank,
-      finalRank: r.finalRank,
-      status: r.status,
+        rawRank: r.rawRank,
+        finalRank: r.finalRank,
+        status: r.status,
 
-      finishedTime: r.finishedTime,
-      createdAt: r.createdAt,
-      updatedAt: r.updatedAt,
-
-    }));
-}
+        finishedTime: r.finishedTime,
+        createdAt: r.createdAt,
+        updatedAt: r.updatedAt,
+      }));
+  }
 }
