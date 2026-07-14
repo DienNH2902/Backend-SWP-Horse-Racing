@@ -420,10 +420,12 @@ export class UsersRepository {
   async updateManyStatus(
     jockeyIds: Types.ObjectId[],
     jockeyStatus: JockeyStatusEnum,
+    session?: ClientSession,
   ): Promise<void> {
     await this.jockeyModel.updateMany(
       { _id: { $in: jockeyIds } },
       { $set: { jockeyStatus } },
+      { session },
     );
   }
 }

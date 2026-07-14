@@ -58,6 +58,22 @@ export class RaceSimulationService {
   async resetSimulation(raceId: string): Promise<{ message: string }> {
     this.logger.warn(`[RESET] Xóa simulation data của race ${raceId}`);
 
+    // 1. Tìm các rawResult trước khi xóa để lấy danh sách jockeyId (hoặc query từ race/assignment)
+    const rawResults = await this.rawResultRepo.findByRaceId(raceId);
+
+    if (rawResults && rawResults.length > 0) {
+      const jockeyIds = Array.from(new Set(rawResults.map((r) => r.jockeyId)));
+
+      // 2. Trả trạng thái của các Jockey về AVAILABLE
+      await this.usersRepo.updateManyStatus(
+        jockeyIds,
+        JockeyStatusEnum.AVAILABLE,
+      );
+      this.logger.warn(
+        `[RESET] Đã trả trạng thái ${jockeyIds.length} Jockey về AVAILABLE`,
+      );
+    }
+
     await this.raceTickRepo.deleteByRaceId(raceId);
     await this.raceEventRepo.deleteByRaceId(raceId);
     await this.rawResultRepo.deleteByRaceId(raceId);
