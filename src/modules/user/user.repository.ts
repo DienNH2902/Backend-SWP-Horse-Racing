@@ -416,4 +416,14 @@ export class UsersRepository {
       )
       .exec();
   }
+
+  async updateManyStatus(
+    jockeyIds: Types.ObjectId[],
+    jockeyStatus: JockeyStatusEnum,
+  ): Promise<void> {
+    await this.jockeyModel.updateMany(
+      { _id: { $in: jockeyIds } },
+      { $set: { jockeyStatus } },
+    );
+  }
 }
