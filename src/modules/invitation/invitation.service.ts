@@ -34,6 +34,8 @@ import { TransactionRepository } from '../payment/transaction.repository';
 import { TransactionTypeEnum } from 'src/constants/transactionType.enum';
 import { NotificationTypeEnum } from 'src/constants/notificationTypeEnum.enum';
 import { NotificationTitleEnum } from 'src/constants/notificationTitleEnum.enum';
+import { FilterContractDto } from './dto/filter-contract.dto';
+import { RoleEnum } from 'src/constants/roleEnum.enum';
 
 type PopulatedJockeyProfile = User & {
   jockeyProfile?: { jockeyStatus: JockeyStatusEnum };
@@ -260,6 +262,8 @@ export class JockeyInvitationService {
       (invitation.proposeContractAmount * invitation.jockeyCompensationRate) /
       100;
 
+    const horseIdStr = this.resolveId(invitation.horseId);
+
     // Xử lý kịch bản ACCEPTED (Chấp nhận giao kèo)
     if (dto.status === JockeyInvitationEnum.ACCEPTED) {
       const hasContract =
@@ -378,6 +382,12 @@ export class JockeyInvitationService {
           'Jockey đã từ chối lời mời hợp tác của bạn. Tiền ký quỹ đã được hoàn về ví khả dụng.',
         isRead: false,
       });
+
+      // 4. Đổi trạng thái ngựa về lại IDLE nếu Jockey từ chối
+      await this.horseRepository.updateHorseStatus(
+        horseIdStr,
+        HorseStatusEnum.IDLE,
+      );
     }
 
     const updated = await this.jockeyInvitationRepository.updateStatus(
@@ -404,7 +414,7 @@ export class JockeyInvitationService {
       });
 
       // Đổi trạng thái ngựa sang REGISTERED sau khi hợp đồng kích hoạt thành công
-      const horseIdStr = this.resolveId(invitation.horseId);
+      // const horseIdStr = this.resolveId(invitation.horseId);
       await this.horseRepository.updateHorseStatus(
         horseIdStr,
         HorseStatusEnum.REGISTERED,
@@ -429,11 +439,22 @@ export class JockeyInvitationService {
       await this.jockeyInvitationRepository.findById(invitationId);
     if (!invitation) throw new NotFoundException('Không tìm thấy lời mời');
 
+    const isAdmin = await this.userRepository.findOneUser(
+      new Types.ObjectId(requesterId),
+    );
+
+    if (!isAdmin)
+      throw new BadRequestException('Không tìm thấy người dùng để xem role');
+
     const jockeyIdStr = this.resolveId(invitation.jockeyId);
     const ownerIdStr = this.resolveId(invitation.horseOwnerId);
 
     // Chỉ jockey hoặc horseOwner liên quan mới được xem
-    if (requesterId !== jockeyIdStr && requesterId !== ownerIdStr) {
+    if (
+      requesterId !== jockeyIdStr &&
+      requesterId !== ownerIdStr &&
+      isAdmin.role !== RoleEnum.ADMIN
+    ) {
       throw new ForbiddenException('Bạn không có quyền xem lời mời này');
     }
 
@@ -450,10 +471,21 @@ export class JockeyInvitationService {
       await this.jockeyInvitationRepository.findById(invitationId);
     if (!invitation) throw new NotFoundException('Không tìm thấy lời mời');
 
+    const isAdmin = await this.userRepository.findOneUser(
+      new Types.ObjectId(requesterId),
+    );
+
+    if (!isAdmin)
+      throw new BadRequestException('Không tìm thấy người dùng để xem role');
+
     const jockeyIdStr = this.resolveId(invitation.jockeyId);
     const ownerIdStr = this.resolveId(invitation.horseOwnerId);
 
-    if (requesterId !== jockeyIdStr && requesterId !== ownerIdStr) {
+    if (
+      requesterId !== jockeyIdStr &&
+      requesterId !== ownerIdStr &&
+      isAdmin.role !== RoleEnum.ADMIN
+    ) {
       throw new ForbiddenException('Bạn không có quyền xem hợp đồng này');
     }
 
@@ -466,5 +498,12 @@ export class JockeyInvitationService {
     }
 
     return this.toContractResponse(contract);
+  }
+
+  async getAllContracts(
+    filterDto: FilterContractDto,
+  ): Promise<ResponseContractDto[]> {
+    const contracts = await this.contractRepository.getAllContracts(filterDto);
+    return contracts.map((c) => this.toContractResponse(c));
   }
 }

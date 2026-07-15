@@ -20,7 +20,6 @@ export class HorseService {
   constructor(
     private readonly horseRepository: HorseRepository,
     private readonly rawResultRepository: RawResultRepository,
-
   ) {}
 
   private toResponse(data: any) {
