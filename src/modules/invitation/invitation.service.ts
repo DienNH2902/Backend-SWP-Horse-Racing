@@ -34,6 +34,7 @@ import { TransactionRepository } from '../payment/transaction.repository';
 import { TransactionTypeEnum } from 'src/constants/transactionType.enum';
 import { NotificationTypeEnum } from 'src/constants/notificationTypeEnum.enum';
 import { NotificationTitleEnum } from 'src/constants/notificationTitleEnum.enum';
+import { FilterContractDto } from './dto/filter-contract.dto';
 
 type PopulatedJockeyProfile = User & {
   jockeyProfile?: { jockeyStatus: JockeyStatusEnum };
@@ -474,5 +475,12 @@ export class JockeyInvitationService {
     }
 
     return this.toContractResponse(contract);
+  }
+
+  async getAllContracts(
+    filterDto: FilterContractDto,
+  ): Promise<ResponseContractDto[]> {
+    const contracts = await this.contractRepository.getAllContracts(filterDto);
+    return contracts.map((c) => this.toContractResponse(c));
   }
 }
