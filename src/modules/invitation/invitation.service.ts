@@ -35,6 +35,7 @@ import { TransactionTypeEnum } from 'src/constants/transactionType.enum';
 import { NotificationTypeEnum } from 'src/constants/notificationTypeEnum.enum';
 import { NotificationTitleEnum } from 'src/constants/notificationTitleEnum.enum';
 import { FilterContractDto } from './dto/filter-contract.dto';
+import { RoleEnum } from 'src/constants/roleEnum.enum';
 
 type PopulatedJockeyProfile = User & {
   jockeyProfile?: { jockeyStatus: JockeyStatusEnum };
@@ -438,11 +439,22 @@ export class JockeyInvitationService {
       await this.jockeyInvitationRepository.findById(invitationId);
     if (!invitation) throw new NotFoundException('Không tìm thấy lời mời');
 
+    const isAdmin = await this.userRepository.findOneUser(
+      new Types.ObjectId(requesterId),
+    );
+
+    if (!isAdmin)
+      throw new BadRequestException('Không tìm thấy người dùng để xem role');
+
     const jockeyIdStr = this.resolveId(invitation.jockeyId);
     const ownerIdStr = this.resolveId(invitation.horseOwnerId);
 
     // Chỉ jockey hoặc horseOwner liên quan mới được xem
-    if (requesterId !== jockeyIdStr && requesterId !== ownerIdStr) {
+    if (
+      requesterId !== jockeyIdStr &&
+      requesterId !== ownerIdStr &&
+      isAdmin.role !== RoleEnum.ADMIN
+    ) {
       throw new ForbiddenException('Bạn không có quyền xem lời mời này');
     }
 
