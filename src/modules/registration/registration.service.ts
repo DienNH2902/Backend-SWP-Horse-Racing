@@ -40,6 +40,8 @@ import {
 } from '../payment/schemas/systemWallet.schema';
 import { RaceRepository } from '../race/race.repository';
 import { JockeyProfile } from '../user/schemas/jockey-profile.schema';
+import { RaceStatusEnum } from 'src/constants/raceStatus.enum';
+import { BetService } from '../bet/bet.service';
 
 @Injectable()
 export class RegistrationService {
@@ -52,6 +54,7 @@ export class RegistrationService {
     private readonly notificationRepository: NotificationRepository,
     private readonly horseRepository: HorseRepository,
     private readonly raceRepository: RaceRepository,
+    private readonly betService: BetService,
 
     @InjectModel(HorseOwnerProfile.name)
     private readonly horseOwnerProfileModel: Model<HorseOwnerProfileDocument>,
@@ -482,6 +485,7 @@ export class RegistrationService {
 
       const ownerIdStr = this.resolveId(reg.ownerId);
       const jockeyIdStr = this.resolveId(reg.jockeyId);
+      const horseIdStr = this.resolveId(reg.horseId);
 
       // --- GIẢI PHÓNG TIỀN CHO OWNER ---
       await this.horseOwnerProfileModel.updateOne(
@@ -531,6 +535,24 @@ export class RegistrationService {
         this.resolveId(contract),
         ContractStatusEnum.CANCELLED,
       );
+
+      if (reg.raceId) {
+        const raceIdStr = this.resolveId(reg.raceId);
+        const race = await this.raceRepository.findById(raceIdStr);
+
+        if (race) {
+          const refundableStatuses = [
+            RaceStatusEnum.SCHEDULED.toString(),
+            RaceStatusEnum.READY.toString(),
+          ];
+          if (refundableStatuses.includes(race.status)) {
+            await this.betService.refundBetsForDisqualifiedHorse(
+              raceIdStr,
+              horseIdStr,
+            );
+          }
+        }
+      }
 
       // --- BẮN NOTIFICATION CHO JOCKEY ---
       await this.notificationRepository.create({
