@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model, QueryFilter, Types } from 'mongoose';
 import { Contract, ContractDocument } from './schemas/contract.schema';
 import { ContractStatusEnum } from 'src/constants/contractStatusEnum.enum';
+import { FilterContractDto } from './dto/filter-contract.dto';
 
 @Injectable()
 export class ContractRepository {
@@ -13,6 +14,24 @@ export class ContractRepository {
 
   async create(data: Partial<Contract>): Promise<Contract> {
     return new this.contractModel(data).save();
+  }
+
+  async getAllContracts(filterDto: FilterContractDto): Promise<Contract[]> {
+    const query: QueryFilter<ContractDocument> = {};
+
+    if (filterDto.status) {
+      query.status = filterDto.status;
+    }
+
+    if (filterDto.tournamentId) {
+      query.tournamentId = new Types.ObjectId(filterDto.tournamentId);
+    }
+
+    return this.contractModel
+      .find(query)
+      .sort({ createdAt: -1 }) // Sắp xếp giảm dần theo thời gian tạo
+      .lean()
+      .exec();
   }
 
   async findById(id: string): Promise<Contract | null> {

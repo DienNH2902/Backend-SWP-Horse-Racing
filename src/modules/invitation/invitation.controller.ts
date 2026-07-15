@@ -8,6 +8,7 @@ import {
   UseGuards,
   Request,
   Req,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -28,6 +29,7 @@ import {
 } from './dto';
 import { ContractBreachService } from './contractBreach.service';
 import { CreateContractBreachDto } from './dto/create-contract-breach.dto';
+import { FilterContractDto } from './dto/filter-contract.dto';
 
 @ApiTags('Jockey Invitations')
 @Controller('jockey-invitations')
@@ -73,6 +75,16 @@ export class JockeyInvitationController {
   @ApiOperation({ summary: 'Chủ ngựa xem danh sách lời mời đã gửi' })
   getSent(@Request() req: any): Promise<ResponseJockeyInvitationDto[]> {
     return this.service.getSentInvitations(req.user._id as string);
+  }
+
+  @Get('all-contract')
+  @UseGuards(RolesGuard)
+  @Roles(RoleEnum.ADMIN)
+  @ApiOperation({ summary: 'ADMIN xem toàn bộ danh sách hợp đồng (có filter)' })
+  getAllContracts(
+    @Query() filterDto: FilterContractDto,
+  ): Promise<ResponseContractDto[]> {
+    return this.service.getAllContracts(filterDto);
   }
 
   // Xem chi tiết 1 invitation (cả jockey lẫn horseOwner liên quan)
