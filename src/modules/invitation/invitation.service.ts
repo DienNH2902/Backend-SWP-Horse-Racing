@@ -471,10 +471,21 @@ export class JockeyInvitationService {
       await this.jockeyInvitationRepository.findById(invitationId);
     if (!invitation) throw new NotFoundException('Không tìm thấy lời mời');
 
+    const isAdmin = await this.userRepository.findOneUser(
+      new Types.ObjectId(requesterId),
+    );
+
+    if (!isAdmin)
+      throw new BadRequestException('Không tìm thấy người dùng để xem role');
+
     const jockeyIdStr = this.resolveId(invitation.jockeyId);
     const ownerIdStr = this.resolveId(invitation.horseOwnerId);
 
-    if (requesterId !== jockeyIdStr && requesterId !== ownerIdStr) {
+    if (
+      requesterId !== jockeyIdStr &&
+      requesterId !== ownerIdStr &&
+      isAdmin.role !== RoleEnum.ADMIN
+    ) {
       throw new ForbiddenException('Bạn không có quyền xem hợp đồng này');
     }
 
