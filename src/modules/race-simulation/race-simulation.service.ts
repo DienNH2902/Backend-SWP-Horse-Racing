@@ -98,7 +98,7 @@ export class RaceSimulationService {
 
     if (race.status !== RaceStatusEnum.READY) {
       throw new BadRequestException(
-        `Race phải ở trạng thái "ready" mới có thể simulate (hiện tại: ${race.status})`,
+        `Race phải ở trạng thái "Ready" mới có thể simulate (hiện tại: ${race.status})`,
       );
     }
 
@@ -163,12 +163,6 @@ export class RaceSimulationService {
 
     const raceObjectId = new Types.ObjectId(raceId);
 
-    // ── 3.5. Resolve lại JockeyProfile thật ──────────────────────────────────
-    // BUG FIX: reg.jockeyProfile (từ findConfirmedWithDetails()) thực chất là
-    // User document do populate sai field (JockeyInvitation.jockeyId ref 'User',
-    // không phải 'JockeyProfile'). reg.jockeyProfile._id vì vậy là User._id,
-    // không phải JockeyProfile._id như RawResult.jockeyId yêu cầu (ref: 'JockeyProfile').
-    // Resolve lại đúng JockeyProfile bằng userId để lấy _id và weight thật.
     const jockeyProfileMap = new Map<
       string,
       { _id: Types.ObjectId; weight: number; height: number; winRate: number }
@@ -199,7 +193,7 @@ export class RaceSimulationService {
       }
     }
 
-    // ── 4. Build HorseInput ───────────────────────────────────────────────────
+    // ── 4. Build HorseInput 
     const horseInputs: HorseInput[] = registrations.map((reg) => {
       const userId =
         (reg.jockeyProfile as any)?._id?.toString() ??
