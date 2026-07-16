@@ -64,6 +64,12 @@ export class ResponseHorseDto {
   weight: number;
 
   @Expose()
+  winRate: number;
+
+  @Expose()
+  totalWin: number;
+
+  @Expose()
   @Transform(({ obj }) => obj.userId?._id?.toString() || obj.userId?.toString())
   userId: string;
 
