@@ -12,7 +12,6 @@ import { RoleEnum } from 'src/constants/roleEnum.enum';
 export class ScheduleController {
   constructor(private readonly scheduleService: ScheduleService) {}
 
-  // ── GET /schedule/upcoming
   @Get('upcoming')
   @ApiOperation({
     summary: 'Lấy lịch các RACE sắp tới của hệ thống',
@@ -21,7 +20,18 @@ export class ScheduleController {
     return this.scheduleService.getUpcomingPublicSchedule();
   }
 
-  // ── GET /schedule/upcoming/referee/me
+  @Get('upcoming/owner')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleEnum.HORSE_OWNER)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'OWNER lấy lịch RACE sắp tới của ngựa mình sở hữu',
+    description: 'Trả về danh sách race sắp diễn ra có ngựa thuộc sở hữu của owner hiện tại tham gia.',
+  })
+  getUpcomingOwnerSchedule(@Req() req: any) {
+    return this.scheduleService.getUpcomingOwnerSchedule(req.user._id as string);
+  }
+
   @Get('upcoming/referee')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleEnum.REFEREE)
@@ -34,7 +44,6 @@ export class ScheduleController {
     return this.scheduleService.getUpcomingRefereeSchedule(req.user._id as string);
   }
 
-  // ── GET /schedule/upcoming/jockey/me
   @Get('upcoming/jockey')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleEnum.JOCKEY)
@@ -46,4 +55,6 @@ export class ScheduleController {
   getUpcomingJockeySchedule(@Req() req: any) {
     return this.scheduleService.getUpcomingJockeySchedule(req.user._id as string);
   }
+
+
 }

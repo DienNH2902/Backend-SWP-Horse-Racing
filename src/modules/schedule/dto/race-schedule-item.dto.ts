@@ -40,3 +40,25 @@ export class RaceScheduleItemDto {
   @Expose()
   availableSlots: number;
 }
+
+export class OwnerRaceScheduleItemDto extends RaceScheduleItemDto {
+  @Expose()
+  jockeyId: string;
+
+  @Expose()
+  jockeyName: string;
+
+  @Expose()
+  horseId: string;
+
+  @Expose()
+  horseName: string;
+}
+
+export class JockeyRaceScheduleItemDto extends RaceScheduleItemDto {
+  @Expose()
+  horseId: string;
+
+  @Expose()
+  horseName: string;
+}
