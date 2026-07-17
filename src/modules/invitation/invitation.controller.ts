@@ -30,6 +30,7 @@ import {
 import { ContractBreachService } from './contractBreach.service';
 import { CreateContractBreachDto } from './dto/create-contract-breach.dto';
 import { FilterContractDto } from './dto/filter-contract.dto';
+import { ProcessContractBreachDto } from './dto/process-contract-breach.dto';
 
 @ApiTags('Jockey Invitations')
 @Controller('jockey-invitations')
@@ -134,16 +135,51 @@ export class JockeyInvitationController {
 
   // ─── CÁC ROUTE PHỤC VỤ XỬ LÝ VI PHẠM VÀ HOÀN THÀNH HỢP ĐỒNG ───
 
-  // Admin xử lý vi phạm hợp đồng liên quan đến lời mời/hợp đồng này
+  // Lấy thông tin vi phạm hợp đồng theo contractId
+  @Get('contracts/:contractId/breach')
+  @ApiOperation({
+    summary: 'Lấy thông tin đơn tố cáo/vi phạm theo ID hợp đồng',
+  })
+  @ApiParam({
+    name: 'contractId',
+    description: 'ID của hợp đồng cần kiểm tra vi phạm',
+  })
+  getBreachByContractId(@Param('contractId') contractId: string) {
+    return this.contractBreachService.findByContractId(contractId);
+  }
+
+  // User (Owner/Jockey) báo cáo vi phạm hoặc tự hủy hợp đồng
   @Post('contracts/report-breach')
   @ApiOperation({
-    summary: 'Hủy hợp đồng',
+    summary: 'Báo cáo vi phạm hoặc tự hủy hợp đồng',
     description:
-      'Khấu trừ tiền phạt đền bù, trích thu 10% về ví hệ thống và hoàn trả số dư đóng băng hợp lệ.',
+      'Gửi đơn tố cáo đối phương (chờ Admin duyệt) hoặc tự hủy hợp đồng (thực thi phạt ngay lập tức).',
   })
   reportContractBreach(@Req() req: any, @Body() dto: CreateContractBreachDto) {
     const userId = req.user._id as string;
     return this.contractBreachService.reportBreach(userId, dto);
+  }
+
+  // Admin xử lý duyệt hoặc từ chối đơn tố cáo vi phạm
+  @Patch('contracts/breaches/:breachId/process')
+  @UseGuards(RolesGuard)
+  @Roles(RoleEnum.ADMIN)
+  @ApiOperation({
+    summary: 'Admin phê duyệt hoặc từ chối đơn tố cáo vi phạm hợp đồng',
+  })
+  @ApiParam({
+    name: 'breachId',
+    description: 'ID của bản ghi tố cáo vi phạm (Breach Record ID)',
+  })
+  processBreachReportByAdmin(
+    @Param('breachId') breachId: string,
+    @Body() dto: ProcessContractBreachDto,
+  ) {
+    return this.contractBreachService.processBreachReportByAdmin(
+      breachId,
+      dto.isApproved,
+      dto.adminReason,
+    );
   }
 
   // Admin nghiệm thu và giải ngân hợp đồng sau khi giải đấu kết thúc tốt đẹp

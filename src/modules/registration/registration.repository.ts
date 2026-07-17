@@ -405,7 +405,7 @@ export class RegistrationRepository {
       .populate('horseId', 'name')
       .lean()
       .exec();
-  }  
+  }
 
   async findConfirmedByRaceAndHorse(
     raceId: string,
@@ -420,7 +420,7 @@ export class RegistrationRepository {
       .lean()
       .exec();
   }
- 
+
   async updateStatusToRemoved(id: string): Promise<Registration | null> {
     return this.registrationModel
       .findByIdAndUpdate(

@@ -3,4 +3,5 @@ export enum ContractStatusEnum {
   COMPLETED = 'COMPLETED',
   BREACHED = 'BREACHED',
   CANCELLED = 'CANCELLED',
+  DISPUTED = 'DISPUTED',
 }
