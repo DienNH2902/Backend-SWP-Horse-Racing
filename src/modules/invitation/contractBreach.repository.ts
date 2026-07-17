@@ -22,6 +22,13 @@ export class ContractBreachRepository {
     return this.breachModel.findById(breachId).exec();
   }
 
+  async findByContractId(contractId: string): Promise<ContractBreach | null> {
+    return await this.breachModel
+      .findOne({ contractId: new Types.ObjectId(contractId) })
+      .lean()
+      .exec();
+  }
+
   async updateStatus(
     breachId: string,
     status: BreachStatusEnum,

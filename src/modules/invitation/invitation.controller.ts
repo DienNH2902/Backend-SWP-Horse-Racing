@@ -135,6 +135,19 @@ export class JockeyInvitationController {
 
   // ─── CÁC ROUTE PHỤC VỤ XỬ LÝ VI PHẠM VÀ HOÀN THÀNH HỢP ĐỒNG ───
 
+  // Lấy thông tin vi phạm hợp đồng theo contractId
+  @Get('contracts/:contractId/breach')
+  @ApiOperation({
+    summary: 'Lấy thông tin đơn tố cáo/vi phạm theo ID hợp đồng',
+  })
+  @ApiParam({
+    name: 'contractId',
+    description: 'ID của hợp đồng cần kiểm tra vi phạm',
+  })
+  getBreachByContractId(@Param('contractId') contractId: string) {
+    return this.contractBreachService.findByContractId(contractId);
+  }
+
   // User (Owner/Jockey) báo cáo vi phạm hoặc tự hủy hợp đồng
   @Post('contracts/report-breach')
   @ApiOperation({
