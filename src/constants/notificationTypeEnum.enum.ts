@@ -16,6 +16,8 @@ export enum NotificationTypeEnum {
   INVITATION_REJECTED = 'Invitation_rejected', // Chủ ngựa nhận thông báo nài đã từ chối
   CONTRACT_CANCELLED = 'Contract_cancelled', // Hợp đồng bị hủy bỏ
   CONTRACT_BREACHED = 'Contract_breached', // Hợp đồng bị vi phạm
+  CONTRACT_BREACHED_SENT = 'Contract_breached_sent',
+  CONTRACT_BREACHED_SENT_REJECTED = 'Contract_breached_sent_rejected',
   CONTRACT_COMPLETED = 'Contract_completed', // Hợp đồng hoàn thành tốt đẹp
 
   // --- Hệ thống giải đấu / Vận hành (Tournament) ---

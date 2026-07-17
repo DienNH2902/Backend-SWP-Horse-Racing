@@ -13,6 +13,8 @@ export type ContractDocument = Contract & Document;
 
 @Schema({ timestamps: true })
 export class Contract {
+  _id: Types.ObjectId;
+
   @Prop({ type: Types.ObjectId, ref: 'Tournament', required: true })
   tournamentId: Types.ObjectId;
 
