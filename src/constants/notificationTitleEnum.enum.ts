@@ -10,6 +10,8 @@ export enum NotificationTitleEnum {
   INVITATION_RECEIVED = 'Lời mời hợp tác mới',
   INVITATION_ACCEPTED = 'Lời mời đã được chấp nhận',
   INVITATION_REJECTED = 'Lời mời đã bị từ chối',
+  CONTRACT_BREACHED_SENT = 'Tố cáo vi phạm hợp đồng đã gửi',
+  CONTRACT_BREACHED_SENT_REJECTED = 'Tố cáo vi phạm bị từ chối',
 
   TOURNAMENT_REGISTERED = 'Đăng ký giải đấu thành công',
   TOURNAMENT_WAITLIST = 'Bạn đã được chuyển vào phòng chờ',

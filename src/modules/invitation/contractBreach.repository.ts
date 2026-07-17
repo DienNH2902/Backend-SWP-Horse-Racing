@@ -5,6 +5,7 @@ import {
   ContractBreach,
   ContractBreachDocument,
 } from './schemas/contractBreach.schema';
+import { BreachStatusEnum } from 'src/constants/breachStatusEnum.enum';
 
 @Injectable()
 export class ContractBreachRepository {
@@ -15,6 +16,23 @@ export class ContractBreachRepository {
 
   async create(data: Partial<ContractBreach>): Promise<ContractBreach> {
     return new this.breachModel(data).save();
+  }
+
+  async findById(breachId: string): Promise<ContractBreachDocument | null> {
+    return this.breachModel.findById(breachId).exec();
+  }
+
+  async updateStatus(
+    breachId: string,
+    status: BreachStatusEnum,
+  ): Promise<ContractBreachDocument | null> {
+    return this.breachModel
+      .findByIdAndUpdate(
+        breachId,
+        { $set: { status, resolvedAt: new Date() } },
+        { new: true },
+      )
+      .exec();
   }
 
   // Tìm các vi phạm của một user cụ thể (chủ ngựa hoặc nài ngựa) trong giải đấu
