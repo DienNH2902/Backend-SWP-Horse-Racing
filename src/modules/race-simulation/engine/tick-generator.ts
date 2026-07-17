@@ -2,7 +2,7 @@ import { Types } from 'mongoose';
 import { HorseEngineData, GenerateTicksResult } from './engine.types';
 import { RaceEventType } from '../schemas/race-event.schema';
 
-// ─── Engine constants ──────────────────────────────────────────────────────────
+//  Engine constants 
 const LUCK_FACTOR = 0.3;   // giảm từ 0.8 → variance nhỏ hơn, smooth hơn
 const SPEED_SCALE = 0.018;
 const MIN_SPEED   = 0.003;
@@ -17,7 +17,7 @@ const STUMBLE_RATIO = 0.4;  // giảm từ 0.6 → chỉ stumble khi giảm tố
 const BURST_CHANCE   = 0.04;  // 4% mỗi tick có thể burst
 const STUMBLE_CHANCE = 0.03;  // 3% mỗi tick có thể stumble
 
-// ─── Utility ──────────────────────────────────────────────────────────────────
+//  Utility 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
@@ -26,7 +26,7 @@ function randomRange(range: number): number {
   return (Math.random() * 2 - 1) * range;
 }
 
-// ─── Phase ────────────────────────────────────────────────────────────────────
+//  Phase 
 type Phase = 'EARLY' | 'MID' | 'LATE';
 
 function getPhase(progress: number): Phase {
@@ -34,6 +34,7 @@ function getPhase(progress: number): Phase {
   if (progress < 0.7) return 'MID';
   return 'LATE';
 }
+
 
 function calcPhaseMultiplier(
   phase: Phase,
@@ -51,7 +52,7 @@ function calcPhaseMultiplier(
   }
 }
 
-// ─── Generate ticks cho 1 con ngựa ───────────────────────────────────────────
+//  Generate ticks cho 1 con ngựa 
 export function generateTicks(
   raceId: Types.ObjectId,
   horse: HorseEngineData,

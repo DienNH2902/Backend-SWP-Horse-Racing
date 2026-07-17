@@ -43,6 +43,7 @@ function calcTrackModifier(
 ): number {
   const base = TRACK_MODIFIER_TABLE[trackType]?.[trackCondition] ?? 1.0;
 
+  //ngựa nặng đi bùn tốt hơn
   if (trackCondition === TrackConditionEnum.MUDDY) {
     const weightBonus = (horseWeight / 1000) * 0.1;
     return base - weightBonus;

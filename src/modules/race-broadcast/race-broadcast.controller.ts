@@ -50,7 +50,7 @@ export class RaceBroadcastController {
     return await this.broadcastService.startReplay(raceId);
   }
 
-  // ── Check status ──────────────────────────────────────────────────────────
+ 
   @Get(':raceId/status')
   @ApiOperation({ summary: 'Kiểm tra race có đang broadcast không' })
   @ApiParam({ name: 'raceId' })
@@ -58,6 +58,7 @@ export class RaceBroadcastController {
     return {
       raceId,
       isBroadcasting: this.broadcastService.isBroadcasting(raceId),
+      isReplaying: this.broadcastService.isReplaying(raceId),
     };
   }
 }

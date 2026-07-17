@@ -8,8 +8,9 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: monospace; background: #1a1a2e; color: #eee; padding: 20px; }
     h2 { color: #e94560; margin-bottom: 16px; }
+    h4 { color: #7f8fa6; margin: 4px 0 10px; font-weight: normal; }
 
-    .row { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+    .row { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
 
     input, button {
       padding: 8px 12px;
@@ -19,6 +20,7 @@
       font-size: 13px;
     }
     input { background: #16213e; color: #eee; flex: 1; min-width: 200px; }
+    input.small { flex: none; width: 110px; min-width: 0; }
     button {
       background: #e94560;
       color: white;
@@ -31,6 +33,13 @@
     button.green:hover { background: #27ae60; }
     button.gray { background: #555; }
     button.gray:hover { background: #444; }
+    button.blue { background: #3498db; }
+    button.blue:hover { background: #2980b9; }
+    button.purple { background: #9b59b6; }
+    button.purple:hover { background: #8e44ad; }
+    button.cyan { background: #16a085; }
+    button.cyan:hover { background: #128c76; }
+    button:disabled { background: #333; color: #777; cursor: not-allowed; }
 
     .status {
       padding: 6px 14px;
@@ -42,6 +51,14 @@
     }
     .status.connected { background: #2ecc71; color: #000; }
     .status.disconnected { background: #e74c3c; color: #fff; }
+
+    .section {
+      background: #14142b;
+      border: 1px solid #2a2a45;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+    }
 
     /* Track */
     #track {
@@ -111,6 +128,8 @@
     .log-system  { color: #3498db; }
     .log-error   { color: #e74c3c; }
     .log-snap    { color: #9b59b6; }
+    .log-api     { color: #16a085; font-weight: bold; }
+    .log-api-err { color: #e74c3c; font-weight: bold; }
 
     /* Result */
     #result-table {
@@ -138,6 +157,15 @@
       font-size: 12px;
       margin-bottom: 8px;
     }
+
+    .badge {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 10px;
+      background: #2a2a45;
+      color: #888;
+      margin-left: 6px;
+    }
   </style>
 </head>
 <body>
@@ -145,21 +173,33 @@
 <h2>🏇 Race Broadcast Test</h2>
 
 <!-- Config -->
-<div class="row">
-  <input id="inp-token"  placeholder="JWT Token (không cần Bearer)" />
-  <input id="inp-host"   placeholder="Host (mặc định localhost:9000)" value="localhost:9000" style="max-width:220px" />
-</div>
-<div class="row">
-  <input id="inp-race"   placeholder="Race ID" />
-  <button onclick="connect()"    class="green">Connect WS</button>
-  <button onclick="disconnect()" class="gray">Disconnect</button>
-</div>
-<div class="row">
-  <button onclick="joinRace()">Join Race</button>
-  <button onclick="leaveRace()" class="gray">Leave Race</button>
+<div class="section">
+  <div class="row">
+    <input id="inp-token"  placeholder="JWT Token (không cần Bearer)" />
+    <input id="inp-host"   placeholder="Host (mặc định localhost:9000)" value="localhost:9000" style="max-width:220px" />
+  </div>
+  <div class="row">
+    <input id="inp-race"   placeholder="Race ID" />
+    <button onclick="connect()"    class="green">Connect WS</button>
+    <button onclick="disconnect()" class="gray">Disconnect</button>
+  </div>
+  <div class="row">
+    <button onclick="joinRace()">Join Race</button>
+    <button onclick="leaveRace()" class="gray">Leave Race</button>
+  </div>
+  <div id="conn-status" class="status disconnected">● Disconnected</div>
 </div>
 
-<div id="conn-status" class="status disconnected">● Disconnected</div>
+<!-- REST API triggers -->
+<div class="section">
+  <h4>REST API — trigger broadcast<span class="badge">gọi thẳng, không cần Postman</span></h4>
+  <div class="row">
+    <input id="inp-from-tick" class="small" type="number" min="0" placeholder="fromTick" value="0" />
+    <button onclick="startLive()" class="blue">▶ Start Live (Referee)</button>
+    <button onclick="startReplay()" class="purple">🔁 Start Replay</button>
+    <button onclick="checkStatus()" class="cyan">ℹ️ Check Status</button>
+  </div>
+</div>
 
 <!-- Track visualization -->
 <div id="track">
@@ -188,6 +228,11 @@
   ];
   const EMOJIS = ['🐴','🐎','🦄','🐴','🐎','🦄','🐴','🐎'];
 
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function getHost()  { return document.getElementById('inp-host').value.trim() || 'localhost:9000'; }
+  function getToken() { return document.getElementById('inp-token').value.trim(); }
+  function getRaceId(){ return document.getElementById('inp-race').value.trim(); }
+
   // ── Logging ───────────────────────────────────────────────────────────────
   function log(msg, cls = '') {
     const el = document.getElementById('log');
@@ -196,6 +241,61 @@
     line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
     el.appendChild(line);
     el.scrollTop = el.scrollHeight;
+  }
+
+  // ── REST API calls ────────────────────────────────────────────────────────
+  async function callApi(method, path, { silentSuccess = false } = {}) {
+    const token = getToken();
+    if (!token) { log('⚠️ Nhập JWT token trước', 'log-error'); return null; }
+
+    const url = `http://${getHost()}${path}`;
+    log(`→ ${method} ${path}`, 'log-api');
+
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      let data;
+      try { data = await res.json(); } catch { data = null; }
+
+      if (!res.ok) {
+        const msg = data?.message || res.statusText;
+        log(`✗ ${res.status} — ${Array.isArray(msg) ? msg.join('; ') : msg}`, 'log-api-err');
+        return null;
+      }
+
+      if (!silentSuccess) {
+        log(`✓ ${res.status} — ${data?.message ?? JSON.stringify(data)}`, 'log-api');
+      }
+      return data;
+    } catch (err) {
+      log(`✗ Network error: ${err.message} (kiểm tra host/CORS)`, 'log-api-err');
+      return null;
+    }
+  }
+
+  async function startLive() {
+    const raceId = getRaceId();
+    if (!raceId) { log('⚠️ Nhập Race ID', 'log-error'); return; }
+    const fromTick = document.getElementById('inp-from-tick').value.trim() || '0';
+    await callApi('POST', `/race-broadcast/${raceId}/start?fromTick=${fromTick}`);
+  }
+
+  async function startReplay() {
+    const raceId = getRaceId();
+    if (!raceId) { log('⚠️ Nhập Race ID', 'log-error'); return; }
+    await callApi('POST', `/race-broadcast/${raceId}/replay`);
+  }
+
+  async function checkStatus() {
+    const raceId = getRaceId();
+    if (!raceId) { log('⚠️ Nhập Race ID', 'log-error'); return; }
+    const data = await callApi('GET', `/race-broadcast/${raceId}/status`, { silentSuccess: true });
+    if (data) {
+      log(`ℹ️ isBroadcasting = ${data.isBroadcasting}`, 'log-api');
+    }
   }
 
   // ── Track setup ───────────────────────────────────────────────────────────
@@ -241,17 +341,17 @@
   function connect() {
     if (socket?.connected) { log('Đã connected rồi', 'log-system'); return; }
 
-    const token = document.getElementById('inp-token').value.trim();
-    const host  = document.getElementById('inp-host').value.trim() || 'localhost:9000';
+    const token = getToken();
+    const host  = getHost();
 
     if (!token) { log('⚠️ Nhập JWT token trước', 'log-error'); return; }
 
     log(`Connecting to ws://${host}/race ...`, 'log-system');
 
-socket = io(`http://${host}/race`, {
-  auth: { token: `Bearer ${token}` },
-  transports: ['polling', 'websocket'], 
-});
+    socket = io(`http://${host}/race`, {
+      auth: { token: `Bearer ${token}` },
+      transports: ['polling', 'websocket'],
+    });
 
     socket.on('connect', () => {
       document.getElementById('conn-status').className = 'status connected';
@@ -365,7 +465,7 @@ socket = io(`http://${host}/race`, {
 
   function joinRace() {
     if (!socket?.connected) { log('⚠️ Connect trước', 'log-error'); return; }
-    const raceId = document.getElementById('inp-race').value.trim();
+    const raceId = getRaceId();
     if (!raceId) { log('⚠️ Nhập Race ID', 'log-error'); return; }
     log(`Joining race ${raceId}...`, 'log-system');
     socket.emit('join_race', { raceId });
@@ -373,7 +473,7 @@ socket = io(`http://${host}/race`, {
 
   function leaveRace() {
     if (!socket?.connected) return;
-    const raceId = document.getElementById('inp-race').value.trim();
+    const raceId = getRaceId();
     socket.emit('leave_race', { raceId });
     log('Left race ' + raceId, 'log-system');
   }

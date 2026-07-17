@@ -31,6 +31,9 @@ export class RaceBroadcastService implements OnModuleInit {
   // Live broadcast sessions
   private readonly activeBroadcasts = new Set<string>();
 
+  // Replay sessions đang chạy — tránh 2 replay loop chồng nhau cho cùng raceId
+  private readonly activeReplays = new Set<string>();
+
   // Snapshot tick hiện tại để client join muộn catch-up
   private readonly currentSnapshots = new Map<string, RaceTickFrame>();
 
@@ -49,7 +52,7 @@ export class RaceBroadcastService implements OnModuleInit {
     this.gateway.setBroadcastService(this);
   }
 
-  // ── LIVE: Referee trigger ─────────────────────────────────────────────────
+  // ── LIVE: Referee trigger 
   async startBroadcast(
     raceId: string,
     fromTick = 0,
@@ -116,24 +119,43 @@ export class RaceBroadcastService implements OnModuleInit {
     };
   }
 
-  // ── REPLAY: Tất cả role xem lại ──────────────────────────────────────────
+  // ── REPLAY: Tất cả role xem lại 
   async startReplay(raceId: string): Promise<{ message: string }> {
     const race = await this.raceRepo.findById(raceId);
     if (!race) throw new NotFoundException('Không tìm thấy race');
+
+
+   // Không cho replay khi race đang live broadcast
+   if (this.activeBroadcasts.has(raceId)) {
+     throw new BadRequestException(
+       'Race này đang broadcast live, không thể replay',
+     );
+   }
+
+   // Không cho chạy 2 replay loop chồng nhau cho cùng raceId
+   if (this.activeReplays.has(raceId)) {
+     throw new BadRequestException(
+       'Race này đang được replay rồi, vui lòng đợi replay hiện tại kết thúc',
+     );
+   }
 
     // Replay được khi race đã Finished hoặc Ongoing
     const replayableStatuses = [
       RaceStatusEnum.FINISHED,
       RaceStatusEnum.ONGOING,
-      RaceStatusEnum.SIMULATED,
+      // RaceStatusEnum.SIMULATED,
     ];
     if (!replayableStatuses.includes(race.status as RaceStatusEnum)) {
-      throw new BadRequestException('Race chưa có dữ liệu để replay');
+      throw new BadRequestException(
+       'Race chưa được broadcast — chỉ có thể replay khi race đang ONGOING hoặc đã FINISHED'
+      );
     }
 
     const { tickMap, eventMap, maxTick } = await this.loadRaceData(raceId);
 
     this.logger.log(`[REPLAY] Race ${raceId} — ${maxTick + 1} ticks`);
+
+    this.activeReplays.add(raceId);
 
     // Replay dùng namespace riêng để không conflict với live
     // Chạy async
@@ -146,6 +168,7 @@ export class RaceBroadcastService implements OnModuleInit {
       'replay',
     ).catch((err: any) => {
       this.logger.error(`[REPLAY] ❌ ${raceId}: ${err?.message}`);
+      this.activeReplays.delete(raceId);
     });
 
     return {
@@ -245,10 +268,11 @@ export class RaceBroadcastService implements OnModuleInit {
           finishedTime: r.finishedTime,
         })),
       });
+      this.activeReplays.delete(raceId);
     }
   }
 
-  // ── Sau khi live broadcast xong ───────────────────────────────────────────
+  // ── Sau khi live broadcast xong 
   private async onLiveBroadcastFinished(raceId: string): Promise<void> {
     this.logger.log(`[BROADCAST] ✅ Race ${raceId} live xong`);
 
@@ -279,6 +303,10 @@ export class RaceBroadcastService implements OnModuleInit {
 
   isBroadcasting(raceId: string): boolean {
     return this.activeBroadcasts.has(raceId);
+  }
+
+  isReplaying(raceId: string): boolean {
+    return this.activeReplays.has(raceId);
   }
 
   private sleep(ms: number): Promise<void> {
