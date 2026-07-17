@@ -56,6 +56,11 @@ export class ContractBreachService {
     private readonly systemWalletModel: Model<SystemWalletDocument>,
   ) {}
 
+  async findByContractId(contractId: string): Promise<any> {
+    const breach = await this.breachRepository.findByContractId(contractId);
+    return breach;
+  }
+
   async reportBreach(userId: string, dto: CreateContractBreachDto) {
     const contract = await this.contractRepository.findById(dto.contractId);
     if (!contract)
