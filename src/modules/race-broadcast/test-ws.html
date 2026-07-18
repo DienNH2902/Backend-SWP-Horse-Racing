@@ -166,6 +166,17 @@
       color: #888;
       margin-left: 6px;
     }
+
+    .status-badge {
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      background: #2a2a45;
+      color: #888;
+    }
+    .status-badge.on  { background: #16a085; color: #fff; }
+    .status-badge.off { background: #2a2a45; color: #777; }
   </style>
 </head>
 <body>
@@ -198,6 +209,10 @@
     <button onclick="startLive()" class="blue">▶ Start Live (Referee)</button>
     <button onclick="startReplay()" class="purple">🔁 Start Replay</button>
     <button onclick="checkStatus()" class="cyan">ℹ️ Check Status</button>
+  </div>
+  <div class="row" id="status-badges" style="display:none">
+    <span id="badge-live" class="status-badge">● Live: —</span>
+    <span id="badge-replay" class="status-badge">● Replay: —</span>
   </div>
 </div>
 
@@ -294,7 +309,19 @@
     if (!raceId) { log('⚠️ Nhập Race ID', 'log-error'); return; }
     const data = await callApi('GET', `/race-broadcast/${raceId}/status`, { silentSuccess: true });
     if (data) {
-      log(`ℹ️ isBroadcasting = ${data.isBroadcasting}`, 'log-api');
+      log(`ℹ️ isBroadcasting=${data.isBroadcasting}  isReplaying=${data.isReplaying}`, 'log-api');
+
+      const badges = document.getElementById('status-badges');
+      const badgeLive = document.getElementById('badge-live');
+      const badgeReplay = document.getElementById('badge-replay');
+
+      badges.style.display = 'flex';
+
+      badgeLive.textContent = `● Live: ${data.isBroadcasting ? 'ON' : 'off'}`;
+      badgeLive.className = 'status-badge ' + (data.isBroadcasting ? 'on' : 'off');
+
+      badgeReplay.textContent = `● Replay: ${data.isReplaying ? 'ON' : 'off'}`;
+      badgeReplay.className = 'status-badge ' + (data.isReplaying ? 'on' : 'off');
     }
   }
 
@@ -392,10 +419,13 @@
       currentTick = frame.tickNumber;
       if (maxTick < currentTick) maxTick = currentTick;
 
-      // Init track lần đầu từ tick 0
-      if (frame.tickNumber === 0 && frame.horses.length) {
+      // Init track lần đầu — bất kể tick nào, miễn có dữ liệu ngựa
+      // (phòng trường hợp join trễ và miss tick 0 / snapshot)
+      let justInited = false;
+      if (!Object.keys(horses).length && frame.horses.length) {
         initTrack(frame.horses);
         document.getElementById('result-table').style.display = 'none';
+        justInited = true;
       }
 
       frame.horses.forEach(h => updateHorse(h.horseId, h.progress));
