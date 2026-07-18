@@ -25,6 +25,10 @@ export class ContractBreachRepository {
   async findByContractId(contractId: string): Promise<ContractBreach | null> {
     return await this.breachModel
       .findOne({ contractId: new Types.ObjectId(contractId) })
+      .populate({
+        path: 'reporterId',
+        select: 'fullName email', // Lấy trường fullName và email từ Document User
+      })
       .lean()
       .exec();
   }

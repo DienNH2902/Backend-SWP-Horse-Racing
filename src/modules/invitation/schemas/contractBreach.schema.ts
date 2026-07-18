@@ -8,6 +8,8 @@ export type ContractBreachDocument = ContractBreach & Document;
 
 @Schema({ timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' } })
 export class ContractBreach {
+  _id: Types.ObjectId;
+
   @Prop({ type: Types.ObjectId, ref: 'Contract', required: true })
   contractId: Types.ObjectId;
 
