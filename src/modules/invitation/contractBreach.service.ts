@@ -58,7 +58,36 @@ export class ContractBreachService {
 
   async findByContractId(contractId: string): Promise<any> {
     const breach = await this.breachRepository.findByContractId(contractId);
-    return breach;
+    if (!breach) return null;
+
+    // Trích xuất an toàn dữ liệu đã được populate từ repo chuyển về object phẳng
+    const reporter = breach.reporterId as {
+      _id?: any;
+      fullName?: string;
+      email?: string;
+    } | null;
+    const contract = breach.contractId as {
+      _id?: any;
+      [key: string]: any;
+    } | null;
+
+    return {
+      ...breach,
+      // Ghi đè trực tiếp _id tổng của bản ghi vi phạm về string
+      _id: breach._id ? String(breach._id) : '',
+
+      // Đảm bảo ép kiểu chuỗi an toàn cho các ID liên kết
+      reporterId: reporter?._id
+        ? String(reporter._id)
+        : String(breach.reporterId || ''),
+      contractId: contract?._id
+        ? String(contract._id)
+        : String(breach.contractId || ''),
+
+      // Ép kiểu chuỗi cho tên và email người báo cáo
+      reporterName: String(reporter?.fullName || 'N/A'),
+      reporterEmail: String(reporter?.email || 'N/A'),
+    };
   }
 
   async reportBreach(userId: string, dto: CreateContractBreachDto) {
