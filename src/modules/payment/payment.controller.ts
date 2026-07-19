@@ -274,7 +274,7 @@ export class PaymentController {
 
   @Post('withdrawal/request')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleEnum.SPECTATOR, RoleEnum.HORSE_OWNER)
+  @Roles(RoleEnum.JOCKEY, RoleEnum.HORSE_OWNER)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Khởi tạo yêu cầu rút tiền (Dành cho Horse Owner & Jockey)',
@@ -299,7 +299,7 @@ export class PaymentController {
 
   @Get('withdrawal/my-request')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleEnum.SPECTATOR, RoleEnum.HORSE_OWNER)
+  @Roles(RoleEnum.JOCKEY, RoleEnum.HORSE_OWNER)
   @ApiBearerAuth()
   @ApiOperation({
     summary:
@@ -311,7 +311,7 @@ export class PaymentController {
 
   @Get('withdrawal/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleEnum.ADMIN, RoleEnum.SPECTATOR, RoleEnum.HORSE_OWNER)
+  @Roles(RoleEnum.ADMIN, RoleEnum.JOCKEY, RoleEnum.HORSE_OWNER)
   @ApiBearerAuth()
   @ApiOperation({
     summary:

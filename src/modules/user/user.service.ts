@@ -95,7 +95,8 @@ export class UsersService {
     if (role === 'horse owner' || role === 'horseowner') {
       const horses = await this.horseRepository.findAllMyHorse(id);
       const horseIds = horses.map((h: any) => h._id);
-      user.historyRace = await this.rawResultRepository.findByHorseIds(horseIds);
+      user.historyRace =
+        await this.rawResultRepository.findByHorseIds(horseIds);
     }
 
     if (user.historyRace?.length) {
@@ -106,8 +107,11 @@ export class UsersService {
             .filter(Boolean),
         ),
       ];
-      const prizes = await this.prizeRepository.findManyByTournamentIds(tournamentIds);
-      const prizeMap = new Map(prizes.map((p: any) => [p.tournamentId.toString(), p]));
+      const prizes =
+        await this.prizeRepository.findManyByTournamentIds(tournamentIds);
+      const prizeMap = new Map(
+        prizes.map((p: any) => [p.tournamentId.toString(), p]),
+      );
 
       user.historyRace = user.historyRace.map((r: any) => ({
         ...r,
