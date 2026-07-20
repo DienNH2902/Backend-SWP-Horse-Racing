@@ -377,7 +377,7 @@ export class TournamentService {
     const hasRace = await this.raceRepository.findByTournament(id);
     if (hasRace && hasRace.length > 0)
       throw new BadRequestException(
-        `Vui lòng xóa các race liên quan trước khi xóa giải`,
+        `Giải đấu này đã có cuộc đua, không thể xóa`,
       );
 
     await this.tournamentRepository.deleteTournament(id);

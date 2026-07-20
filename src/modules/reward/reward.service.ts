@@ -235,6 +235,20 @@ export class RewardService {
   }
 
   async removeReward(id: string): Promise<any> {
+    // 1. Kiểm tra phần thưởng có tồn tại hay không
+    const reward = await this.rewardRepository.findRewardById(id);
+    if (!reward) {
+      throw new NotFoundException('Không tìm thấy phần thưởng để xóa');
+    }
+
+    // 2. Kiểm tra xem đã có ai nhận hoặc đổi phần thưởng này chưa
+    const isClaimedByUsers = await this.rewardRepository.hasAnyClaims(id);
+    if (isClaimedByUsers) {
+      throw new BadRequestException(
+        'Không thể xóa phần thưởng này vì đã có người dùng nhận hoặc sở hữu vật phẩm.',
+      );
+    }
+
     await this.rewardRepository.deleteReward(id);
     return {
       message: 'Xóa reward thành công',
