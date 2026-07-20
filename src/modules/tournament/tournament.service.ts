@@ -121,6 +121,28 @@ export class TournamentService {
       );
     }
 
+    // Tính toán giới hạn 1 tháng và 3 tháng dựa trên ngày bắt đầu
+    const minEndDate = new Date(start);
+    minEndDate.setMonth(minEndDate.getMonth() + 1);
+
+    const maxEndDate = new Date(start);
+    maxEndDate.setMonth(maxEndDate.getMonth() + 3);
+    // Thiết lập mốc cuối ngày cho giới hạn max để tránh lệch millisecond khi so sánh
+    maxEndDate.setHours(23, 59, 59, 999);
+
+    // Kiểm tra thời gian giải đấu có nằm trong khoảng từ 1 đến 3 tháng không
+    if (end.getTime() < minEndDate.getTime()) {
+      throw new BadRequestException(
+        'Thời gian giải đấu phải kéo dài ít nhất 1 tháng',
+      );
+    }
+
+    if (end.getTime() > maxEndDate.getTime()) {
+      throw new BadRequestException(
+        'Thời gian giải đấu không được vượt quá 3 tháng',
+      );
+    }
+
     // Kiểm tra trùng lịch với các giải đấu khác
     const overlapping =
       await this.tournamentRepository.findOverlappingTournament(start, end);
