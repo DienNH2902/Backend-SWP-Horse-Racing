@@ -13,7 +13,10 @@ import { plainToInstance } from 'class-transformer';
 // import { Types } from 'mongoose';
 import { GetTournamentsQueryDto } from './dto/get-tournament-status-query.dto';
 import { RegistrationRepository } from '../registration/registration.repository';
-import { TOURNAMENT_TOTAL_ROUNDS } from 'src/constants/tournamentStatusEnum.enum';
+import {
+  TOURNAMENT_TOTAL_ROUNDS,
+  TournamentStatusEnum,
+} from 'src/constants/tournamentStatusEnum.enum';
 import { PrizeRepository } from '../prize-distribution/prize.repository';
 import { RaceRepository } from '../race/race.repository';
 
@@ -312,6 +315,12 @@ export class TournamentService {
     const tournament = await this.tournamentRepository.findTournamentById(id);
     if (!tournament) {
       throw new NotFoundException('Không tìm thấy giải đấu để cập nhật');
+    }
+
+    if (tournament.status !== TournamentStatusEnum.PREPARING) {
+      throw new NotFoundException(
+        `Trạng thái giải đấu hiện tại: ${tournament.status}, không thể cập nhật`,
+      );
     }
 
     const updateData: any = { ...dto };
