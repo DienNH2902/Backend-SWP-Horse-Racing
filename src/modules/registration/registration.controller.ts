@@ -147,8 +147,10 @@ export class AdminRegistrationController {
   reject(
     @Param('id') id: string,
     @Body() dto: RejectRegistrationDto,
+    @Request() req: any,
   ): Promise<ResponseRegistrationDto> {
-    return this.registrationService.adminReject(id, dto);
+    const userRole = req.user.role as string;
+    return this.registrationService.adminReject(id, dto, userRole);
   }
 
   @Patch(':id/accept-to-waitlist')

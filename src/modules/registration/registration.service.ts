@@ -42,6 +42,7 @@ import { RaceRepository } from '../race/race.repository';
 import { JockeyProfile } from '../user/schemas/jockey-profile.schema';
 import { RaceStatusEnum } from 'src/constants/raceStatus.enum';
 import { BetService } from '../bet/bet.service';
+import { RoleEnum } from 'src/constants/roleEnum.enum';
 
 @Injectable()
 export class RegistrationService {
@@ -457,9 +458,21 @@ export class RegistrationService {
   async adminReject(
     id: string,
     dto: RejectRegistrationDto,
+    userRole: string,
   ): Promise<ResponseRegistrationDto> {
     const reg = await this.registrationRepository.findById(id);
     if (!reg) throw new NotFoundException('Không tìm thấy đăng ký');
+
+    // Nếu trạng thái là CONFIRMED nhưng người thực hiện không phải REFEREE thì chặn lại
+    if (
+      reg.status === RegistrationStatusEnum.CONFIRMED &&
+      userRole !== (RoleEnum.REFEREE as string) // Thay bằng giá trị Enum tương ứng của bạn (ví dụ: RoleEnum.REFEREE)
+    ) {
+      throw new ConflictException(
+        'Chỉ có Trọng tài (Referee) mới có quyền từ chối đơn đăng ký đã được chấp thuận.',
+      );
+    }
+
     if (
       reg.status !== RegistrationStatusEnum.PENDING &&
       reg.status !== RegistrationStatusEnum.CONFIRMED
