@@ -55,6 +55,13 @@ export class ResponseRegistrationDto {
   raceId: string;
 
   @Expose()
+  @Transform(
+    ({ obj }) =>
+      obj.raceId?.raceName?.toString() || obj.raceName?.toString() || 'N/A',
+  )
+  raceName: string;
+
+  @Expose()
   @Transform(({ obj }) => obj.ownerId?.fullName)
   ownerName: string;
 
