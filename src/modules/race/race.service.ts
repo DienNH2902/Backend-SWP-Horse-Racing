@@ -134,6 +134,7 @@ export class RaceService {
       dto.tournamentId,
       2,
     );
+    
     if (round2Exists.length > 0) {
       throw new ConflictException(
         'Giải đấu đã có race chung kết, không thể tạo thêm race vòng 1',
@@ -145,12 +146,21 @@ export class RaceService {
       dto.tournamentId,
       1,
     );
-    if (round1Count + dto.races.length > tournament.totalRaces) {
+
+    const totalRound1AfterCreate = round1Count + dto.races.length;
+
+    if (totalRound1AfterCreate > tournament.totalRaces) {
       throw new BadRequestException(
         `Tournament chỉ cho phép ${tournament.totalRaces} races vòng 1. ` +
           `Hiện có: ${round1Count}`,
       );
     }
+
+    if (totalRound1AfterCreate < 2) {
+      throw new BadRequestException(
+        `Vòng 1 cần tối thiểu 2 race. Hiện có ${round1Count}`,
+      );
+    }    
 
     // Validate tất cả date nằm trong startDate–endDate tournament
     for (const item of dto.races) {

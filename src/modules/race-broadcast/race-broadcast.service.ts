@@ -176,7 +176,8 @@ export class RaceBroadcastService implements OnModuleInit {
     };
   }
 
-  // ── Load tick + event data từ DB ──────────────────────────────────────────
+  // ── Load tick + event data từ DB 
+
   private async loadRaceData(raceId: string) {
     const allTicks = await this.raceTickRepo.findByRaceIdOrdered(raceId);
     const allEvents = await this.raceEventRepo.findByRaceId(raceId);
@@ -290,13 +291,13 @@ export class RaceBroadcastService implements OnModuleInit {
     this.logger.log(`[BROADCAST] Chờ Referee confirm finalRank`);
   }
 
-  // ── Cleanup ───────────────────────────────────────────────────────────────
+  // ── Cleanup 
   private cleanup(raceId: string): void {
     this.activeBroadcasts.delete(raceId);
     this.currentSnapshots.delete(raceId);
   }
 
-  // ── Public helpers ────────────────────────────────────────────────────────
+  // ── Public helpers 
   getCurrentSnapshot(raceId: string): RaceTickFrame | null {
     return this.currentSnapshots.get(raceId) ?? null;
   }

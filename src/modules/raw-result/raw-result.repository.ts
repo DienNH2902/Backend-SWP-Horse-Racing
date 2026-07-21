@@ -136,4 +136,22 @@ async findFinalResultsByRaceId(raceId: string): Promise<RawResult[]> {
     .lean()
     .exec();
 }
+
+  async findByRaceIds(raceIds: Types.ObjectId[]): Promise<RawResult[]> {
+    if (!raceIds.length) return [];
+    return this.rawResultModel
+      .find({
+        raceId: { $in: raceIds },
+        // status: RawResultStatus.CONFIRMED,
+      })
+      .populate({ path: 'horseId', select: 'name' })
+      .populate({
+        path: 'jockeyId',
+        select: 'userId',
+        populate: { path: 'userId', select: 'fullName' },
+      })
+      .sort({ finalRank: 1 })
+      .lean()
+      .exec();
+  }
 }

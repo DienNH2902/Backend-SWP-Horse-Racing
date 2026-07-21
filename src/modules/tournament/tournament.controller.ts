@@ -158,6 +158,14 @@ export class TournamentController {
     return this.advancementService.getAdvancementsByTournament(tournamentId);
   }
 
+  @Get(':id/results')
+  @ApiOperation({
+    summary: 'Xem kết quả các race trong 1 giải đấu'
+  })
+  getTournamentRaceResults(@Param('id') id: string) {
+    return this.tournamentService.getTournamentRaceResults(id);
+  }
+
   // @Get('advancements/race/:raceId')
   // @UseGuards(JwtAuthGuard, RolesGuard)
   // @Roles(RoleEnum.ADMIN, RoleEnum.REFEREE)

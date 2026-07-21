@@ -8,6 +8,7 @@ import { CreateTournamentDto } from './dto/create-tournament.dto';
 import { UpdateTournamentDto } from './dto/update-tournament.dto';
 import { UpdateTournamentStatusDto } from './dto/update-tournament-status.dto';
 import { ResponseTournamentDto } from './dto/response-tournament.dto';
+import { RaceWithResultsDto } from './dto/result-tournament.dto';
 import { plainToInstance } from 'class-transformer';
 // import { UserTournamentRepository } from './user-tournament.repository';
 // import { Types } from 'mongoose';
@@ -19,6 +20,7 @@ import {
 } from 'src/constants/tournamentStatusEnum.enum';
 import { PrizeRepository } from '../prize-distribution/prize.repository';
 import { RaceRepository } from '../race/race.repository';
+import { RawResultRepository } from '../raw-result/raw-result.repository';
 
 export class ParticipantJockeyDto {
   jockeyId: string;
@@ -71,6 +73,7 @@ export class TournamentService {
     private readonly raceRepository: RaceRepository,
     private readonly prizeRepository: PrizeRepository,
     // private readonly userTournamentRepository: UserTournamentRepository,
+    private readonly rawResultRepository: RawResultRepository,
   ) {}
 
   private toResponse(data: any): any {
@@ -392,4 +395,56 @@ export class TournamentService {
     await this.tournamentRepository.deleteTournament(id);
     return { message: 'Xóa giải đấu thành công' };
   }
+
+
+  async getTournamentRaceResults(
+    tournamentId: string,
+  ): Promise<RaceWithResultsDto[]> {
+    const tournament =
+      await this.tournamentRepository.findTournamentById(tournamentId);
+    if (!tournament) {
+      throw new NotFoundException('Không tìm thấy giải đấu yêu cầu');
+    }
+
+    const races = await this.raceRepository.findByTournament(tournamentId);
+    if (!races.length) return [];
+
+    const raceIds = races.map((r: any) => r._id);
+    const rawResults = await this.rawResultRepository.findByRaceIds(raceIds);
+
+    // Gom result theo raceId để tránh N+1 query
+    const resultsByRace = new Map<string, any[]>();
+    for (const rr of rawResults as any[]) {
+      const key = rr.raceId.toString();
+      if (!resultsByRace.has(key)) resultsByRace.set(key, []);
+      resultsByRace.get(key)!.push(rr);
+    }
+
+    return races.map((race: any) => {
+      const raceResults = resultsByRace.get(race._id.toString()) || [];
+
+      return {
+        raceId: race._id.toString(),
+        raceName: race.name,
+        roundNumber: race.roundNumber,
+        raceOrder: race.raceOrder,
+        status: race.status,
+        date: race.date,
+        startTime: race.startTime,
+        results: raceResults
+          .sort((a, b) => (a.finalRank ?? 999) - (b.finalRank ?? 999))
+          .map((rr: any) => ({
+            resultId: rr._id.toString(),
+            finalRank: rr.finalRank,
+            rawRank: rr.rawRank,
+            status: rr.status,
+            finishedTime: rr.finishedTime,
+            horseId: rr.horseId?._id?.toString() ?? '',
+            horseName: rr.horseId?.name ?? 'Unknown Horse',
+            jockeyId: rr.jockeyId?._id?.toString() ?? '',
+            jockeyName: rr.jockeyId?.userId?.fullName ?? 'N/A',
+          })),
+      };
+    });
+  }  
 }

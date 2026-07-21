@@ -3,7 +3,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 import { RaceBroadcastGateway } from './gateway/race-broadcast.gateway';
-import { WsJwtGuard } from './gateway/ws-jwt.guard';
+// import { WsJwtGuard } from './gateway/ws-jwt.guard';
 import { RaceBroadcastService } from './race-broadcast.service';
 import { RaceBroadcastController } from './race-broadcast.controller';
 
@@ -34,7 +34,7 @@ import {
     NotificationModule,
   ],
   controllers: [RaceBroadcastController],
-  providers: [RaceBroadcastGateway, RaceBroadcastService, WsJwtGuard],
+  providers: [RaceBroadcastGateway, RaceBroadcastService],
   exports: [RaceBroadcastService, RaceBroadcastGateway],
 })
 export class RaceBroadcastModule {}

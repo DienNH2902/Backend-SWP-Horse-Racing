@@ -93,7 +93,7 @@ export class RaceBroadcastGateway
       this.logger.warn(`[WS] Invalid token — reject ${client.id}`);
       client.disconnect();
     }
-  }
+  }   
 
   handleDisconnect(client: Socket) {
     this.logger.log(`[WS] Disconnected: ${client.id}`);
