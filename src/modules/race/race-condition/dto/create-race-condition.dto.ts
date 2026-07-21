@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsMongoId, IsNotEmpty, IsNumber, Min } from 'class-validator';
+import { IsEnum, IsMongoId, IsNotEmpty, IsNumber, Min, Max } from 'class-validator';
 import { WeatherEnum, TrackConditionEnum } from '../schemas/race-condition.schema';
  
 export class CreateRaceConditionDto {
@@ -16,8 +16,12 @@ export class CreateRaceConditionDto {
   @IsEnum(TrackConditionEnum)
   trackCondition: TrackConditionEnum;
  
-  @ApiProperty({ example: 3, description: 'Tốc độ gió (km/h)' })
+  @ApiProperty({
+    example: 12,
+    description: 'Wind speed (km/h). Valid range: 0-60 km/h',
+  })
   @IsNumber()
   @Min(0)
+  @Max(60)
   windSpeed: number;
 }
