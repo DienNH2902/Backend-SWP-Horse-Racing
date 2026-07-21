@@ -376,6 +376,7 @@ export class RegistrationService {
     // Cập nhật thêm raceId vào bản ghi Registration để xác định đơn này thuộc về trận đấu nào
     await this.registrationRepository.updateById(id, {
       raceId: new Types.ObjectId(dto.raceId),
+      raceName: race.name,
     });
 
     // 6. Notification cho owner qua NotificationRepository
