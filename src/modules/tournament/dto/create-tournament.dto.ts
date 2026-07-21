@@ -73,7 +73,7 @@ export class CreateTournamentDto {
 
   @ApiProperty({ example: 2, description: 'Tổng số vòng đấu cố định' })
   @IsNumber()
-  @Min(1)
+  @Min(2)
   totalRounds: number;
 
   @ApiProperty({ example: 8, description: 'Số ngựa tối đa mỗi lượt chạy' })
@@ -85,8 +85,8 @@ export class CreateTournamentDto {
 
   @ApiProperty({ example: 3, description: 'Tổng số trận đấu trong giải' })
   @IsNumber()
-  @Min(3)
-  @Max(11)
+  @Min(2)
+  @Max(10)
   totalRaces: number;
 
   @ApiProperty({
