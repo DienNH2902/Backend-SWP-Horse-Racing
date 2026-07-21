@@ -26,6 +26,9 @@ export class Registration {
   @Prop({ type: Types.ObjectId, ref: 'Race' })
   raceId: Types.ObjectId;
 
+  @Prop({ trim: true })
+  raceName: string;
+
   @Prop({ required: true, min: 0 })
   entryFee: number;
 
