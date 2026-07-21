@@ -18,6 +18,7 @@ export class JockeyLicenseRepository {
         path: 'jockeyProfileId', // Kéo thông tin bảng Profile lên
         select: 'userId', // Trong Profile chỉ cần lấy đúng trường userId
       })
+      .sort({ createdAt: -1 })
       .lean()
       .exec();
   }

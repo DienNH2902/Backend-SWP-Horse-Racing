@@ -33,7 +33,10 @@ export class RewardRepository {
   }
 
   async findRewardById(id: string): Promise<RewardDocument | null> {
-    return await this.rewardModel.findById(new Types.ObjectId(id)).exec();
+    return await this.rewardModel
+      .findById(new Types.ObjectId(id))
+      .lean()
+      .exec();
   }
 
   async updateReward(
@@ -130,6 +133,13 @@ export class RewardRepository {
       { $set: { isUsed: true } },
       { session },
     );
+  }
+
+  async hasAnyClaims(rewardId: string): Promise<boolean> {
+    const count = await this.claimedRewardModel
+      .countDocuments({ rewardId: new Types.ObjectId(rewardId) })
+      .exec();
+    return count > 0;
   }
 
   async deleteReward(id: string): Promise<Reward | null> {

@@ -7,6 +7,7 @@ import {
   Min,
   IsDate,
   IsOptional,
+  Max,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 
@@ -17,11 +18,7 @@ import { Transform } from 'class-transformer';
 function parseDateString(value: unknown): unknown {
   if (typeof value === 'string' && value.includes('/')) {
     const [day, month, year] = value.split('/');
-    const date = new Date(
-      Number(year),
-      Number(month) - 1,
-      Number(day),
-    );
+    const date = new Date(Number(year), Number(month) - 1, Number(day));
     return isNaN(date.getTime()) ? value : date;
   }
   return value;
@@ -76,21 +73,28 @@ export class CreateTournamentDto {
 
   @ApiProperty({ example: 2, description: 'Tổng số vòng đấu cố định' })
   @IsNumber()
-  @Min(1)
+  @Min(2)
   totalRounds: number;
 
   @ApiProperty({ example: 8, description: 'Số ngựa tối đa mỗi lượt chạy' })
   @IsNumber()
-  @Min(2)
+  @IsNumber()
+  @Min(8)
+  @Max(10)
   horsesPerRace: number;
 
-  @ApiProperty({ example: 20, description: 'Tổng số trận đấu trong giải' })
+  @ApiProperty({ example: 3, description: 'Tổng số trận đấu trong giải' })
   @IsNumber()
-  @Min(1)
+  @Min(2)
+  @Max(10)
   totalRaces: number;
 
-  @ApiProperty({ example: 500000, description: 'Phí tham gia giải đấu' })
+  @ApiProperty({
+    example: 500000,
+    description: 'Phí tham gia giải đấu (Từ 0 đến 100.000.000)',
+  })
   @IsNumber()
   @Min(0)
+  @Max(100000000)
   entryFee: number;
 }

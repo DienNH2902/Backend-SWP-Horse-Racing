@@ -13,7 +13,10 @@ import { plainToInstance } from 'class-transformer';
 // import { Types } from 'mongoose';
 import { GetTournamentsQueryDto } from './dto/get-tournament-status-query.dto';
 import { RegistrationRepository } from '../registration/registration.repository';
-import { TOURNAMENT_TOTAL_ROUNDS } from 'src/constants/tournamentStatusEnum.enum';
+import {
+  TOURNAMENT_TOTAL_ROUNDS,
+  TournamentStatusEnum,
+} from 'src/constants/tournamentStatusEnum.enum';
 import { PrizeRepository } from '../prize-distribution/prize.repository';
 import { RaceRepository } from '../race/race.repository';
 
@@ -118,6 +121,28 @@ export class TournamentService {
     if (start.getTime() >= end.getTime()) {
       throw new BadRequestException(
         'Ngày bắt đầu giải đấu phải trước ngày kết thúc',
+      );
+    }
+
+    // Tính toán giới hạn 1 tháng và 3 tháng dựa trên ngày bắt đầu
+    const minEndDate = new Date(start);
+    minEndDate.setMonth(minEndDate.getMonth() + 1);
+
+    const maxEndDate = new Date(start);
+    maxEndDate.setMonth(maxEndDate.getMonth() + 3);
+    // Thiết lập mốc cuối ngày cho giới hạn max để tránh lệch millisecond khi so sánh
+    maxEndDate.setHours(23, 59, 59, 999);
+
+    // Kiểm tra thời gian giải đấu có nằm trong khoảng từ 1 đến 3 tháng không
+    if (end.getTime() < minEndDate.getTime()) {
+      throw new BadRequestException(
+        'Thời gian giải đấu phải kéo dài ít nhất 1 tháng',
+      );
+    }
+
+    if (end.getTime() > maxEndDate.getTime()) {
+      throw new BadRequestException(
+        'Thời gian giải đấu không được vượt quá 3 tháng',
       );
     }
 
@@ -292,6 +317,12 @@ export class TournamentService {
       throw new NotFoundException('Không tìm thấy giải đấu để cập nhật');
     }
 
+    if (tournament.status !== TournamentStatusEnum.PREPARING) {
+      throw new NotFoundException(
+        `Trạng thái giải đấu hiện tại: ${tournament.status}, không thể cập nhật`,
+      );
+    }
+
     const updateData: any = { ...dto };
 
     // Xác định mốc thời gian sau khi update (nếu không truyền thì giữ nguyên cũ)
@@ -355,7 +386,7 @@ export class TournamentService {
     const hasRace = await this.raceRepository.findByTournament(id);
     if (hasRace && hasRace.length > 0)
       throw new BadRequestException(
-        `Vui lòng xóa các race liên quan trước khi xóa giải`,
+        `Giải đấu này đã có cuộc đua, không thể xóa`,
       );
 
     await this.tournamentRepository.deleteTournament(id);

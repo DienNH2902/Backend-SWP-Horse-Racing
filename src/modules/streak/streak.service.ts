@@ -4,6 +4,8 @@ import { plainToInstance } from 'class-transformer';
 import { ResponseStreakDto } from './dto/response-streak.dto';
 import { Streak, StreakDocument } from './schemas/streak.schema';
 
+const DAILY_STREAK_REWARD_POINTS = 10;
+
 @Injectable()
 export class StreakService {
   constructor(private readonly streakRepository: StreakRepository) {}
@@ -61,7 +63,10 @@ export class StreakService {
 
     // Xử lý cộng điểm vào Hồ sơ Spectator nếu thỏa mãn điều kiện sang ngày mới
     if (shouldRewardPoints) {
-      await this.streakRepository.rewardDailyPoints(userId, 10);
+      await this.streakRepository.rewardDailyPoints(
+        userId,
+        DAILY_STREAK_REWARD_POINTS,
+      );
     }
 
     // Tiến hành đẩy xuống DB xử lý cập nhật trạng thái chuỗi đăng nhập

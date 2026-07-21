@@ -305,6 +305,11 @@ export class JockeyInvitationService {
           JockeyInvitationEnum.REJECTED,
         );
 
+        await this.horseRepository.updateHorseStatus(
+          horseIdStr,
+          HorseStatusEnum.IDLE,
+        );
+
         throw new ConflictException(
           'Bạn đã sở hữu hợp đồng thi đấu ACTIVE khác trong giải này',
         );
