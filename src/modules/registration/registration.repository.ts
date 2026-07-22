@@ -438,4 +438,20 @@ export class RegistrationRepository {
       .lean()
       .exec();
   }
+
+  async findConfirmedByRaceIds(raceIds: Types.ObjectId[]): Promise<Registration[]> {
+    if (!raceIds.length) return [];
+    return this.registrationModel
+      .find({
+        raceId: { $in: raceIds },
+        status: RegistrationStatusEnum.CONFIRMED,
+      })
+      .populate('horseId', 'name')
+      .populate({
+        path: 'jockeyId',
+        select: 'fullName',
+      })
+      .lean()
+      .exec();
+  }  
 }

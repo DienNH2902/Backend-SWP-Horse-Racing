@@ -10,6 +10,7 @@ import { RaceBroadcastController } from './race-broadcast.controller';
 import { RaceSimulationModule } from '../race-simulation/race-simulation.module';
 import { RaceModule } from '../race/race.module';
 import { NotificationModule } from '../notification/notification.module';
+import { RegistrationModule } from '../registration/registration.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import {
   SpectatorProfile,
@@ -32,6 +33,7 @@ import {
     RaceSimulationModule,
     RaceModule,
     NotificationModule,
+    RegistrationModule
   ],
   controllers: [RaceBroadcastController],
   providers: [RaceBroadcastGateway, RaceBroadcastService],

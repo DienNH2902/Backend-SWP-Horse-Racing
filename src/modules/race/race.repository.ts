@@ -351,4 +351,25 @@ export class RaceRepository {
       }[]
     >);
   }
+
+  async findAllForBroadcast(
+    skip: number,
+    limit: number,
+  ): Promise<RaceDocument[]> {
+    return this.raceModel
+      .find({ status: { $ne: RaceStatusEnum.CANCELLED } })
+      .populate('tournamentId', 'title horsesPerRace')
+      .populate('raceCourseId', 'name')
+      .sort({ date: 1, startTime: 1 })
+      .skip(skip)
+      .limit(limit)
+      .lean()
+      .exec();
+  } 
+
+  async countAllForBroadcast(): Promise<number> {
+    return this.raceModel.countDocuments({
+      status: { $ne: RaceStatusEnum.CANCELLED },
+    });
+  }  
 }

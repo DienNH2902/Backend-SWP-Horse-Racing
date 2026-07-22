@@ -61,4 +61,20 @@ export class RaceBroadcastController {
       isReplaying: this.broadcastService.isReplaying(raceId),
     };
   }
+
+
+  @Get('live')
+  @ApiOperation({
+    summary: 'Lấy danh sách race cho trang live broadcast',
+  })
+  @ApiQuery({ name: 'page', required: false, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, example: 10 })
+  getLiveBroadcastRaces(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string
+  ) {
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 10;
+    return this.broadcastService.getLiveBroadcastRaces(pageNum, limitNum);
+  }
 }

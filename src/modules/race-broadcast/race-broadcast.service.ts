@@ -13,6 +13,7 @@ import {
 import { RaceTickRepository } from '../race-simulation/repositories/race-tick.repository';
 import { RaceEventRepository } from '../race-simulation/repositories/race-event.repository';
 import { RawResultRepository } from '../race-simulation/repositories/raw-result.repository';
+import { RegistrationRepository } from '../registration/registration.repository';
 import { RaceRepository } from '../race/race.repository';
 import { RaceStatusEnum } from 'src/constants/raceStatus.enum';
 import { NotificationRepository } from '../notification/notification.repository';
@@ -20,6 +21,8 @@ import { NotificationTypeEnum } from 'src/constants/notificationTypeEnum.enum';
 import { NotificationTitleEnum } from 'src/constants/notificationTitleEnum.enum';
 import { InjectModel } from '@nestjs/mongoose';
 import { SpectatorProfile } from '../user/schemas/spectator-profile.schema';
+
+import { PaginatedBroadcastRacesDto } from './dto/broadcast-race-list.dto';
 import { Model } from 'mongoose';
 
 const TICK_INTERVAL_MS = 500;
@@ -44,6 +47,7 @@ export class RaceBroadcastService implements OnModuleInit {
     private readonly rawResultRepo: RawResultRepository,
     private readonly raceRepo: RaceRepository,
     private readonly notificationRepository: NotificationRepository,
+    private readonly registrationRepo: RegistrationRepository, 
     @InjectModel(SpectatorProfile.name)
     private readonly spectatorProfileModel: Model<SpectatorProfile>,
   ) {}
@@ -289,6 +293,77 @@ export class RaceBroadcastService implements OnModuleInit {
 
     this.cleanup(raceId);
     this.logger.log(`[BROADCAST] Chờ Referee confirm finalRank`);
+  }
+
+
+  async getLiveBroadcastRaces(
+    page = 1,
+    limit = 10,
+  ): Promise<PaginatedBroadcastRacesDto> {
+    const safePage = page < 1 ? 1 : page;
+    const safeLimit = limit < 1 ? 10 : Math.min(limit, 100); // chặn limit quá lớn
+    const skip = (safePage - 1) * safeLimit;
+
+    const [races, total] = await Promise.all([
+      this.raceRepo.findAllForBroadcast(skip, safeLimit),
+      this.raceRepo.countAllForBroadcast(),
+    ]);
+
+    if (!races.length) {
+      return { data: [], total, page: safePage, limit: safeLimit, totalPages: Math.ceil(total / safeLimit) };
+    }
+
+    const raceIds = races.map((r: any) => r._id);
+    const registrations =
+      await this.registrationRepo.findConfirmedByRaceIds(raceIds);
+
+    const participantsByRace = new Map<string, any[]>();
+    for (const reg of registrations as any[]) {
+      const key = reg.raceId.toString();
+      if (!participantsByRace.has(key)) participantsByRace.set(key, []);
+      participantsByRace.get(key)!.push(reg);
+    }
+
+    const data = races.map((race: any) => {
+      const raceIdStr = race._id.toString();
+      const regs = participantsByRace.get(raceIdStr) || [];
+      const totalSlots = race.tournamentId?.horsesPerRace ?? 0;
+      const filledSlots = regs.length;
+
+      return {
+        raceId: raceIdStr,
+        tournamentId: race.tournamentId?._id?.toString() ?? '',
+        tournamentTitle: race.tournamentId?.title ?? '',
+        raceCourseName: race.raceCourseId?.name ?? null,
+        name: race.name,
+        roundNumber: race.roundNumber,
+        raceOrder: race.raceOrder,
+        date: race.date,
+        startTime: race.startTime,
+        status: race.status,
+        totalBettors: race.totalBettors,
+        totalSlots,
+        filledSlots,
+        availableSlots: totalSlots - filledSlots,
+        isLive: this.isBroadcasting(raceIdStr),
+        isReplaying: this.isReplaying(raceIdStr),
+        participants: regs.map((r: any) => ({
+          horseId: r.horseId?._id?.toString() ?? '',
+          horseName: r.horseId?.name ?? 'Unknown Horse',
+          jockeyId: r.jockeyId?._id?.toString() ?? '',
+          jockeyName: r.jockeyId?.fullName ?? 'N/A',
+          gateNumber: r.gateNumber,
+        })),
+      };
+    });
+
+    return {
+      data,
+      total,
+      page: safePage,
+      limit: safeLimit,
+      totalPages: Math.ceil(total / safeLimit),
+    };
   }
 
   // ── Cleanup 
