@@ -133,11 +133,13 @@ export class UsersService {
     fullName?: string,
     sortWinRate?: 'asc' | 'desc',
     sortTotalWin?: 'asc' | 'desc',
+    jockeyStatus?: JockeyStatusEnum,
   ): Promise<ResponseUserDto[]> {
     const users = await this.userRepository.searchJockeyByFullName(
       fullName || '',
       sortWinRate,
       sortTotalWin,
+      jockeyStatus,
     );
     return users.map((u) => this.toResponse(u));
   }
