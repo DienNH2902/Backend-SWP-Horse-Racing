@@ -54,7 +54,7 @@ export class HorseController {
   @Get()
   @ApiOperation({
     summary:
-      'Lấy toàn bộ danh sách ngựa trong hệ thống (có hỗ trợ search, filter status & sort by winRate)',
+      'Lấy toàn bộ danh sách ngựa trong hệ thống (có hỗ trợ search, filter status & sort by winRate/totalWin)',
   })
   @ApiQuery({
     name: 'search',
@@ -75,12 +75,25 @@ export class HorseController {
     description:
       'Sắp xếp theo tỷ lệ thắng (asc: thấp đến cao, desc: cao đến thấp)',
   })
+  @ApiQuery({
+    name: 'sortTotalWin',
+    required: false,
+    enum: ['asc', 'desc'],
+    description:
+      'Sắp xếp theo số trận thắng (asc: ít đến nhiều, desc: nhiều đến ít)',
+  })
   findAll(
     @Query('search') search?: string,
     @Query('status') status?: HorseStatusEnum,
     @Query('sortWinRate') sortWinRate?: 'asc' | 'desc',
+    @Query('sortTotalWin') sortTotalWin?: 'asc' | 'desc',
   ): Promise<ResponseHorseDto[]> {
-    return this.horseService.findAllHorses(search, sortWinRate, status);
+    return this.horseService.findAllHorses(
+      search,
+      sortWinRate,
+      status,
+      sortTotalWin,
+    );
   }
 
   @Get('my-horses')
