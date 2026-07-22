@@ -33,6 +33,8 @@ export class HorseRepository {
   async findAllWithFilter(
     search?: string,
     sortWinRate?: 'asc' | 'desc',
+    status?: HorseStatusEnum,
+    sortTotalWin?: 'asc' | 'desc',
   ): Promise<Horse[]> {
     const filter: any = {};
 
@@ -40,11 +42,21 @@ export class HorseRepository {
       filter.name = { $regex: search, $options: 'i' }; // Tìm kiếm không phân biệt hoa thường
     }
 
+    if (status) {
+      filter.horseStatus = status;
+    }
+
     const sort: any = {};
     if (sortWinRate) {
       sort.winRate = sortWinRate === 'asc' ? 1 : -1;
-    } else {
-      sort.createdAt = -1; // Mặc định sắp xếp theo thời gian tạo mới nhất
+    }
+    if (sortTotalWin) {
+      sort.totalWin = sortTotalWin === 'asc' ? 1 : -1;
+    }
+
+    // Nếu không truyền sortWinRate lẫn sortTotalWin thì mới fallback về createdAt
+    if (!sortWinRate && !sortTotalWin) {
+      sort.createdAt = -1;
     }
 
     return await this.horseModel
