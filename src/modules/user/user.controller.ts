@@ -78,6 +78,43 @@ export class UsersController {
     return await this.userService.searchUsersByName(query.fullName as string);
   }
 
+  @Get('search/jockey/by-name')
+  @ApiOperation({
+    summary:
+      'Tìm kiếm người dùng Jockey theo họ tên, hỗ trợ sort theo winRate & totalWin',
+  })
+  @ApiQuery({
+    name: 'fullName',
+    required: false,
+    type: String,
+    description: 'Từ khóa tìm kiếm theo họ tên',
+  })
+  @ApiQuery({
+    name: 'sortWinRate',
+    required: false,
+    enum: ['asc', 'desc'],
+    description:
+      'Sắp xếp theo tỉ lệ thắng (asc: thấp đến cao, desc: cao đến thấp)',
+  })
+  @ApiQuery({
+    name: 'sortTotalWin',
+    required: false,
+    enum: ['asc', 'desc'],
+    description:
+      'Sắp xếp theo số trận thắng (asc: ít đến nhiều, desc: nhiều đến ít)',
+  })
+  async searchJockeyByName(
+    @Query('fullName') fullName?: string,
+    @Query('sortWinRate') sortWinRate?: 'asc' | 'desc',
+    @Query('sortTotalWin') sortTotalWin?: 'asc' | 'desc',
+  ): Promise<ResponseUserDto[]> {
+    return await this.userService.searchJockeyByName(
+      fullName,
+      sortWinRate,
+      sortTotalWin,
+    );
+  }
+
   @Get('admin/dashboard/stats')
   async getDashboardStatistics(): Promise<{
     totalUsers: number;
