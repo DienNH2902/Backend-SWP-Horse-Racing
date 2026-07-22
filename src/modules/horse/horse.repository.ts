@@ -21,11 +21,36 @@ export class HorseRepository {
     return new this.horseModel(data).save();
   }
 
-  async findAllHorse(): Promise<Horse[]> {
+  // async findAllHorse(): Promise<Horse[]> {
+  //   return await this.horseModel
+  //     .find()
+  //     .populate('userId')
+  //     .sort({ createdAt: -1 })
+  //     .lean()
+  //     .exec();
+  // }
+
+  async findAllWithFilter(
+    search?: string,
+    sortWinRate?: 'asc' | 'desc',
+  ): Promise<Horse[]> {
+    const filter: any = {};
+
+    if (search) {
+      filter.name = { $regex: search, $options: 'i' }; // Tìm kiếm không phân biệt hoa thường
+    }
+
+    const sort: any = {};
+    if (sortWinRate) {
+      sort.winRate = sortWinRate === 'asc' ? 1 : -1;
+    } else {
+      sort.createdAt = -1; // Mặc định sắp xếp theo thời gian tạo mới nhất
+    }
+
     return await this.horseModel
-      .find()
+      .find(filter)
       .populate('userId')
-      .sort({ createdAt: -1 })
+      .sort(sort)
       .lean()
       .exec();
   }
