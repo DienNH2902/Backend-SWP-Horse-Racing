@@ -1,6 +1,4 @@
 import {
-  forwardRef,
-  Inject,
   Injectable,
   NotFoundException,
   ForbiddenException,
@@ -39,8 +37,19 @@ export class HorseService {
     return this.toResponse(horse);
   }
 
-  async findAllHorses(): Promise<ResponseHorseDto[]> {
-    const horses = await this.horseRepository.findAllHorse();
+  // async findAllHorses(): Promise<ResponseHorseDto[]> {
+  //   const horses = await this.horseRepository.findAllHorse();
+  //   return horses.map((h) => this.toResponse(h));
+  // }
+
+  async findAllHorses(
+    search?: string,
+    sortWinRate?: 'asc' | 'desc',
+  ): Promise<ResponseHorseDto[]> {
+    const horses = await this.horseRepository.findAllWithFilter(
+      search,
+      sortWinRate,
+    );
     return horses.map((h) => this.toResponse(h));
   }
 

@@ -8,11 +8,17 @@ import {
   Put,
   UseGuards,
   Request,
+  Query,
 } from '@nestjs/common';
 import { HorseService } from './horse.service';
 import { CreateHorseDto } from './dto/create-horse.dto';
 import { UpdateHorseDto } from './dto/update-horse.dto';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard'; // Giả định tên file Guard phân quyền của bạn
 import { Roles } from '../auth/decorators/roles.decorator'; // Giả định tên decorator phân quyền của bạn
@@ -38,10 +44,35 @@ export class HorseController {
     return this.horseService.createHorse(dto, userId);
   }
 
+  // @Get()
+  // @ApiOperation({ summary: 'Lấy toàn bộ danh sách ngựa trong hệ thống' })
+  // findAll(): Promise<ResponseHorseDto[]> {
+  //   return this.horseService.findAllHorses();
+  // }
+
   @Get()
-  @ApiOperation({ summary: 'Lấy toàn bộ danh sách ngựa trong hệ thống' })
-  findAll(): Promise<ResponseHorseDto[]> {
-    return this.horseService.findAllHorses();
+  @ApiOperation({
+    summary:
+      'Lấy toàn bộ danh sách ngựa trong hệ thống (có hỗ trợ search & sort)',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Tìm kiếm theo tên ngựa',
+  })
+  @ApiQuery({
+    name: 'sortWinRate',
+    required: false,
+    enum: ['asc', 'desc'],
+    description:
+      'Sắp xếp theo tỷ lệ thắng (asc: thấp đến cao, desc: cao đến thấp)',
+  })
+  findAll(
+    @Query('search') search?: string,
+    @Query('sortWinRate') sortWinRate?: 'asc' | 'desc',
+  ): Promise<ResponseHorseDto[]> {
+    return this.horseService.findAllHorses(search, sortWinRate);
   }
 
   @Get('my-horses')

@@ -261,8 +261,7 @@ export class RegistrationRepository {
       ...doc,
       horse: doc.horseId as Record<string, any>,
       jockeyProfile: doc.jockeyInvitationId?.jockeyId as
-        | Record<string, any>
-        | undefined,
+        Record<string, any> | undefined,
       gateNumber: doc.gateNumber as number | undefined,
     }));
   }
