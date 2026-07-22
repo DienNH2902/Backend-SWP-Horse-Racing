@@ -239,6 +239,75 @@ export class UsersRepository {
       .exec();
   }
 
+  async searchJockeyByFullName(
+    fullName?: string,
+    sortWinRate?: 'asc' | 'desc',
+    sortTotalWin?: 'asc' | 'desc',
+  ): Promise<User[]> {
+    const pipeline: any[] = [{ $match: { role: RoleEnum.JOCKEY } }];
+
+    // Search theo fullName nếu có
+    if (fullName) {
+      pipeline.push({
+        $match: { fullName: { $regex: fullName, $options: 'i' } },
+      });
+    }
+
+    // Lookup đểjoin với collection jockeyprofiles
+    pipeline.push({
+      $lookup: {
+        from: 'jockeyprofiles',
+        localField: '_id',
+        foreignField: 'userId',
+        as: 'jockeyProfile',
+      },
+    });
+
+    // Unwind jockeyProfile
+    pipeline.push({
+      $unwind: {
+        path: '$jockeyProfile',
+        preserveNullAndEmptyArrays: true,
+      },
+    });
+
+    // Lookup tiếp licenses của Jockey
+    pipeline.push({
+      $lookup: {
+        from: 'jockeylicenses',
+        localField: 'jockeyProfile._id',
+        foreignField: 'jockeyProfileId',
+        as: 'jockeyProfile.licenses',
+      },
+    });
+
+    // Cấu hình Sort theo winRate / totalWin
+    const sort: any = {};
+    if (sortWinRate) {
+      sort['jockeyProfile.winRate'] = sortWinRate === 'asc' ? 1 : -1;
+    }
+    if (sortTotalWin) {
+      sort['jockeyProfile.totalWin'] = sortTotalWin === 'asc' ? 1 : -1;
+    }
+
+    // Nếu không chọn sort thì mặc định theo thời gian tạo mới nhất
+    if (!sortWinRate && !sortTotalWin) {
+      sort.createdAt = -1;
+    }
+
+    pipeline.push({ $sort: sort });
+
+    // Exclude password & __v
+    pipeline.push({
+      $project: {
+        password: 0,
+        __v: 0,
+      },
+    });
+
+    return await this.userModel.aggregate(pipeline).exec();
+  }
+
   async deleteUser(id: string): Promise<User | null> {
     return this.userModel.findByIdAndDelete(id).exec();
   }

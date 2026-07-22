@@ -129,6 +129,19 @@ export class UsersService {
     return users.map((u) => this.toResponse(u));
   }
 
+  async searchJockeyByName(
+    fullName?: string,
+    sortWinRate?: 'asc' | 'desc',
+    sortTotalWin?: 'asc' | 'desc',
+  ): Promise<ResponseUserDto[]> {
+    const users = await this.userRepository.searchJockeyByFullName(
+      fullName || '',
+      sortWinRate,
+      sortTotalWin,
+    );
+    return users.map((u) => this.toResponse(u));
+  }
+
   // async updateUser(id: string, dto: UpdateUserDto): Promise<ResponseUserDto> {
   //   const updated = await this.userRepository.findUserByIdAndUpdate(id, dto);
   //   if (!updated) throw new NotFoundException('User not found');
