@@ -129,9 +129,15 @@ export class UsersService {
     return users.map((u) => this.toResponse(u));
   }
 
-  async searchJockeyByName(fullName: string): Promise<ResponseUserDto[]> {
+  async searchJockeyByName(
+    fullName?: string,
+    sortWinRate?: 'asc' | 'desc',
+    sortTotalWin?: 'asc' | 'desc',
+  ): Promise<ResponseUserDto[]> {
     const users = await this.userRepository.searchJockeyByFullName(
       fullName || '',
+      sortWinRate,
+      sortTotalWin,
     );
     return users.map((u) => this.toResponse(u));
   }

@@ -102,6 +102,14 @@ export class ResponseUserDto {
   })
   licenses?: ResponseJockeyLicenseDto[];
 
+  @Expose()
+  @Transform(({ obj }) =>
+    obj.role === 'Jockey'
+      ? (obj.jockeyProfile?.totalWin ?? obj.totalWin)
+      : undefined,
+  )
+  totalWin?: number;
+
   // ==========================================
   // 2. CÁC FIELDS CHUYÊN BIỆT CHO REFEREE
   // ==========================================
