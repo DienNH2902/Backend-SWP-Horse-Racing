@@ -53,7 +53,7 @@ export class HorseController {
   @Get()
   @ApiOperation({
     summary:
-      'Lấy toàn bộ danh sách ngựa trong hệ thống (có hỗ trợ search & sort)',
+      'Lấy toàn bộ danh sách ngựa trong hệ thống (có hỗ trợ search & sort by winRate)',
   })
   @ApiQuery({
     name: 'search',
