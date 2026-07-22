@@ -78,6 +78,16 @@ export class UsersController {
     return await this.userService.searchUsersByName(query.fullName as string);
   }
 
+  @Get('search/jockey/by-name')
+  @ApiOperation({
+    summary: 'Tìm kiếm người dùng Jockey theo họ và tên (fullName)',
+  })
+  async searchJockeyByName(
+    @Query() query: SearchUserDto,
+  ): Promise<ResponseUserDto[]> {
+    return await this.userService.searchJockeyByName(query.fullName as string);
+  }
+
   @Get('admin/dashboard/stats')
   async getDashboardStatistics(): Promise<{
     totalUsers: number;

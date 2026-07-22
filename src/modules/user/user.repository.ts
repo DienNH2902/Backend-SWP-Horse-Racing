@@ -239,6 +239,26 @@ export class UsersRepository {
       .exec();
   }
 
+  async searchJockeyByFullName(fullName: string): Promise<User[]> {
+    const searchFilter: any = {
+      role: RoleEnum.JOCKEY, // Bắt buộc chỉ lấy user có role Jockey
+    };
+
+    if (fullName) {
+      searchFilter.fullName = { $regex: fullName, $options: 'i' };
+    }
+
+    return await this.userModel
+      .find(searchFilter)
+      .select('-password -__v')
+      .populate({
+        path: 'jockeyProfile',
+        populate: { path: 'licenses' },
+      })
+      .lean({ virtuals: true })
+      .exec();
+  }
+
   async deleteUser(id: string): Promise<User | null> {
     return this.userModel.findByIdAndDelete(id).exec();
   }
