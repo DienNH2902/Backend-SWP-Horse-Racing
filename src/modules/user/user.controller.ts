@@ -90,6 +90,12 @@ export class UsersController {
     description: 'Từ khóa tìm kiếm theo họ tên',
   })
   @ApiQuery({
+    name: 'jockeyStatus',
+    required: false,
+    enum: JockeyStatusEnum,
+    description: 'Lọc theo trạng thái của Jockey (VD: AVAILABLE, BUSY, ...)',
+  })
+  @ApiQuery({
     name: 'sortWinRate',
     required: false,
     enum: ['asc', 'desc'],
@@ -105,6 +111,7 @@ export class UsersController {
   })
   async searchJockeyByName(
     @Query('fullName') fullName?: string,
+    @Query('jockeyStatus') jockeyStatus?: JockeyStatusEnum,
     @Query('sortWinRate') sortWinRate?: 'asc' | 'desc',
     @Query('sortTotalWin') sortTotalWin?: 'asc' | 'desc',
   ): Promise<ResponseUserDto[]> {
@@ -112,6 +119,7 @@ export class UsersController {
       fullName,
       sortWinRate,
       sortTotalWin,
+      jockeyStatus,
     );
   }
 

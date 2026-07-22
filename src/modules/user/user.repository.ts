@@ -243,6 +243,7 @@ export class UsersRepository {
     fullName?: string,
     sortWinRate?: 'asc' | 'desc',
     sortTotalWin?: 'asc' | 'desc',
+    jockeyStatus?: JockeyStatusEnum,
   ): Promise<User[]> {
     const pipeline: any[] = [{ $match: { role: RoleEnum.JOCKEY } }];
 
@@ -270,6 +271,13 @@ export class UsersRepository {
         preserveNullAndEmptyArrays: true,
       },
     });
+
+    // Filter theo jockeyStatus nếu truyền lên
+    if (jockeyStatus) {
+      pipeline.push({
+        $match: { 'jockeyProfile.jockeyStatus': jockeyStatus },
+      });
+    }
 
     // Lookup tiếp licenses của Jockey
     pipeline.push({
