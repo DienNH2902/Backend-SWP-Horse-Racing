@@ -204,13 +204,34 @@ export class ResponseUserDto {
   // 5. CÁC FIELDS DÙNG CHUNG NHƯNG PHÂN TÁCH LOGIC TỪNG ROLE
   // ==========================================
 
+  // @Expose()
+  // @Transform(({ obj }) => {
+  //   if (obj.role === 'Jockey')
+  //     return obj.jockeyProfile?.winRate ?? obj.winRate ?? 0;
+  //   if (obj.role === 'Spectator')
+  //     return obj.spectatorProfile?.winRate ?? obj.winRate ?? 0;
+  //   return undefined;
+  // })
+  // winRate?: number;
+
   @Expose()
   @Transform(({ obj }) => {
-    if (obj.role === 'Jockey')
-      return obj.jockeyProfile?.winRate ?? obj.winRate ?? 0;
-    if (obj.role === 'Spectator')
-      return obj.spectatorProfile?.winRate ?? obj.winRate ?? 0;
-    return undefined;
+    let rawWinRate: number | undefined;
+
+    if (obj.role === 'Jockey') {
+      rawWinRate = obj.jockeyProfile?.winRate ?? obj.winRate;
+    } else if (obj.role === 'Spectator') {
+      rawWinRate = obj.spectatorProfile?.winRate ?? obj.winRate;
+    } else {
+      return undefined;
+    }
+
+    if (rawWinRate === undefined || rawWinRate === null || isNaN(rawWinRate)) {
+      return 0;
+    }
+
+    // Làm tròn lấy 2 chữ số thập phân (ví dụ: 0.222222... -> 0.22)
+    return Number(Number(rawWinRate).toFixed(2));
   })
   winRate?: number;
 
@@ -266,8 +287,8 @@ export class ResponseUserDto {
       finalRank: r.finalRank,
       jockeyProfileId: r.jockeyId?._id?.toString(),
       jockeyName: r.jockeyId?.userId?.fullName,
-      horseId: r.horseId?._id?.toString(), 
-      horseName: r.horseId?.name, 
+      horseId: r.horseId?._id?.toString(),
+      horseName: r.horseId?.name,
       horseOwnerId: r.horseId?.userId?._id?.toString(),
       horseOwnerName: r.horseId?.userId?.fullName,
       prizeName: r.prize?.name ?? null,
