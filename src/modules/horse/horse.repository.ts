@@ -33,11 +33,16 @@ export class HorseRepository {
   async findAllWithFilter(
     search?: string,
     sortWinRate?: 'asc' | 'desc',
+    status?: HorseStatusEnum,
   ): Promise<Horse[]> {
     const filter: any = {};
 
     if (search) {
       filter.name = { $regex: search, $options: 'i' }; // Tìm kiếm không phân biệt hoa thường
+    }
+
+    if (status) {
+      filter.horseStatus = status;
     }
 
     const sort: any = {};

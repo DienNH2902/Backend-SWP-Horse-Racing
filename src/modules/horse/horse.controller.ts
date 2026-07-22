@@ -24,6 +24,7 @@ import { RolesGuard } from '../auth/guards/roles.guard'; // Giả định tên f
 import { Roles } from '../auth/decorators/roles.decorator'; // Giả định tên decorator phân quyền của bạn
 import { RoleEnum } from 'src/constants/roleEnum.enum';
 import { ResponseHorseDto } from './dto/response-horse.dto';
+import { HorseStatusEnum } from 'src/constants/horseStatusEnum.enum';
 
 @ApiTags('Horses')
 @Controller('horses')
@@ -53,13 +54,19 @@ export class HorseController {
   @Get()
   @ApiOperation({
     summary:
-      'Lấy toàn bộ danh sách ngựa trong hệ thống (có hỗ trợ search & sort by winRate)',
+      'Lấy toàn bộ danh sách ngựa trong hệ thống (có hỗ trợ search, filter status & sort by winRate)',
   })
   @ApiQuery({
     name: 'search',
     required: false,
     type: String,
     description: 'Tìm kiếm theo tên ngựa',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: HorseStatusEnum,
+    description: 'Lọc theo trạng thái của ngựa',
   })
   @ApiQuery({
     name: 'sortWinRate',
@@ -70,9 +77,10 @@ export class HorseController {
   })
   findAll(
     @Query('search') search?: string,
+    @Query('status') status?: HorseStatusEnum,
     @Query('sortWinRate') sortWinRate?: 'asc' | 'desc',
   ): Promise<ResponseHorseDto[]> {
-    return this.horseService.findAllHorses(search, sortWinRate);
+    return this.horseService.findAllHorses(search, sortWinRate, status);
   }
 
   @Get('my-horses')

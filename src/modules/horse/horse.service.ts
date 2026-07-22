@@ -45,10 +45,12 @@ export class HorseService {
   async findAllHorses(
     search?: string,
     sortWinRate?: 'asc' | 'desc',
+    status?: HorseStatusEnum,
   ): Promise<ResponseHorseDto[]> {
     const horses = await this.horseRepository.findAllWithFilter(
       search,
       sortWinRate,
+      status,
     );
     return horses.map((h) => this.toResponse(h));
   }
