@@ -36,8 +36,19 @@ export class RewardService {
     return this.toResponse(reward);
   }
 
-  async findAllRewards(): Promise<ResponseRewardDto[]> {
-    const rewards = await this.rewardRepository.findAllRewards();
+  // async findAllRewards(): Promise<ResponseRewardDto[]> {
+  //   const rewards = await this.rewardRepository.findAllRewards();
+  //   return rewards.map((r) => this.toResponse(r));
+  // }
+
+  async findAllRewards(
+    conditionType?: RewardConditionType,
+    rewardType?: RewardType,
+  ): Promise<ResponseRewardDto[]> {
+    const rewards = await this.rewardRepository.findAllRewards(
+      conditionType,
+      rewardType,
+    );
     return rewards.map((r) => this.toResponse(r));
   }
 
@@ -212,9 +223,9 @@ export class RewardService {
   async getUnlockedAssets(userId: string) {
     const claims = await this.rewardRepository.findClaimsByUserId(userId);
 
-    const unlockedFrames = claims
-      .filter((c) => (c.rewardId as any).rewardType === RewardType.AVATAR_FRAME)
-      .map((c) => (c.rewardId as any).rewardValue);
+    // const unlockedFrames = claims
+    //   .filter((c) => (c.rewardId as any).rewardType === RewardType.AVATAR_FRAME)
+    //   .map((c) => (c.rewardId as any).rewardValue);
 
     const unlockedBackgrounds = claims
       .filter((c) => (c.rewardId as any).rewardType === RewardType.BACKGROUND)
@@ -227,7 +238,7 @@ export class RewardService {
     ).length;
 
     return {
-      frames: unlockedFrames,
+      // frames: unlockedFrames,
       backgrounds: unlockedBackgrounds,
       hasInsuranceCard: insuranceCardsCount > 0,
       insuranceCardsCount,
