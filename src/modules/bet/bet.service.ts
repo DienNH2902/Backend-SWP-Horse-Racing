@@ -81,9 +81,14 @@ export class BetService {
     return Math.round(finalOdds * 100) / 100;
   }
 
-  async findAllBets(): Promise<ResponseBetDto> {
-    const bets = await this.betRepository.findAllBets();
-    return this.toResponse(bets);
+  // async findAllBets(): Promise<ResponseBetDto> {
+  //   const bets = await this.betRepository.findAllBets();
+  //   return this.toResponse(bets);
+  // }
+
+  async findAllBets(result?: BetResultEnum): Promise<ResponseBetDto[]> {
+    const bets = await this.betRepository.findAllBets(result);
+    return bets.map((b) => this.toResponse(b));
   }
 
   async findAllMyBets(userId: string): Promise<ResponseBetDto> {
