@@ -68,8 +68,14 @@ export class UsersRepository {
   async findAllUsersByRole(
     role: RoleEnum,
     jockeyStatus?: JockeyStatusEnum,
+    status?: AccountStatusEnum,
   ): Promise<User[]> {
-    const query = this.userModel.find({ role }).select('-password -__v');
+    const filter: Record<string, unknown> = { role };
+    if (status) {
+      filter.status = status;
+    }
+
+    const query = this.userModel.find(filter).select('-password -__v');
 
     switch (role) {
       case RoleEnum.JOCKEY: {
