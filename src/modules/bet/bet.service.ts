@@ -91,7 +91,10 @@ export class BetService {
     return bets.map((b) => this.toResponse(b));
   }
 
-  async findAllMyBets(userId: string): Promise<ResponseBetDto> {
+  async findAllMyBets(
+    userId: string,
+    result?: BetResultEnum,
+  ): Promise<ResponseBetDto> {
     const spectator = await this.spectatorModel.findOne({
       userId: new Types.ObjectId(userId),
     });
@@ -99,6 +102,7 @@ export class BetService {
       throw new NotFoundException('Không tìm thấy Profile của Spectator này');
     const bets = await this.betRepository.findAllMyBets(
       spectator._id.toString(),
+      result,
     );
     return this.toResponse(bets);
   }
