@@ -60,7 +60,7 @@ export class UsersController {
   @ApiQuery({
     name: 'role',
     enum: RoleEnum,
-    required: true,
+    required: false,
     description: 'Vai trò của người dùng',
   })
   @ApiQuery({
@@ -77,7 +77,7 @@ export class UsersController {
       'Trạng thái hoạt động của Jockey (Chỉ có tác dụng khi role là Jockey)',
   })
   findAllUsersByRole(
-    @Query('role') role: RoleEnum,
+    @Query('role') role?: RoleEnum,
     @Query('jockeyStatus') jockeyStatus?: JockeyStatusEnum,
     @Query('status') status?: AccountStatusEnum,
   ) {

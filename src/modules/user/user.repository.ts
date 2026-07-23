@@ -66,53 +66,90 @@ export class UsersRepository {
   // }
 
   async findAllUsersByRole(
-    role: RoleEnum,
+    role?: RoleEnum,
     jockeyStatus?: JockeyStatusEnum,
     status?: AccountStatusEnum,
   ): Promise<User[]> {
-    const filter: Record<string, unknown> = { role };
+    const filter: Record<string, unknown> = {};
+
+    // 1. Sửa Lỗi 1: Đưa role vào filter nếu có truyền lên
+    if (role) {
+      filter.role = role;
+    }
+
+    // Đưa status vào filter nếu có truyền lên
     if (status) {
       filter.status = status;
     }
 
     const query = this.userModel.find(filter).select('-password -__v');
 
-    switch (role) {
-      case RoleEnum.JOCKEY: {
-        // Tạo object filter cho bảng populate phụ
-        const matchFilter: any = {};
-        if (jockeyStatus) {
-          matchFilter.jockeyStatus = jockeyStatus; // Lọc chính xác trạng thái từ enum
-        }
+    // 2. Sửa Lỗi 2: Xử lý populate linh hoạt
+    if (role) {
+      // Nếu có role cụ thể -> chỉ populate đúng profile đó
+      switch (role) {
+        case RoleEnum.JOCKEY: {
+          const matchFilter: Record<string, unknown> = {};
+          if (jockeyStatus) {
+            matchFilter.jockeyStatus = jockeyStatus;
+          }
 
-        query.populate({
-          path: 'jockeyProfile',
-          match: matchFilter as Record<string, unknown>, // <-- Mongoose sẽ chỉ lọc các profile khớp điều kiện này
-          populate: { path: 'licenses' },
-        });
-        break;
+          query.populate({
+            path: 'jockeyProfile',
+            match: matchFilter,
+            populate: { path: 'licenses' },
+          });
+          break;
+        }
+        case RoleEnum.REFEREE:
+          query.populate('refereeProfile');
+          break;
+        case RoleEnum.HORSE_OWNER:
+          query.populate({
+            path: 'horseOwnerProfile',
+            populate: { path: 'totalHorsesOwned' },
+          });
+          break;
+        case RoleEnum.SPECTATOR:
+          query.populate('spectatorProfile');
+          break;
+      }
+    } else {
+      // Nếu KHÔNG truyền role -> Populate tất cả các profile để không bị thiếu dữ liệu
+      const jockeyMatch: Record<string, unknown> = {};
+      if (jockeyStatus) {
+        jockeyMatch.jockeyStatus = jockeyStatus;
       }
 
-      case RoleEnum.REFEREE:
-        query.populate('refereeProfile');
-        break;
-      case RoleEnum.HORSE_OWNER:
-        query.populate({
+      query
+        .populate({
+          path: 'jockeyProfile',
+          match: jockeyMatch,
+          populate: { path: 'licenses' },
+        })
+        .populate('refereeProfile')
+        .populate({
           path: 'horseOwnerProfile',
           populate: { path: 'totalHorsesOwned' },
-        });
-        break;
-      case RoleEnum.SPECTATOR:
-        query.populate('spectatorProfile');
-        break;
+        })
+        .populate('spectatorProfile');
     }
 
     const results = await query.lean({ virtuals: true }).exec();
 
-    // Vì sử dụng `match` trong populate, những User có role Jockey nhưng profile không khớp điều kiện
-    // sẽ bị gán `jockeyProfile: null`. Bạn cần lọc bỏ những phần tử này trước khi trả về dữ liệu.
-    if (role === RoleEnum.JOCKEY && jockeyStatus) {
-      return results.filter((user: any) => user.jockeyProfile !== null);
+    // 3. Xử lý filter jockeyStatus
+    // Nếu có truyền jockeyStatus (dù truyền role=JOCKEY hay không truyền role)
+    // Loại bỏ những user là Jockey nhưng không thỏa mãn jockeyStatus
+    if (jockeyStatus) {
+      return results.filter((user: any) => {
+        if (user.role === RoleEnum.JOCKEY) {
+          return (
+            user.jockeyProfile !== null && user.jockeyProfile !== undefined
+          );
+        }
+        // Nếu không phải Jockey thì vẫn giữ lại bình thường
+        return true;
+      });
     }
 
     return results;
