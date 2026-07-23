@@ -598,7 +598,10 @@ export class PaymentService {
   }
 
   // Danh sách hiển thị toàn bộ lịch sử yêu cầu rút tiền trên CMS Admin
-  async getAllWithdrawalRequests() {
-    return this.withdrawalRepository.findAllRequests();
+  async getAllWithdrawalRequests(
+    status?: WithdrawalStatusEnum,
+    search?: string,
+  ) {
+    return this.withdrawalRepository.findAllRequests(status, search);
   }
 }
