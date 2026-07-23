@@ -36,6 +36,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { SearchUserDto } from './dto/search-user.dto';
 import { AdjustPointsDto } from './dto/admin-adjust-points.dto';
 import { AdjustReputationPointsDto } from './dto/admin-adjust-reputation.dto';
+import { AccountStatusEnum } from 'src/constants/accountStatusEnum.enum';
 
 @ApiTags('Users')
 @Controller('users')
@@ -55,19 +56,32 @@ export class UsersController {
   }
 
   @Get('role')
-  @ApiOperation({ summary: 'Get all users by role' })
+  @ApiOperation({ summary: 'Get all users by role with status filter' })
+  @ApiQuery({
+    name: 'role',
+    enum: RoleEnum,
+    required: true,
+    description: 'Vai trò của người dùng',
+  })
+  @ApiQuery({
+    name: 'status',
+    enum: AccountStatusEnum,
+    required: false,
+    description: 'Lọc theo trạng thái tài khoản (Active, Inactive, Banned)',
+  })
   @ApiQuery({
     name: 'jockeyStatus',
     enum: JockeyStatusEnum,
-    required: false, // <-- Khai báo tường minh trường này KHÔNG bắt buộc
+    required: false,
     description:
       'Trạng thái hoạt động của Jockey (Chỉ có tác dụng khi role là Jockey)',
   })
   findAllUsersByRole(
     @Query('role') role: RoleEnum,
     @Query('jockeyStatus') jockeyStatus?: JockeyStatusEnum,
+    @Query('status') status?: AccountStatusEnum,
   ) {
-    return this.userService.findAllUsersByRole(role, jockeyStatus);
+    return this.userService.findAllUsersByRole(role, jockeyStatus, status);
   }
 
   @Get('search/by-name')

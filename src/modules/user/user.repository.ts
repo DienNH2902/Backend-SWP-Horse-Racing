@@ -68,8 +68,14 @@ export class UsersRepository {
   async findAllUsersByRole(
     role: RoleEnum,
     jockeyStatus?: JockeyStatusEnum,
+    status?: AccountStatusEnum,
   ): Promise<User[]> {
-    const query = this.userModel.find({ role }).select('-password -__v');
+    const filter: Record<string, unknown> = { role };
+    if (status) {
+      filter.status = status;
+    }
+
+    const query = this.userModel.find(filter).select('-password -__v');
 
     switch (role) {
       case RoleEnum.JOCKEY: {
@@ -290,20 +296,21 @@ export class UsersRepository {
     });
 
     // Cấu hình Sort theo winRate / totalWin
-    const sort: any = {};
+    const sortObj: Record<string, 1 | -1> = {};
+
     if (sortWinRate) {
-      sort['jockeyProfile.winRate'] = sortWinRate === 'asc' ? 1 : -1;
+      sortObj['jockeyProfile.winRate'] = sortWinRate === 'asc' ? 1 : -1;
     }
     if (sortTotalWin) {
-      sort['jockeyProfile.totalWin'] = sortTotalWin === 'asc' ? 1 : -1;
+      sortObj['jockeyProfile.totalWin'] = sortTotalWin === 'asc' ? 1 : -1;
     }
 
     // Nếu không chọn sort thì mặc định theo thời gian tạo mới nhất
     if (!sortWinRate && !sortTotalWin) {
-      sort.createdAt = -1;
+      sortObj.createdAt = -1;
     }
 
-    pipeline.push({ $sort: sort });
+    pipeline.push({ $sort: sortObj });
 
     // Exclude password & __v
     pipeline.push({

@@ -66,10 +66,12 @@ export class UsersService {
   async findAllUsersByRole(
     role: RoleEnum,
     jockeyStatus?: JockeyStatusEnum,
+    status?: AccountStatusEnum,
   ): Promise<ResponseUserDto[]> {
     const users = await this.userRepository.findAllUsersByRole(
       role,
       jockeyStatus,
+      status,
     );
     return users.map((u) => this.toResponse(u));
   }
