@@ -85,6 +85,7 @@ import {
 import {
   ApiBearerAuth,
   ApiOperation,
+  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -102,6 +103,7 @@ import { ApproveWithdrawalDto } from './dto/approval-withdrawal.dto';
 import { CreateWithdrawalDto } from './dto/create-withdrawal.dto';
 import { SystemWalletOverviewDto } from './dto/system-wallet.dto';
 import { SystemWalletService } from './system-wallet.service';
+import { WithdrawalStatusEnum } from 'src/constants/withdrawalStatusEnum.enum';
 
 interface RequestWithUser extends Request {
   user: {
@@ -291,10 +293,26 @@ export class PaymentController {
   @Roles(RoleEnum.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Admin lấy danh sách toàn bộ các yêu cầu rút tiền trên hệ thống',
+    summary:
+      'Admin lấy danh sách toàn bộ các yêu cầu rút tiền trên hệ thống (có filter & search)',
   })
-  async getAllWithdrawals() {
-    return this.paymentService.getAllWithdrawalRequests();
+  @ApiQuery({
+    name: 'status',
+    enum: WithdrawalStatusEnum,
+    required: false,
+    description: 'Lọc theo trạng thái yêu cầu rút tiền',
+  })
+  @ApiQuery({
+    name: 'search',
+    type: String,
+    required: false,
+    description: 'Tìm kiếm theo tên người dùng (fullName)',
+  })
+  async getAllWithdrawals(
+    @Query('status') status?: WithdrawalStatusEnum,
+    @Query('search') search?: string,
+  ) {
+    return this.paymentService.getAllWithdrawalRequests(status, search);
   }
 
   @Get('withdrawal/my-request')
