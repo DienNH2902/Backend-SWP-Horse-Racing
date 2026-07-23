@@ -309,6 +309,12 @@ export class RaceService {
     const race = await this.raceRepository.findById(raceId);
     if (!race) throw new NotFoundException('Không tìm thấy race');
 
+    if (race.status !== RaceStatusEnum.SCHEDULED) {
+      throw new BadRequestException(
+        `Race đang ở trạng thái "${race.status}", chỉ có thể gán khi race ở trạng thái "Scheduled"`,
+      );
+    }
+
     // Verify raceCourse tồn tại
     const course = await this.raceCourseRepository.findById(raceCourseId);
     if (!course) throw new NotFoundException('Không tìm thấy đường đua');
