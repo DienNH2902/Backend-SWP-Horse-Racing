@@ -67,9 +67,23 @@ export class HorseRepository {
       .exec();
   }
 
-  async findAllMyHorse(userId: string): Promise<Horse[]> {
+  async findAllMyHorse(
+    userId: string,
+    search?: string,
+    status?: HorseStatusEnum,
+  ): Promise<Horse[]> {
+    const filter: any = { userId: new Types.ObjectId(userId) };
+
+    if (search) {
+      filter.name = { $regex: search, $options: 'i' }; // Tìm kiếm không phân biệt hoa thường
+    }
+
+    if (status) {
+      filter.horseStatus = status;
+    }
+
     return await this.horseModel
-      .find({ userId: new Types.ObjectId(userId) })
+      .find(filter)
       .populate('userId')
       .sort({ createdAt: -1 })
       .lean()

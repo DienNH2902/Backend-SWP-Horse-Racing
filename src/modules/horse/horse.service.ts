@@ -82,8 +82,16 @@ export class HorseService {
     };
   }
 
-  async findAllMyHorses(userId: string): Promise<ResponseHorseDto[]> {
-    const horses = await this.horseRepository.findAllMyHorse(userId);
+  async findAllMyHorses(
+    userId: string,
+    search?: string,
+    status?: HorseStatusEnum,
+  ): Promise<ResponseHorseDto[]> {
+    const horses = await this.horseRepository.findAllMyHorse(
+      userId,
+      search,
+      status,
+    );
     return horses.map((h) => this.toResponse(h));
   }
 

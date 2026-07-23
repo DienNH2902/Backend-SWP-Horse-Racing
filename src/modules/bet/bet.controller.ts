@@ -68,9 +68,18 @@ export class BetController {
   @ApiOperation({
     summary: 'Lấy toàn bộ các bet đặt cược của tài khoản hiện tại',
   })
-  async getAllMyBets(@Request() req: any): Promise<ResponseBetDto> {
+  @ApiQuery({
+    name: 'result',
+    enum: BetResultEnum,
+    required: false,
+    description: 'Lọc danh sách cược theo kết quả (VD: PENDING, WIN, LOSE)',
+  })
+  async getAllMyBets(
+    @Request() req: any,
+    @Query('result') result?: BetResultEnum,
+  ): Promise<ResponseBetDto> {
     const userId = req.user._id as string;
-    return this.betService.findAllMyBets(userId);
+    return this.betService.findAllMyBets(userId, result);
   }
 
   @Get('admin/dashboard/stats')
