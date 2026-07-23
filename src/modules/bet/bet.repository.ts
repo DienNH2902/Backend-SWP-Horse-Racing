@@ -52,9 +52,20 @@ export class BetRepository {
       .exec()) as unknown as BetDocument[];
   }
 
-  async findAllMyBets(userId: string): Promise<BetDocument[] | null> {
+  async findAllMyBets(
+    userId: string,
+    result?: BetResultEnum,
+  ): Promise<BetDocument[] | null> {
+    const filter: QueryFilter<BetDocument> = {
+      spectatorId: new Types.ObjectId(userId),
+    };
+
+    if (result) {
+      filter.result = result;
+    }
+
     return await this.betModel
-      .find({ spectatorId: new Types.ObjectId(userId) })
+      .find(filter)
       .populate([
         {
           path: 'spectatorId',

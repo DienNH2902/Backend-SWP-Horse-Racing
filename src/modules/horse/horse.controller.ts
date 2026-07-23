@@ -100,10 +100,28 @@ export class HorseController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleEnum.HORSE_OWNER)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Lấy toàn bộ danh sách ngựa trong của tôi' })
-  findAllMyHorse(@Request() req: any): Promise<ResponseHorseDto[]> {
+  @ApiOperation({
+    summary: 'Lấy toàn bộ danh sách ngựa của tôi (có filter & search)',
+  })
+  @ApiQuery({
+    name: 'search',
+    type: String,
+    required: false,
+    description: 'Tìm kiếm ngựa theo tên',
+  })
+  @ApiQuery({
+    name: 'status',
+    enum: HorseStatusEnum,
+    required: false,
+    description: 'Lọc danh sách ngựa theo trạng thái',
+  })
+  findAllMyHorse(
+    @Request() req: any,
+    @Query('search') search?: string,
+    @Query('status') status?: HorseStatusEnum,
+  ): Promise<ResponseHorseDto[]> {
     const userId = req.user._id as string;
-    return this.horseService.findAllMyHorses(userId);
+    return this.horseService.findAllMyHorses(userId, search, status);
   }
 
   @Get('admin/dashboard/stats')
