@@ -64,7 +64,7 @@ export class UsersService {
   // }
 
   async findAllUsersByRole(
-    role: RoleEnum,
+    role?: RoleEnum,
     jockeyStatus?: JockeyStatusEnum,
     status?: AccountStatusEnum,
   ): Promise<ResponseUserDto[]> {
