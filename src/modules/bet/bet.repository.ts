@@ -1,7 +1,7 @@
 // src/bet/bet.repository.ts
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types, ClientSession } from 'mongoose';
+import { Model, Types, ClientSession, QueryFilter } from 'mongoose';
 import { Bet, BetDocument } from './schemas/bet.schema';
 import { BetResultEnum } from 'src/constants/betResultStatusEnum.enum';
 
@@ -19,26 +19,32 @@ export class BetRepository {
     return bet.save({ session });
   }
 
-  async findAllBets(): Promise<BetDocument[] | null> {
+  async findAllBets(result?: BetResultEnum): Promise<BetDocument[]> {
+    const filter: QueryFilter<BetDocument> = {};
+
+    if (result) {
+      filter.result = result;
+    }
+
     return (await this.betModel
-      .find()
+      .find(filter)
       .populate([
         {
           path: 'spectatorId',
-          model: 'SpectatorProfile', // Ép định danh chính xác Model của bảng phụ trong DB
+          model: 'SpectatorProfile',
           populate: {
             path: 'userId',
-            model: 'User', // Đảm bảo khớp với Class User đã khai báo
+            model: 'User',
             select: 'fullName email avatar',
           },
         },
         {
           path: 'raceId',
-          select: 'name title', // Thay thế bằng các trường lưu tên trận đấu trong DB của bạn
+          select: 'name title',
         },
         {
           path: 'horseId',
-          select: 'name', // Chỉ lấy trường name của ngựa
+          select: 'name',
         },
       ])
       .sort({ createdAt: -1 })
