@@ -1,4 +1,5 @@
 import { RawResultStatus } from "src/constants/rawResultStatus.enum";
+import { TrackTypeEnum } from "src/modules/race/race-course/schemas/race-course.schema";
 
 export class RaceResultItemDto {
   resultId: string;
@@ -20,5 +21,8 @@ export class RaceWithResultsDto {
   status: string;
   date: Date;
   startTime: Date;
+  raceCourseName: string;
+  trackType: TrackTypeEnum;
+  distance: number;
   results: RaceResultItemDto[];
 }
