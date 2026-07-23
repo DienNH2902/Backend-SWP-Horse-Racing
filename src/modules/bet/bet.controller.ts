@@ -8,8 +8,14 @@ import {
   UseGuards,
   Request,
   Get,
+  Query,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { BetService } from './bet.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateBetDto } from './dto/create-bet.dto';
@@ -18,6 +24,7 @@ import { ResponseBetDto } from './dto/response-bet.dto';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { RoleEnum } from 'src/constants/roleEnum.enum';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { BetResultEnum } from 'src/constants/betResultStatusEnum.enum';
 
 @ApiTags('Bets (Cá cược Hệ Thống)')
 @Controller('bets')
@@ -40,11 +47,21 @@ export class BetController {
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleEnum.ADMIN)
+  @ApiBearerAuth()
   @ApiOperation({
-    summary: 'ADMIN lấy toàn bộ các bet đặt cược của hệ thống',
+    summary:
+      'ADMIN lấy toàn bộ các bet đặt cược của hệ thống (có filter theo kết quả)',
   })
-  async getBet(): Promise<ResponseBetDto> {
-    return this.betService.findAllBets();
+  @ApiQuery({
+    name: 'result',
+    enum: BetResultEnum,
+    required: false,
+    description: 'Lọc danh sách cược theo kết quả (VD: PENDING, WIN, LOSE)',
+  })
+  async getBet(
+    @Query('result') result?: BetResultEnum,
+  ): Promise<ResponseBetDto[]> {
+    return this.betService.findAllBets(result);
   }
 
   @Get('/my-bet')
