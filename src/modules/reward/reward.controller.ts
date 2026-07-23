@@ -8,12 +8,20 @@ import {
   Body,
   Put,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { RewardService } from './reward.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { CreateRewardDto } from './dto/create-reward.dto';
 import { ResponseRewardDto } from './dto/response-reward.dto';
+import { RewardConditionType } from 'src/constants/rewardConditionTypeEnum.enum';
+import { RewardType } from 'src/constants/rewardTypeEnum.enum';
 
 @Controller('rewards')
 @UseGuards(JwtAuthGuard)
@@ -28,11 +36,33 @@ export class RewardController {
     return await this.rewardService.createReward(dto);
   }
 
+  // @Get()
+  // @ApiOperation({ summary: 'Lấy danh sách toàn bộ phần thưởng hiện có' })
+  // @ApiResponse({ status: 20, type: [ResponseRewardDto] })
+  // async findAll(): Promise<ResponseRewardDto[]> {
+  //   return await this.rewardService.findAllRewards();
+  // }
+
   @Get()
-  @ApiOperation({ summary: 'Lấy danh sách toàn bộ phần thưởng hiện có' })
-  @ApiResponse({ status: 20, type: [ResponseRewardDto] })
-  async findAll(): Promise<ResponseRewardDto[]> {
-    return await this.rewardService.findAllRewards();
+  @ApiOperation({ summary: 'Lấy danh sách phần thưởng có hỗ trợ filter' })
+  @ApiQuery({
+    name: 'conditionType',
+    enum: RewardConditionType,
+    required: false,
+    description: 'Lọc theo điều kiện phần thưởng',
+  })
+  @ApiQuery({
+    name: 'rewardType',
+    enum: RewardType,
+    required: false,
+    description: 'Lọc theo loại phần thưởng',
+  })
+  @ApiResponse({ status: 200, type: [ResponseRewardDto] })
+  async findAll(
+    @Query('conditionType') conditionType?: RewardConditionType,
+    @Query('rewardType') rewardType?: RewardType,
+  ): Promise<ResponseRewardDto[]> {
+    return await this.rewardService.findAllRewards(conditionType, rewardType);
   }
 
   // Lấy danh sách hiển thị bảng quà tặng kèm trạng thái nút (Sẵn sàng nhận, Đã khóa, Đã mua)

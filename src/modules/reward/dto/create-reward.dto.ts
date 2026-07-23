@@ -37,7 +37,7 @@ export class CreateRewardDto {
   requiredValue: number;
 
   @ApiProperty({
-    example: RewardType.AVATAR_FRAME,
+    example: RewardType.BACKGROUND,
     enum: RewardType,
     description: 'Loại phần quà nhận được',
   })

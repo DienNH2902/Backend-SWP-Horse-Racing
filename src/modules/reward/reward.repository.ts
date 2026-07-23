@@ -7,6 +7,8 @@ import {
   ClaimedReward,
   ClaimedRewardDocument,
 } from './schemas/claimedReward.schema';
+import { RewardConditionType } from 'src/constants/rewardConditionTypeEnum.enum';
+import { RewardType } from 'src/constants/rewardTypeEnum.enum';
 
 @Injectable()
 export class RewardRepository {
@@ -24,8 +26,28 @@ export class RewardRepository {
     return await newReward.save();
   }
 
-  async findAllRewards(): Promise<RewardDocument[]> {
-    return await this.rewardModel.find().sort({ requiredValue: 1 }).exec();
+  // async findAllRewards(): Promise<RewardDocument[]> {
+  //   return await this.rewardModel.find().sort({ requiredValue: 1 }).exec();
+  // }
+
+  async findAllRewards(
+    conditionType?: RewardConditionType,
+    rewardType?: RewardType,
+  ): Promise<RewardDocument[]> {
+    const filter: Record<string, unknown> = {};
+
+    if (conditionType) {
+      filter.conditionType = conditionType;
+    }
+
+    if (rewardType) {
+      filter.rewardType = rewardType;
+    }
+
+    return await this.rewardModel
+      .find(filter)
+      .sort({ requiredValue: 1 })
+      .exec();
   }
 
   async findOneReward(filter: QueryFilter<Reward>): Promise<Reward | null> {
