@@ -12,6 +12,7 @@ import {
   UpdateRaceConditionDto,
   ResponseRaceConditionDto,
 } from './dto';
+import { RaceStatusEnum } from 'src/constants/raceStatus.enum';
 
 @Injectable()
 export class RaceConditionService {
@@ -58,6 +59,15 @@ export class RaceConditionService {
     raceId: string,
     dto: UpdateRaceConditionDto,
   ): Promise<ResponseRaceConditionDto> {
+    const race = await this.raceRepository.findById(raceId);
+    if (!race) throw new NotFoundException('Không tìm thấy race');
+
+    if (race.status !== RaceStatusEnum.SCHEDULED) {
+      throw new ConflictException(
+        'Chỉ được chỉnh sửa điều kiện khi race đang ở trạng thái Scheduled',
+      );
+    }
+
     const updated = await this.raceConditionRepository.updateByRaceId(
       raceId,
       dto,

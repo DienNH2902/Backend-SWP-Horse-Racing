@@ -21,6 +21,13 @@ export interface RaceTickFrame {
   }[];
 }
 
+export interface HorseTickState {
+  horseId: string;
+  progress: number;
+  currentSpeed: number;
+  lane: number;
+}
+
 export interface RaceEventFrame {
   tickNumber: number;
   eventType: string;

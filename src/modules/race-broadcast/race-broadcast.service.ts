@@ -9,6 +9,7 @@ import {
   RaceBroadcastGateway,
   RaceTickFrame,
   RaceEventFrame,
+  HorseTickState
 } from './gateway/race-broadcast.gateway';
 import { RaceTickRepository } from '../race-simulation/repositories/race-tick.repository';
 import { RaceEventRepository } from '../race-simulation/repositories/race-event.repository';
@@ -38,7 +39,9 @@ export class RaceBroadcastService implements OnModuleInit {
   private readonly activeReplays = new Set<string>();
 
   // Snapshot tick hiện tại để client join muộn catch-up
-  private readonly currentSnapshots = new Map<string, RaceTickFrame>();
+  // private readonly currentSnapshots = new Map<string, RaceTickFrame>();
+  private readonly currentSnapshots = new Map<string, Map<string, HorseTickState>>();
+  private readonly currentSnapshotTick = new Map<string, number>(); // raceId -> tick mới nhất
 
   constructor(
     private readonly gateway: RaceBroadcastGateway,
@@ -64,9 +67,10 @@ export class RaceBroadcastService implements OnModuleInit {
     const race = await this.raceRepo.findById(raceId);
     if (!race) throw new NotFoundException('Không tìm thấy race');
 
-    if (race.status !== RaceStatusEnum.SIMULATED) {
+    const allowedStatuses = [RaceStatusEnum.SIMULATED, RaceStatusEnum.ONGOING];
+    if (!allowedStatuses.includes(race.status as RaceStatusEnum)) {
       throw new BadRequestException(
-        `Race phải ở trạng thái "Simulated" (hiện tại: ${race.status})`,
+        `Race phải ở trạng thái "Simulated" hoặc "Ongoing" mới có thể broadcast (hiện tại: ${race.status})`,
       );
     }
 
@@ -78,6 +82,10 @@ export class RaceBroadcastService implements OnModuleInit {
 
     if (fromTick < 0 || fromTick > maxTick) {
       throw new BadRequestException(`fromTick phải trong khoảng 0–${maxTick}`);
+    }
+
+    if (race.status === RaceStatusEnum.SIMULATED) {
+      await this.raceRepo.updateStatus(raceId, RaceStatusEnum.ONGOING);
     }
 
     await this.raceRepo.updateStatus(raceId, RaceStatusEnum.ONGOING);
@@ -238,9 +246,20 @@ export class RaceBroadcastService implements OnModuleInit {
       };
 
       // Chỉ lưu snapshot cho live broadcast (không phải replay)
+      // if (mode === 'live') {
+      //   this.currentSnapshots.set(raceId, tickFrame);
+      // }
       if (mode === 'live') {
-        this.currentSnapshots.set(raceId, tickFrame);
-      }
+        let horseMap = this.currentSnapshots.get(raceId);
+        if (!horseMap) {
+          horseMap = new Map<string, HorseTickState>();
+          this.currentSnapshots.set(raceId, horseMap);
+        }
+        for (const h of tickFrame.horses) {
+          horseMap.set(h.horseId, h); // chỉ ghi đè ngựa có mặt ở tick này, ngựa khác giữ nguyên
+        }
+        this.currentSnapshotTick.set(raceId, t);
+      }      
 
       this.gateway.emitTick(raceId, tickFrame);
 
@@ -370,11 +389,22 @@ export class RaceBroadcastService implements OnModuleInit {
   private cleanup(raceId: string): void {
     this.activeBroadcasts.delete(raceId);
     this.currentSnapshots.delete(raceId);
+    this.currentSnapshotTick.delete(raceId);
   }
 
   // ── Public helpers 
+  // getCurrentSnapshot(raceId: string): RaceTickFrame | null {
+  //   return this.currentSnapshots.get(raceId) ?? null;
+  // }
+
   getCurrentSnapshot(raceId: string): RaceTickFrame | null {
-    return this.currentSnapshots.get(raceId) ?? null;
+    const horseMap = this.currentSnapshots.get(raceId);
+    if (!horseMap || horseMap.size === 0) return null;
+
+    return {
+      tickNumber: this.currentSnapshotTick.get(raceId) ?? 0,
+      horses: Array.from(horseMap.values()),
+    };
   }
 
   isBroadcasting(raceId: string): boolean {
