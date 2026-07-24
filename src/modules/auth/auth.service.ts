@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { UsersRepository } from '../user/user.repository';
 import { HashUtil } from 'src/utils/helpers';
 import { RoleEnum } from 'src/constants/roleEnum.enum';
@@ -71,6 +71,29 @@ export class AuthService {
     @InjectModel(HorseOwnerProfile.name)
     private horseOwnerModel: Model<HorseOwnerProfile>,
   ) {}
+
+  private async checkReputationPoints(
+    userIdStr: string,
+    role: RoleEnum,
+  ): Promise<void> {
+    const userId = new Types.ObjectId(userIdStr);
+
+    if (role === RoleEnum.HORSE_OWNER) {
+      const ownerProfile = await this.horseOwnerModel.findOne({ userId });
+      if (ownerProfile && (ownerProfile.reputationPoints ?? 0) < 20) {
+        throw new UnauthorizedException(
+          `Tài khoản của bạn đã bị tạm khóa do điểm uy tín xuống dưới mức tối thiểu (dưới 20 điểm), điểm uy tín hiện tại: ${ownerProfile.reputationPoints} điểm`,
+        );
+      }
+    } else if (role === RoleEnum.JOCKEY) {
+      const jockeyProfile = await this.jockeyModel.findOne({ userId });
+      if (jockeyProfile && (jockeyProfile.reputationPoints ?? 0) < 20) {
+        throw new UnauthorizedException(
+          `Tài khoản của bạn đã bị tạm khóa do điểm uy tín xuống dưới mức tối thiểu (dưới 20 điểm), điểm uy tín hiện tại: ${jockeyProfile.reputationPoints} điểm`,
+        );
+      }
+    }
+  }
 
   // Luồng xử lý đăng ký đa vai trò tập trung
   async register(dto: RegisterPayload) {
@@ -163,6 +186,8 @@ export class AuthService {
         'Tài khoản của bạn đã bị khóa, không thể đăng nhập',
       );
     }
+
+    await this.checkReputationPoints(user._id.toString(), user.role);
 
     const payload: JwtPayload = {
       sub: user._id.toString(),
@@ -285,6 +310,8 @@ export class AuthService {
         'Tài khoản Google của bạn đã bị khóa, không thể đăng nhập vào hệ thống',
       );
     }
+
+    await this.checkReputationPoints(user._id.toString(), user.role);
 
     // 3. Đóng gói payload theo đúng cấu trúc định dạng JwtPayload của hệ thống bạn
     const payload: JwtPayload = {
