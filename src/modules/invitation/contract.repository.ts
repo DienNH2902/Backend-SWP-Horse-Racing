@@ -126,4 +126,37 @@ export class ContractRepository {
     });
     return count > 0;
   }
+
+  async findActiveContractsExpiredAfterTournament(
+    cutoffDate: Date,
+  ): Promise<any[]> {
+    return this.contractModel
+      .aggregate([
+        // 1. Chỉ lấy các hợp đồng đang ACTIVE
+        {
+          $match: {
+            status: ContractStatusEnum.ACTIVE,
+          },
+        },
+        // 2. Join sang bảng tournaments dựa trên tournamentId
+        {
+          $lookup: {
+            from: 'tournaments', // Tên collection giải đấu trong DB
+            localField: 'tournamentId',
+            foreignField: '_id',
+            as: 'tournament',
+          },
+        },
+        {
+          $unwind: '$tournament',
+        },
+        // 3. Lọc giải đấu có endDate đã kết thúc trước mốc cutoffDate (hiện tại - 2 ngày)
+        {
+          $match: {
+            'tournament.endDate': { $lt: cutoffDate },
+          },
+        },
+      ])
+      .exec();
+  }
 }
