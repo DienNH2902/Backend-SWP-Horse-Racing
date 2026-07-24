@@ -9,7 +9,7 @@ import {
   IsArray,
 } from 'class-validator';
 import { Type } from 'class-transformer';
- 
+
 /**
  * Thông tin 1 race trong batch
  */
@@ -18,11 +18,11 @@ export class RaceItemDto {
   @IsString()
   @IsNotEmpty()
   name: string;
- 
+
   @ApiProperty({ example: '2026-07-15T08:00:00.000Z' })
   @IsDateString()
   startTime: string;
- 
+
   @ApiProperty({ example: '2026-07-15' })
   @IsDateString()
   date: string;
@@ -36,7 +36,7 @@ export class CreateRaceBatchDto {
   @IsString()
   @IsNotEmpty()
   tournamentId: string;
- 
+
   @ApiProperty({ type: [RaceItemDto] })
   @IsArray()
   @ArrayMinSize(1)
