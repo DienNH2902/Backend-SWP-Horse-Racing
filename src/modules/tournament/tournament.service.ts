@@ -431,6 +431,9 @@ export class TournamentService {
         status: race.status,
         date: race.date,
         startTime: race.startTime,
+        raceCourseName: race.raceCourseId?.name ?? 'N/A',
+        trackType: race.raceCourseId?.trackType ?? null,
+        distance: race.raceCourseId?.distance ?? null,
         results: raceResults
           .sort((a, b) => (a.finalRank ?? 999) - (b.finalRank ?? 999))
           .map((rr: any) => ({
