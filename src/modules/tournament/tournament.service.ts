@@ -65,6 +65,8 @@ interface PopulatedRegistration {
     totalWin?: number;
   };
 }
+
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 @Injectable()
 export class TournamentService {
   constructor(
@@ -127,25 +129,23 @@ export class TournamentService {
       );
     }
 
-    // Tính toán giới hạn 1 tháng và 3 tháng dựa trên ngày bắt đầu
-    const minEndDate = new Date(start);
-    minEndDate.setMonth(minEndDate.getMonth() + 1);
+    // Tính toán giới hạn 1 tháng (30 ngày) và 3 tháng (90 ngày) dựa trên mốc mili-giây
+    const minEndDate = new Date(start.getTime() + 30 * ONE_DAY_MS);
+    const maxEndDate = new Date(start.getTime() + 60 * ONE_DAY_MS);
 
-    const maxEndDate = new Date(start);
-    maxEndDate.setMonth(maxEndDate.getMonth() + 3);
     // Thiết lập mốc cuối ngày cho giới hạn max để tránh lệch millisecond khi so sánh
     maxEndDate.setHours(23, 59, 59, 999);
 
-    // Kiểm tra thời gian giải đấu có nằm trong khoảng từ 1 đến 3 tháng không
+    // Kiểm tra thời gian giải đấu có nằm trong khoảng từ 1 đến 2 tháng (30 - 60 ngày) không
     if (end.getTime() < minEndDate.getTime()) {
       throw new BadRequestException(
-        'Thời gian giải đấu phải kéo dài ít nhất 1 tháng',
+        'Thời gian giải đấu phải kéo dài ít nhất 1 tháng (30 ngày)',
       );
     }
 
     if (end.getTime() > maxEndDate.getTime()) {
       throw new BadRequestException(
-        'Thời gian giải đấu không được vượt quá 3 tháng',
+        'Thời gian giải đấu không được vượt quá 2 tháng (60 ngày)',
       );
     }
 
@@ -397,7 +397,6 @@ export class TournamentService {
     return { message: 'Xóa giải đấu thành công' };
   }
 
-
   async getTournamentRaceResults(
     tournamentId: string,
   ): Promise<RaceWithResultsDto[]> {
@@ -450,5 +449,5 @@ export class TournamentService {
           })),
       };
     });
-  }  
+  }
 }
