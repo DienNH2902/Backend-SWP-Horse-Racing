@@ -185,6 +185,7 @@ export class TournamentService {
   async getAllTournament(query: GetTournamentsQueryDto): Promise<any[]> {
     const tournaments = await this.tournamentRepository.findAllTournament({
       status: query.status,
+      search: query.search,
     });
 
     // Duyệt qua từng giải đấu để tính toán động availableSlot

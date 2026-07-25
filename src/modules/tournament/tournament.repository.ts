@@ -23,8 +23,13 @@ export class TournamentRepository {
 
   async findAllTournament(filter: {
     status?: TournamentStatusEnum;
+    search?: string;
   }): Promise<TournamentDocument[]> {
     const query: any = {};
+
+    if (filter.search) {
+      query.title = { $regex: filter.search, $options: 'i' };
+    }
 
     if (filter.status) {
       query.status = filter.status;
