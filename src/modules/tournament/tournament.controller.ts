@@ -64,7 +64,8 @@ export class TournamentController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Lấy danh sách tất cả giải đấu (Có thể lọc theo trạng thái)',
+    summary:
+      'Lấy danh sách tất cả giải đấu (Có thể search và lọc theo trạng thái)',
   })
   async getAllTournament(@Query() query: GetTournamentsQueryDto) {
     return await this.tournamentService.getAllTournament(query);
@@ -160,7 +161,7 @@ export class TournamentController {
 
   @Get(':id/results')
   @ApiOperation({
-    summary: 'Xem kết quả các race trong 1 giải đấu'
+    summary: 'Xem kết quả các race trong 1 giải đấu',
   })
   getTournamentRaceResults(@Param('id') id: string) {
     return this.tournamentService.getTournamentRaceResults(id);
