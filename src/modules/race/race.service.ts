@@ -162,9 +162,27 @@ export class RaceService {
       );
     }    
 
+    let previousDate: Date | null = null;
+    let previousName: string | null = null;
+
+    if (round1Count > 0) {
+      const existingRound1 = await this.raceRepository.findByTournamentAndRound(
+        dto.tournamentId,
+        1,
+      );
+      const lastExistingDate = existingRound1.reduce((latest, r) => {
+        const d = new Date(r.date);
+        return d > latest ? d : latest;
+      }, new Date(0));
+
+      previousDate = lastExistingDate;
+      previousName = 'race vòng 1 đã tồn tại gần nhất';
+    }
+
     // Validate tất cả date nằm trong startDate–endDate tournament
     for (const item of dto.races) {
       const raceDate = new Date(item.date);
+
       if (
         raceDate < new Date(tournament.startDate) ||
         raceDate > new Date(tournament.endDate)
@@ -174,6 +192,17 @@ export class RaceService {
             `${tournament.startDate} → ${tournament.endDate}`,
         );
       }
+
+      if (previousDate && raceDate <= previousDate) {
+        throw new BadRequestException(
+          `Race "${item.name}" (ngày ${item.date}) phải diễn ra sau ${
+            previousName ?? 'race trước đó'
+          } (ngày ${previousDate.toISOString().split('T')[0]}). ` 
+        );
+      }
+
+      previousDate = raceDate;
+      previousName = `race "${item.name}"`;
     }
 
     // Repository tự lo raceOrder + ObjectId conversion
@@ -184,7 +213,7 @@ export class RaceService {
     return created.map((r) => this.toResponse(r));
   }
 
-  // Hệ thống tự động tạo race vòng 2 sau khi vòng 1 kết thúc
+  
   async createFinalRace(
     tournamentId: string,
     startTime: string,
@@ -213,22 +242,29 @@ export class RaceService {
       );
     }
 
-    // Validate date phải sau race cuối cùng của round 1
+    // Validate date phải sau race cuối cùng của round 1 (không trùng ngày)
     const round1Races = await this.raceRepository.findByTournamentAndRound(
       tournamentId,
       1,
     );
-    if (round1Races.length > 0) {
-      const lastRound1Date = round1Races.reduce((latest, r) => {
-        const d = new Date(r.date);
-        return d > latest ? d : latest;
-      }, new Date(0));
 
-      if (raceDate <= lastRound1Date) {
-        throw new BadRequestException(
-          `Ngày race chung kết phải sau ngày race vòng 1 cuối cùng (${lastRound1Date.toISOString().split('T')[0]})`,
-        );
-      }
+    if (round1Races.length === 0) {
+      throw new BadRequestException(
+        'Chưa có race vòng 1 nào, không thể tạo race chung kết',
+      );
+    }
+
+    const lastRound1Date = round1Races.reduce((latest, r) => {
+      const d = new Date(r.date);
+      return d > latest ? d : latest;
+    }, new Date(0));
+
+    if (raceDate <= lastRound1Date) {
+      throw new BadRequestException(
+        `Ngày race chung kết (${date}) phải sau ngày race vòng 1 cuối cùng ` +
+          `(${lastRound1Date.toISOString().split('T')[0]}). ` +
+          `Không được trùng ngày hoặc trước race vòng 1.`,
+      );
     }
 
     const finalRace = await this.raceRepository.createRound2Race(
