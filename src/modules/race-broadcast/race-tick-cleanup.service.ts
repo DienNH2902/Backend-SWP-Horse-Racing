@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
 import { RaceTickRepository } from '../race-simulation/repositories/race-tick.repository';
 import { RaceRepository } from '../race/race.repository';
 
@@ -13,8 +13,11 @@ export class RaceTickCleanupService {
     private readonly raceRepo: RaceRepository,
   ) {}
 
-  // Chạy lúc 2:00 AM mỗi ngày
-  @Cron(CronExpression.EVERY_DAY_AT_2AM)
+  // Chạy lúc 23:59 tối Chủ Nhật hàng tuần
+  // Cron format: giây phút giờ ngày-trong-tháng tháng ngày-trong-tuần
+  @Cron('59 23 * * 0', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+  })
   async cleanupOldRaceTicks(): Promise<void> {
     this.logger.log('[CLEANUP] Bắt đầu xóa RaceTick cũ...');
 

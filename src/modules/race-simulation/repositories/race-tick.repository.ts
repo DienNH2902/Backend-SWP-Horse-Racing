@@ -50,7 +50,7 @@ export class RaceTickRepository {
     return result ? result.tickNumber : 0;
   }
 
-  // Xóa toàn bộ tick sau khi race kết thúc (Phase 5)
+  // Xóa toàn bộ tick sau khi race kết thúc
   async deleteByRaceId(raceId: string): Promise<void> {
     await this.raceTickModel
       .deleteMany({ raceId: new Types.ObjectId(raceId) })
