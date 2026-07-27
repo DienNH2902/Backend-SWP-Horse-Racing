@@ -207,7 +207,7 @@ export class UsersRepository {
   ): Promise<User | null> {
     return await this.userModel
       .findByIdAndUpdate(
-        id,
+        new Types.ObjectId(id),
         { $set: { status: accountStatus } },
         { returnDocument: 'after' },
       )

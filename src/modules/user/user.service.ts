@@ -22,6 +22,7 @@ import { RawResultRepository } from '../raw-result/raw-result.repository';
 import { PrizeRepository } from '../prize-distribution/prize.repository';
 import { AdjustPointsDto } from './dto/admin-adjust-points.dto';
 import { AdjustReputationPointsDto } from './dto/admin-adjust-reputation.dto';
+import { Types } from 'mongoose';
 
 @Injectable()
 export class UsersService {
@@ -243,12 +244,30 @@ export class UsersService {
     id: string,
     accountStatus: AccountStatusEnum,
   ): Promise<ResponseUserDto> {
-    const user = await this.userRepository.updateAccountStatus(
+    const user = await this.userRepository.findOneUser(new Types.ObjectId(id));
+
+    if (!user) {
+      throw new NotFoundException(
+        'Không tìm thấy người dùng để cập nhật trạng thái',
+      );
+    }
+
+    if (user.status === AccountStatusEnum.DELETED) {
+      throw new BadRequestException(
+        'Tài khoản đã bị xóa, không thể cập nhật trạng thái',
+      );
+    }
+
+    const updatedUser = await this.userRepository.updateAccountStatus(
       id,
       accountStatus,
     );
 
-    return this.toResponse(user);
+    if (!updatedUser) {
+      throw new NotFoundException('Cập nhật trạng thái thất bại');
+    }
+
+    return this.toResponse(updatedUser);
   }
 
   async updatePassword(
@@ -436,10 +455,19 @@ export class UsersService {
   }
 
   async removeUser(id: string): Promise<any> {
+    const user = await this.userRepository.findOneUser(new Types.ObjectId(id));
+
+    if (!user) throw new BadRequestException('Không tìm thấy người dùng');
+
+    if (user.status === AccountStatusEnum.DELETED) {
+      throw new BadRequestException('Tài khoản này đã bị xóa trước đó rồi');
+    }
+
     const deletedUser = await this.userRepository.deleteUser(id);
     if (!deletedUser) {
       throw new NotFoundException('Không tìm thấy người dùng');
     }
+
     return deletedUser;
   }
 }
