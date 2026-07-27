@@ -440,6 +440,11 @@ export class UsersService {
     if (!deletedUser) {
       throw new NotFoundException('Không tìm thấy người dùng');
     }
+
+    if (deletedUser.status === AccountStatusEnum.DELETED) {
+      throw new BadRequestException('Tài khoản này đã bị xóa trước đó rồi');
+    }
+
     return deletedUser;
   }
 }
