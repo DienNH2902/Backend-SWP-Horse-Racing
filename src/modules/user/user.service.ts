@@ -436,6 +436,10 @@ export class UsersService {
   }
 
   async removeUser(id: string): Promise<any> {
-    return this.userRepository.deleteUser(id);
+    const deletedUser = await this.userRepository.deleteUser(id);
+    if (!deletedUser) {
+      throw new NotFoundException('Không tìm thấy người dùng');
+    }
+    return deletedUser;
   }
 }
