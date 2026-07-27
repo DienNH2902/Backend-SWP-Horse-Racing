@@ -187,6 +187,12 @@ export class AuthService {
       );
     }
 
+    if (user.status === AccountStatusEnum.DELETED) {
+      throw new UnauthorizedException(
+        'Tài khoản này đã bị xóa, không thể đăng nhập',
+      );
+    }
+
     await this.checkReputationPoints(user._id.toString(), user.role);
 
     const payload: JwtPayload = {
@@ -308,6 +314,12 @@ export class AuthService {
     if (user.status === AccountStatusEnum.BANNED) {
       throw new UnauthorizedException(
         'Tài khoản Google của bạn đã bị khóa, không thể đăng nhập vào hệ thống',
+      );
+    }
+
+    if (user.status === AccountStatusEnum.DELETED) {
+      throw new UnauthorizedException(
+        'Tài khoản này đã bị xóa, không thể đăng nhập',
       );
     }
 

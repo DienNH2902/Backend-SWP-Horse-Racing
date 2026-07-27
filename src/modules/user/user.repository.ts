@@ -361,7 +361,13 @@ export class UsersRepository {
   }
 
   async deleteUser(id: string): Promise<User | null> {
-    return this.userModel.findByIdAndDelete(id).exec();
+    return this.userModel
+      .findByIdAndUpdate(
+        id,
+        { status: AccountStatusEnum.DELETED },
+        { returnDocument: 'after' },
+      )
+      .exec();
   }
 
   async findAdminUser(): Promise<User | null> {
