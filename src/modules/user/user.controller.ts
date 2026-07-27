@@ -314,8 +314,13 @@ export class UsersController {
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Delete user' })
-  remove(@Param('id') id: string) {
-    return this.userService.removeUser(id);
+  @ApiOperation({
+    summary: 'Xóa mềm người dùng (chuyển trạng thái sang DELETED)',
+  })
+  async remove(@Param('id') id: string) {
+    await this.userService.removeUser(id);
+    return {
+      message: 'Xóa người dùng thành công (Deleted)',
+    };
   }
 }

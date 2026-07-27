@@ -1,5 +1,5 @@
 export enum AccountStatusEnum {
   ACTIVE = 'Active',
-  INACTIVE = 'Inactive',
+  DELETED = 'Deleted',
   BANNED = 'Banned',
 }
