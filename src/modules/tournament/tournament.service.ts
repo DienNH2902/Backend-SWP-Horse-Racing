@@ -375,9 +375,31 @@ export class TournamentService {
       throw new NotFoundException('Không tìm thấy giải đấu yêu cầu');
     }
 
+    if (
+      tournament.status === TournamentStatusEnum.COMPLETED ||
+      tournament.status === TournamentStatusEnum.CANCELED
+    )
+      throw new BadRequestException(
+        `Trạng thái giải hiện tại: ${tournament.status}, không thể cập nhật`,
+      );
+
+    if (dto.status === TournamentStatusEnum.CANCELED) {
+      const hasRace = await this.raceRepository.findByTournament(id);
+      if (hasRace && hasRace.length > 0) {
+        throw new BadRequestException(
+          `Giải đấu này đã có cuộc đua, không thể hủy`,
+        );
+      }
+    }
+
     const updated = await this.tournamentRepository.updateTournament(id, {
       status: dto.status,
     });
+
+    if (!updated) {
+      throw new NotFoundException('Cập nhật trạng thái giải đấu thất bại');
+    }
+
     return this.toResponse(updated);
   }
 
