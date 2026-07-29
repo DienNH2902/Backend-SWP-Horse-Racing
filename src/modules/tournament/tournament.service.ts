@@ -129,7 +129,7 @@ export class TournamentService {
       );
     }
 
-    // Tính toán giới hạn 1 tháng (30 ngày) và 3 tháng (90 ngày) dựa trên mốc mili-giây
+    // Tính toán giới hạn 1 tháng (30 ngày) và 2 tháng (60 ngày) dựa trên mốc mili-giây
     const minEndDate = new Date(start.getTime() + 30 * ONE_DAY_MS);
     const maxEndDate = new Date(start.getTime() + 60 * ONE_DAY_MS);
 

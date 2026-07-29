@@ -124,10 +124,10 @@ export class SystemWalletService {
         },
         {
           $project: {
-            type: 1,
-            amount: 1,
-            year: { $year: '$createdAt' },
-            month: { $month: '$createdAt' },
+            type: 1, // chỉ giữ lại type
+            amount: 1, // chỉ giữ lại amount
+            year: { $year: '$createdAt' }, // lấy được năm
+            month: { $month: '$createdAt' }, // lấy được tháng
           },
         },
         {
@@ -136,9 +136,10 @@ export class SystemWalletService {
               year: '$year',
               month: '$month',
               type: '$type',
-            },
-            monthlyAmount: { $sum: '$amount' },
+            }, // chia ra theo type và theo năm tháng
+            monthlyAmount: { $sum: '$amount' }, // tổng tiền tháng đó
             monthlyCommission: {
+              // tổng tiền tháng đó, nếu tiền phạt thì * 10%
               $sum: {
                 $cond: [
                   { $eq: ['$type', TransactionTypeEnum.PENALTY] },
@@ -164,15 +165,16 @@ export class SystemWalletService {
 
     for (const item of monthlyData) {
       const yearStr = item._id.year.toString();
-      const monthStr = item._id.month.toString().padStart(2, '0');
+      const monthStr = item._id.month.toString().padStart(2, '0'); // format như tháng 7 thành 07
       const key = `${yearStr}-${monthStr}`;
 
       if (!monthlyMap.has(key)) {
-        monthlyMap.set(key, { entryFee: 0, penaltyCommission: 0 });
+        monthlyMap.set(key, { entryFee: 0, penaltyCommission: 0 }); // nếu chưa có data, mặc định tháng đó doanh thu bằng 0
       }
 
       const current = monthlyMap.get(key)!;
 
+      // cộng dồn tiền và type tương ứng từng tháng
       if (item._id.type === TransactionTypeEnum.ENTRY_FEE.toString()) {
         current.entryFee += item.monthlyAmount;
       } else if (item._id.type === TransactionTypeEnum.PENALTY.toString()) {
@@ -186,7 +188,7 @@ export class SystemWalletService {
         month: key,
         entryFee: val.entryFee,
         penaltyCommission: val.penaltyCommission,
-        totalMonthlyRevenue: val.entryFee + val.penaltyCommission,
+        totalMonthlyRevenue: val.entryFee + val.penaltyCommission, // tổng doanh thu tháng thì trả ra tổng entryFee và penaltyCommission
       });
     });
 
