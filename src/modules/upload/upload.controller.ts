@@ -1,62 +1,3 @@
-// import {
-//   Controller,
-//   Post,
-//   UseInterceptors,
-//   UploadedFile,
-//   BadRequestException,
-// } from '@nestjs/common';
-// import { FileInterceptor } from '@nestjs/platform-express';
-// import { diskStorage } from 'multer';
-// import { extname } from 'path';
-
-// @Controller('upload')
-// export class UploadController {
-//   @Post('avatar')
-//   @UseInterceptors(
-//     FileInterceptor('file', {
-//       storage: diskStorage({
-//         // Định nghĩa thư mục lưu file trên đĩa cứng VPS
-//         destination: './uploads/avatars',
-//         filename: (req, file, callback) => {
-//           // Tạo tên file duy nhất: avatar-timestamp-random.png
-//           const uniqueSuffix =
-//             Date.now() + '-' + Math.round(Math.random() * 1e9);
-//           const ext = extname(file.originalname);
-//           callback(null, `avatar-${uniqueSuffix}${ext}`);
-//         },
-//       }),
-//       fileFilter: (req, file, callback) => {
-//         // Chỉ cho phép upload các định dạng ảnh phổ biến
-//         if (!file.mimetype.match(/\/(jpg|jpeg|png|webp)$/)) {
-//           return callback(
-//             new BadRequestException(
-//               'Chỉ chấp nhận file ảnh (jpg, jpeg, png, webp)!',
-//             ),
-//             false,
-//           );
-//         }
-//         callback(null, true);
-//       },
-//       limits: {
-//         fileSize: 5 * 1024 * 1024, // Giới hạn file tối đa 5MB (Bảo vệ băng thông Cloudflare Tunnel)
-//       },
-//     }),
-//   )
-//   uploadAvatar(@UploadedFile() file: Express.Multer.File) {
-//     if (!file) {
-//       throw new BadRequestException('Không tìm thấy file để upload');
-//     }
-
-//     // Trả về URL public của ảnh dựa trên domain API đã deploy của bạn
-//     const fileUrl = `https://api.horse-racing.io.vn/static/avatars/${file.filename}`;
-
-//     return {
-//       message: 'Upload ảnh thành công!',
-//       url: fileUrl,
-//     };
-//   }
-// }
-
 import {
   Controller,
   Post,
@@ -408,3 +349,62 @@ export class UploadController {
     };
   }
 }
+
+// import {
+//   Controller,
+//   Post,
+//   UseInterceptors,
+//   UploadedFile,
+//   BadRequestException,
+// } from '@nestjs/common';
+// import { FileInterceptor } from '@nestjs/platform-express';
+// import { diskStorage } from 'multer';
+// import { extname } from 'path';
+
+// @Controller('upload')
+// export class UploadController {
+//   @Post('avatar')
+//   @UseInterceptors(
+//     FileInterceptor('file', {
+//       storage: diskStorage({
+//         // Định nghĩa thư mục lưu file trên đĩa cứng VPS
+//         destination: './uploads/avatars',
+//         filename: (req, file, callback) => {
+//           // Tạo tên file duy nhất: avatar-timestamp-random.png
+//           const uniqueSuffix =
+//             Date.now() + '-' + Math.round(Math.random() * 1e9);
+//           const ext = extname(file.originalname);
+//           callback(null, `avatar-${uniqueSuffix}${ext}`);
+//         },
+//       }),
+//       fileFilter: (req, file, callback) => {
+//         // Chỉ cho phép upload các định dạng ảnh phổ biến
+//         if (!file.mimetype.match(/\/(jpg|jpeg|png|webp)$/)) {
+//           return callback(
+//             new BadRequestException(
+//               'Chỉ chấp nhận file ảnh (jpg, jpeg, png, webp)!',
+//             ),
+//             false,
+//           );
+//         }
+//         callback(null, true);
+//       },
+//       limits: {
+//         fileSize: 5 * 1024 * 1024, // Giới hạn file tối đa 5MB (Bảo vệ băng thông Cloudflare Tunnel)
+//       },
+//     }),
+//   )
+//   uploadAvatar(@UploadedFile() file: Express.Multer.File) {
+//     if (!file) {
+//       throw new BadRequestException('Không tìm thấy file để upload');
+//     }
+
+//     // Trả về URL public của ảnh dựa trên domain API đã deploy của bạn
+//     const fileUrl = `https://api.horse-racing.io.vn/static/avatars/${file.filename}`;
+
+//     return {
+//       message: 'Upload ảnh thành công!',
+//       url: fileUrl,
+//     };
+//   }
+// }
