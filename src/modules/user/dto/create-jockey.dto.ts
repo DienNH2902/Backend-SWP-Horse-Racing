@@ -1,5 +1,5 @@
 import { ApiProperty, IntersectionType } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty, IsNumber, Min } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsNumber, Max, Min } from 'class-validator';
 import { CreateUserDto } from './create-user.dto';
 import { RoleEnum } from 'src/constants/roleEnum.enum';
 
@@ -18,12 +18,14 @@ export class CreateJockeyDto {
   @IsNumber()
   @IsNotEmpty()
   @Min(30)
+  @Max(120)
   weight: number;
 
   @ApiProperty({ example: 162, description: 'Chiều cao của nài ngựa (cm)' })
   @IsNumber()
   @IsNotEmpty()
   @Min(100)
+  @Max(220)
   height: number;
 }
 
