@@ -68,6 +68,7 @@ export class BetService {
     const winRate = winRatePercentage / 100;
 
     let baseOdds = 5.0;
+    // con số 5.0 (tương đương 20%) là mức an toàn, không quá nhỏ như 1.0 hay 1.5 do nhân thưởng không nhiều, cũng không quá lớn như 8.0 9.0 gây mất cân bằng nếu ngựa đó bất ngờ thắng
     if (winRate > 0) {
       baseOdds = 1 / winRate;
     }
@@ -188,7 +189,7 @@ export class BetService {
         'Bạn không sở hữu thẻ bảo hiểm khả dụng để sử dụng',
       );
     }
-    const isInsuranceApplied = !!(dto.useInsuranceCard && targetInsuranceClaim);
+    const isInsuranceApplied = !!(dto.useInsuranceCard && targetInsuranceClaim); // chuyển đổi kiểu giá trị về true flase không để bị undefined và null
 
     const finalOdds = this.calculateOdds(
       horse.winRate || 0,
@@ -357,12 +358,12 @@ export class BetService {
     // Xác định trạng thái cuối cùng của đơn cược có được bảo hiểm hay không
     // Trạng thái true khi: Đơn cũ đã dùng sẵn rồi HOẶC đơn mới kích hoạt thành công với thẻ mới
     const isInsuranceApplied =
-      dto.useInsuranceCard !== undefined
+      dto.useInsuranceCard !== undefined // nếu client không truyền thẻ bảo hiểm thì sẽ undefined
         ? !!(
             dto.useInsuranceCard &&
-            (bet.isInsuranceCardUsed || targetInsuranceClaim)
+            (bet.isInsuranceCardUsed || targetInsuranceClaim) // nếu có truyền TRUE thì xét thêm đơn cũ đã dùng thẻ chưa, nếu có thì coi đơn cũ đã có thẻ chưa, nếu chưa thì xem kho có sở hữu thẻ không
           )
-        : bet.isInsuranceCardUsed;
+        : bet.isInsuranceCardUsed; // nếu truyền FALSE thì bet.isInsuranceCardUsed === FALSE
 
     const session = await this.connection.startSession();
     session.startTransaction();
@@ -614,7 +615,7 @@ export class BetService {
             // Log giao dịch hoàn tiền bảo hiểm
             await this.pointsTransactionService.logTransaction({
               userId: this.resolveId(specProfile.userId),
-              type: PointsTransactionType.REFUND, // Hoặc EARN tùy cấu hình hệ thống của bạn
+              type: PointsTransactionType.REFUND, // Hoặc EARN
               amount: refundPoints,
               balanceAfter: currentBalance,
               reason: `Hoàn lại 50% điểm cược do sử dụng thẻ bảo hiểm tại vòng đua [${raceId}]`,
