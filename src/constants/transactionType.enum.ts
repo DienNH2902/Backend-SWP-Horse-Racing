@@ -7,4 +7,5 @@ export enum TransactionTypeEnum {
   REFUND = 'Refund',
   PENALTY = 'Penalty',
   HOLD_BALANCE = 'Hold_balance',
+  CONTRACT_COMPLETED = 'Contract_completed',
 }
