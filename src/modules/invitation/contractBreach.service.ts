@@ -647,7 +647,7 @@ export class ContractBreachService {
       receiverId: new Types.ObjectId(jockeyUserId),
       content: `Giải ngân hoàn tất hợp đồng thi đấu giải ${jockeyCompensationLimit}. Jockey nhận tiền công: ${contract.contractAmount}`,
       amount: contract.contractAmount,
-      type: TransactionTypeEnum.PRIZE_PAYOUT, // Đảm bảo đúng enum payout hệ thống của bạn
+      type: TransactionTypeEnum.CONTRACT_COMPLETED, // Đảm bảo đúng enum payout hệ thống của bạn
     });
 
     // 4. Gửi thông báo hoàn thành đến cả 2 tài khoản
