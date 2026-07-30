@@ -8,6 +8,7 @@ export enum NotificationTitleEnum {
   WITHDRAW_FAILED = 'Rút tiền thất bại',
 
   INVITATION_RECEIVED = 'Lời mời hợp tác mới',
+  INVITATION_SENT = 'Lời mời đã được gửi',
   INVITATION_ACCEPTED = 'Lời mời đã được chấp nhận',
   INVITATION_REJECTED = 'Lời mời đã bị từ chối',
   CONTRACT_BREACHED_SENT = 'Tố cáo vi phạm hợp đồng đã gửi',

@@ -404,12 +404,28 @@ export class ContractBreachService {
       );
 
       // Tạo Transaction ghi nhận dòng tiền phạt của Owner
+      // await this.transactionRepository.create({
+      //   senderId: new Types.ObjectId(ownerUserId),
+      //   receiverId: new Types.ObjectId(jockeyUserId),
+      //   content: `Khấu trừ vi phạm hợp đồng: Phạt đền bù ${finalCompensationAmount} (Hệ thống thu 10%: ${systemCommission}, Jockey nhận 90%: ${jockeyReceived})`,
+      //   amount: finalCompensationAmount,
+      //   type: TransactionTypeEnum.PENALTY,
+      // });
+
       await this.transactionRepository.create({
         senderId: new Types.ObjectId(ownerUserId),
-        receiverId: new Types.ObjectId(jockeyUserId),
-        content: `Khấu trừ vi phạm hợp đồng: Phạt đền bù ${finalCompensationAmount} (Hệ thống thu 10%: ${systemCommission}, Jockey nhận 90%: ${jockeyReceived})`,
+        receiverId: null, // hoặc System Wallet ID
+        content: `Khấu trừ vi phạm hợp đồng do hủy/vi phạm điều khoản.`,
         amount: finalCompensationAmount,
-        type: TransactionTypeEnum.PENALTY,
+        type: TransactionTypeEnum.PENALTY, // Hoặc PENALTY_DEDUCTION
+      });
+
+      await this.transactionRepository.create({
+        senderId: null, // hoặc System Wallet ID
+        receiverId: new Types.ObjectId(jockeyUserId),
+        content: `Nhận tiền bồi thường vi phạm hợp đồng từ chủ ngựa (Đã trừ 10% phí hệ thống: ${systemCommission}).`,
+        amount: jockeyReceived,
+        type: TransactionTypeEnum.COMPENSATION, // Hoặc BREACH_COMPENSATION
       });
 
       // Gửi Notification cảnh báo vi phạm
@@ -478,12 +494,28 @@ export class ContractBreachService {
       );
 
       // Gửi transaction
+      // await this.transactionRepository.create({
+      //   senderId: new Types.ObjectId(jockeyUserId),
+      //   receiverId: new Types.ObjectId(ownerUserId),
+      //   content: `Khấu trừ vi phạm hợp đồng Jockey: Phạt đền bù ${finalCompensationAmount} (Hệ thống thu 10%: ${systemCommission}, Owner nhận 90%: ${ownerReceived})`,
+      //   amount: finalCompensationAmount,
+      //   type: TransactionTypeEnum.PENALTY,
+      // });
+
       await this.transactionRepository.create({
         senderId: new Types.ObjectId(jockeyUserId),
-        receiverId: new Types.ObjectId(ownerUserId),
-        content: `Khấu trừ vi phạm hợp đồng Jockey: Phạt đền bù ${finalCompensationAmount} (Hệ thống thu 10%: ${systemCommission}, Owner nhận 90%: ${ownerReceived})`,
+        receiverId: null, // hoặc System Wallet ID
+        content: `Khấu trừ vi phạm hợp đồng do hủy/vi phạm điều khoản.`,
         amount: finalCompensationAmount,
-        type: TransactionTypeEnum.PENALTY,
+        type: TransactionTypeEnum.PENALTY, // Hoặc PENALTY_DEDUCTION
+      });
+
+      await this.transactionRepository.create({
+        senderId: null, // hoặc System Wallet ID
+        receiverId: new Types.ObjectId(ownerUserId),
+        content: `Nhận tiền bồi thường vi phạm hợp đồng từ Jockey (Đã trừ 10% phí hệ thống: ${systemCommission}).`,
+        amount: ownerReceived,
+        type: TransactionTypeEnum.COMPENSATION, // Hoặc BREACH_COMPENSATION
       });
 
       // Gửi thông báo cho 2 bên
