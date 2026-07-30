@@ -675,10 +675,18 @@ export class ContractBreachService {
 
     // 3. Tạo Transaction ghi nhận thanh toán giải ngân thành công từ Owner sang Jockey
     await this.transactionRepository.create({
-      senderId: new Types.ObjectId(ownerUserId),
+      senderId: null,
       receiverId: new Types.ObjectId(jockeyUserId),
       content: `Giải ngân hoàn tất hợp đồng thi đấu giải ${jockeyCompensationLimit}. Jockey nhận tiền công: ${contract.contractAmount}`,
-      amount: contract.contractAmount,
+      amount: contract.contractAmount + jockeyCompensationLimit,
+      type: TransactionTypeEnum.CONTRACT_COMPLETED, // Đảm bảo đúng enum payout hệ thống của bạn
+    });
+
+    await this.transactionRepository.create({
+      senderId: null,
+      receiverId: new Types.ObjectId(ownerUserId),
+      content: `Giải ngân hoàn tất hợp đồng thi đấu giải ${ownerCompensationLimit}. Tiền công: ${contract.contractAmount} đã chuyển sang cho Jockey`,
+      amount: ownerCompensationLimit,
       type: TransactionTypeEnum.CONTRACT_COMPLETED, // Đảm bảo đúng enum payout hệ thống của bạn
     });
 
