@@ -200,6 +200,15 @@ export class JockeyInvitationService {
       invitedAt: new Date(),
     });
 
+    //3. Bắn notification cho Owner đã gửi
+    await this.notificationRepository.create({
+      userId: new Types.ObjectId(horseOwnerId),
+      type: NotificationTypeEnum.INVITATION_SENT,
+      title: NotificationTitleEnum.INVITATION_SENT,
+      content: `Bạn đã gửi lời mời tham gia giải đấu. Tiền thuê đề xuất: ${dto.proposeContractAmount}`,
+      isRead: false,
+    });
+
     // 3. Bắn Notification cho Jockey biết có lời mời mới gửi đến
     await this.notificationRepository.create({
       userId: new Types.ObjectId(dto.jockeyId),
