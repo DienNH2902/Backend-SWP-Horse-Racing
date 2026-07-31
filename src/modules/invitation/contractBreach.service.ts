@@ -36,6 +36,8 @@ import { BreachActionTypeEnum } from 'src/constants/breachingTypeEnum.enum';
 import { ContractDocument } from './schemas/contract.schema';
 import { ContractBreachDocument } from './schemas/contractBreach.schema';
 import { BreachStatusEnum } from 'src/constants/breachStatusEnum.enum';
+import { TournamentRepository } from '../tournament/tournament.repository';
+import { TournamentStatusEnum } from 'src/constants/tournamentStatusEnum.enum';
 
 @Injectable()
 export class ContractBreachService {
@@ -44,6 +46,7 @@ export class ContractBreachService {
     private readonly raceRepository: RaceRepository,
     private readonly betService: BetService,
     private readonly registrationRepository: RegistrationRepository,
+    private readonly tournamentRepository: TournamentRepository,
     private readonly contractRepository: ContractRepository,
     private readonly notificationRepository: NotificationRepository,
     private readonly transactionRepository: TransactionRepository,
@@ -617,6 +620,25 @@ export class ContractBreachService {
     if (!contract || contract.status !== ContractStatusEnum.ACTIVE) {
       throw new BadRequestException(
         'Hợp đồng không tồn tại hoặc không ở trạng thái hoạt động để kết thúc tốt đẹp',
+      );
+    }
+
+    const tournamentIdStr =
+      contract.tournamentId?._id?.toString() ||
+      contract.tournamentId?.toString();
+
+    const tournament =
+      await this.tournamentRepository.findById(tournamentIdStr);
+
+    if (!tournament) {
+      throw new BadRequestException(
+        'Không tìm thấy giải đấu và trạng thái giải trong hợp đồng',
+      );
+    }
+
+    if (tournament.status !== TournamentStatusEnum.COMPLETED) {
+      throw new BadRequestException(
+        'Trạng thái giải chưa kết thúc, không thể hoàn thành hợp đồng',
       );
     }
 

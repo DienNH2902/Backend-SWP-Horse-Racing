@@ -23,6 +23,7 @@ import { ContractBreachRepository } from './contractBreach.repository';
 import { RegistrationModule } from '../registration/registration.module';
 import { BetModule } from '../bet/bet.module';
 import { RaceModule } from '../race/race.module';
+import { TournamentModule } from '../tournament/tournament.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { RaceModule } from '../race/race.module';
     HorseModule,
     UserModule,
     NotificationModule,
+    forwardRef(() => TournamentModule),
     PaymentModule,
     BetModule,
     RaceModule,
