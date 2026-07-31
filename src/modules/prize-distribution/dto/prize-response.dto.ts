@@ -25,4 +25,8 @@ export class PrizeResponseDto {
   @ApiProperty()
   @Expose()
   updatedAt: Date;
+
+  @ApiProperty()
+  @Expose()
+  isDistributed: boolean;
 }
