@@ -15,6 +15,9 @@ export class Prize {
 
   @Prop({ required: true })
   amount: number;
+
+  @Prop({ required: true, default: false })
+  isDistributed: boolean;
 }
 
 export const PrizeSchema = SchemaFactory.createForClass(Prize);
