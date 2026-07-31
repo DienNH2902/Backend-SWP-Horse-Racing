@@ -214,6 +214,8 @@
             session,
           );
 
+          await this.prizeRepo.findByIdAnhUpdateDistributed(prize._id.toString());
+
           // 15. Đóng tournament
           await this.tournamentRepo.updateTournamentWithSession(
             tournamentId,

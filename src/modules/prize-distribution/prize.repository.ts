@@ -24,13 +24,27 @@ export class PrizeRepository {
       .lean()
       .exec();
   }
-  
-  async findManyByTournamentIds(tournamentIds: string[]): Promise<Prize[]> {
-    if (!tournamentIds.length) return [];
+
+  async findByIdAnhUpdateDistributed(id: string): Promise<Prize | null> {
     return this.prizeModel
-      .find({ tournamentId: { $in: tournamentIds.map(id => new Types.ObjectId(id)) } })
+      .findByIdAndUpdate(
+        id,
+        { $set: { isDistributed: true } },
+        { returnDocument: 'after' },
+      )
       .lean()
       .exec();
   }
 
+  async findManyByTournamentIds(tournamentIds: string[]): Promise<Prize[]> {
+    if (!tournamentIds.length) return [];
+    return this.prizeModel
+      .find({
+        tournamentId: {
+          $in: tournamentIds.map((id) => new Types.ObjectId(id)),
+        },
+      })
+      .lean()
+      .exec();
+  }
 }
