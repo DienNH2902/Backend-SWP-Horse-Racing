@@ -36,7 +36,10 @@ export class TournamentRepository {
     }
 
     // Luôn giữ sắp xếp theo ngày bắt đầu tăng dần
-    return await this.tournamentModel.find(query).sort({ startDate: 1 }).exec();
+    return await this.tournamentModel
+      .find(query)
+      .sort({ createdAt: -1 })
+      .exec();
   }
 
   async findTournamentById(id: string): Promise<TournamentDocument | null> {
