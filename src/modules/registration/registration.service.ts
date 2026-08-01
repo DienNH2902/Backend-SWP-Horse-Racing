@@ -231,6 +231,16 @@ export class RegistrationService {
       );
     }
 
+    const invitation = await this.invitationRepository.findByIdNoPopulate(
+      this.resolveId(reg.jockeyInvitationId),
+    );
+
+    if (!invitation) {
+      throw new NotFoundException(
+        'Không tìm thấy lời mời Jockey trong đơn đăng ký này',
+      );
+    }
+
     const race = await this.raceRepository.findOneRace({ _id: dto.raceId });
     if (!race) {
       throw new NotFoundException(
@@ -377,6 +387,10 @@ export class RegistrationService {
     await this.registrationRepository.updateById(id, {
       raceId: new Types.ObjectId(dto.raceId),
       raceName: race.name,
+    });
+
+    await this.invitationRepository.updateById(this.resolveId(invitation._id), {
+      isAdminResponse: true,
     });
 
     // 6. Notification cho owner qua NotificationRepository

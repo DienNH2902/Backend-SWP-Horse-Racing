@@ -6,6 +6,8 @@ export type JockeyInvitationDocument = JockeyInvitation & Document;
 
 @Schema({ timestamps: true })
 export class JockeyInvitation {
+  _id: Types.ObjectId;
+
   @Prop({ type: Types.ObjectId, ref: 'Tournament', required: true })
   tournamentId: Types.ObjectId;
 
@@ -45,6 +47,9 @@ export class JockeyInvitation {
 
   @Prop()
   invitedAt: Date;
+
+  @Prop({ default: false })
+  isAdminResponse: boolean;
 }
 
 export const JockeyInvitationSchema =
