@@ -123,6 +123,15 @@ export class TournamentService {
     const start = this.startOfDay(new Date(dto.startDate));
     const end = this.endOfDay(new Date(dto.endDate));
 
+    // Lấy mốc cuối ngày hôm nay để đảm bảo startDate phải bắt đầu từ ngày mai trở đi
+    const todayEnd = this.endOfDay(new Date());
+
+    if (start.getTime() <= todayEnd.getTime()) {
+      throw new BadRequestException(
+        'Ngày bắt đầu giải đấu phải sau ngày hôm nay',
+      );
+    }
+
     if (start.getTime() >= end.getTime()) {
       throw new BadRequestException(
         'Ngày bắt đầu giải đấu phải trước ngày kết thúc',
