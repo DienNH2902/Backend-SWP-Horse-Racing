@@ -12,6 +12,7 @@ import { RawResultRepository } from './raw-result.repository';
 import { RaceRepository } from '../race/race.repository';
 import { HorseRepository } from '../horse/horse.repository';
 import { UsersRepository } from '../user/user.repository';
+import { RefereeReportRepository } from '../referee-report/referee-report.repository';
 
 import { AdvancementService } from '../tournament/round-advancement.service';
 
@@ -25,6 +26,8 @@ import { NotificationTitleEnum } from 'src/constants/notificationTitleEnum.enum'
 import { SpectatorProfile } from '../user/schemas/spectator-profile.schema';
 import { NotificationRepository } from '../notification/notification.repository';
 import { JockeyStatusEnum } from 'src/constants/jockeyStatusEnum.enum';
+import { RefereeReportType } from '../../constants/refereeReportType.enum';
+
 
 @Injectable()
 export class RawResultService {
@@ -38,6 +41,7 @@ export class RawResultService {
     private readonly horseRepository: HorseRepository,
     private readonly usersRepository: UsersRepository,
     private readonly notificationRepository: NotificationRepository,
+    private readonly refereeReportRepository: RefereeReportRepository,
     @InjectModel(SpectatorProfile.name)
     private readonly spectatorProfileModel: Model<SpectatorProfile>,
     @InjectConnection() private readonly connection: Connection,
@@ -75,6 +79,16 @@ export class RawResultService {
     if (raceRefereeId !== refereeId) {
       throw new ForbiddenException(
         'Bạn không phải referee được phân công cho race này',
+      );
+    }
+
+    const hasEndReport = await this.refereeReportRepository.existsByRaceIdAndType(
+      raceId,
+      RefereeReportType.END,
+    );
+    if (!hasEndReport) {
+      throw new BadRequestException(
+        'Chưa có report kết thúc cho race này. Referee phải tạo report trước khi confirm final rank',
       );
     }
 
