@@ -64,5 +64,8 @@ export class ResponseJockeyInvitationDto {
   invitedAt: Date;
 
   @Expose()
+  isAdminResponse: boolean;
+
+  @Expose()
   createdAt: Date;
 }
