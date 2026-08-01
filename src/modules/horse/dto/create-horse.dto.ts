@@ -35,7 +35,7 @@ export class CreateHorseDto {
 
   @ApiProperty({ example: 450 })
   @IsNumber()
-  @Min(50, { message: 'Cân nặng phải tối thiểu 50kg' })
-  @Max(1500, { message: 'Cân nặng không được vượt quá 1500kg' })
+  @Min(300, { message: 'Cân nặng ngựa đua tối thiểu phải từ 300kg' })
+  @Max(700, { message: 'Cân nặng ngựa đua không vượt quá 700kg' })
   weight: number;
 }
