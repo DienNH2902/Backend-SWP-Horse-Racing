@@ -81,6 +81,7 @@ export class RaceService {
     raceObj.filledSlots = filledSlots;
     raceObj.availableSlots = totalSlots - filledSlots;
 
+
     return plainToInstance(ResponseRaceDto, raceObj, {
       excludeExtraneousValues: true,
     });
