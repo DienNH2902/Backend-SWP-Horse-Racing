@@ -137,6 +137,11 @@ export class HorseService {
       );
     }
 
+    if (horse.horseStatus !== HorseStatusEnum.IDLE)
+      throw new BadRequestException(
+        `Ngựa đang ở trạng thái: ${horse.horseStatus}, không thể cập nhật`,
+      );
+
     const updated = await this.horseRepository.findHorseByIdAndUpdate(id, {
       ...dto,
     });
