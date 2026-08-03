@@ -31,6 +31,14 @@ export class ResponseRaceDto {
   raceCourseId: string | null;
 
   @Expose()
+  @Transform(({ obj }) =>
+    obj.raceCourseId && typeof obj.raceCourseId === 'object'
+      ? obj.raceCourseId.name
+      : null,
+  )
+  raceCourseName: string;
+
+  @Expose()
   name: string;
 
   @Expose()
