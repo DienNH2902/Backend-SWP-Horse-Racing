@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { RawResultRepository } from '../raw-result/raw-result.repository';
 import { RaceRepository } from '../race/race.repository';
