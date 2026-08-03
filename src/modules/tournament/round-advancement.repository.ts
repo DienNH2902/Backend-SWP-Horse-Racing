@@ -36,12 +36,11 @@ export class RoundAdvancementRepository {
     return count > 0;
   }
 
-
   async findByFromRaceId(fromRaceId: string): Promise<RoundAdvancement[]> {
-  return this.model
-    .find({ fromRaceId: new Types.ObjectId(fromRaceId) })
-    .populate('horseId toRaceId')
-    .lean()
-    .exec();
-}
+    return this.model
+      .find({ fromRaceId: new Types.ObjectId(fromRaceId) })
+      .populate('horseId toRaceId')
+      .lean()
+      .exec();
+  }
 }
