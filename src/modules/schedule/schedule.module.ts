@@ -6,10 +6,7 @@ import { RaceModule } from '../race/race.module';
 import { RegistrationModule } from '../registration/registration.module';
 
 @Module({
-  imports: [
-    forwardRef(() => RaceModule),
-    forwardRef(() => RegistrationModule),
-  ],
+  imports: [forwardRef(() => RaceModule), forwardRef(() => RegistrationModule)],
   controllers: [ScheduleController],
   providers: [ScheduleService],
 })

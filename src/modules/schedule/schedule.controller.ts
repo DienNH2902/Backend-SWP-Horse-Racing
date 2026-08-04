@@ -26,10 +26,13 @@ export class ScheduleController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'OWNER lấy lịch RACE sắp tới của ngựa mình sở hữu',
-    description: 'Trả về danh sách race sắp diễn ra có ngựa thuộc sở hữu của owner hiện tại tham gia.',
+    description:
+      'Trả về danh sách race sắp diễn ra có ngựa thuộc sở hữu của owner hiện tại tham gia.',
   })
   getUpcomingOwnerSchedule(@Req() req: any) {
-    return this.scheduleService.getUpcomingOwnerSchedule(req.user._id as string);
+    return this.scheduleService.getUpcomingOwnerSchedule(
+      req.user._id as string,
+    );
   }
 
   @Get('upcoming/referee')
@@ -38,10 +41,13 @@ export class ScheduleController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'REFEREE lấy lịch RACE sắp tới của mình',
-    description: 'Trả về danh sách race sắp diễn ra mà referee hiện tại được phân công.',
+    description:
+      'Trả về danh sách race sắp diễn ra mà referee hiện tại được phân công.',
   })
   getUpcomingRefereeSchedule(@Req() req: any) {
-    return this.scheduleService.getUpcomingRefereeSchedule(req.user._id as string);
+    return this.scheduleService.getUpcomingRefereeSchedule(
+      req.user._id as string,
+    );
   }
 
   @Get('upcoming/jockey')
@@ -50,11 +56,12 @@ export class ScheduleController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'JOCKEY lấy lịch RACE sắp tới của mình',
-    description: 'Trả về danh sách race sắp diễn ra mà jockey hiện tại tham gia.',
-  })                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+    description:
+      'Trả về danh sách race sắp diễn ra mà jockey hiện tại tham gia.',
+  })
   getUpcomingJockeySchedule(@Req() req: any) {
-    return this.scheduleService.getUpcomingJockeySchedule(req.user._id as string);
+    return this.scheduleService.getUpcomingJockeySchedule(
+      req.user._id as string,
+    );
   }
-
-
 }
