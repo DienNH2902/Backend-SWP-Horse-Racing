@@ -9,10 +9,7 @@ import { plainToInstance } from 'class-transformer';
 
 import { RefereeReportRepository } from './referee-report.repository';
 import { RefereeReportType } from '../../constants/refereeReportType.enum';
-import {
-  CreateEndReportDto,
-  RefereeReportResponseDto,
-} from './dto/index';
+import { CreateEndReportDto, RefereeReportResponseDto } from './dto/index';
 
 import { RaceRepository } from '../race/race.repository';
 import { RaceStatusEnum } from 'src/constants/raceStatus.enum';
@@ -97,7 +94,8 @@ export class RefereeReportService {
       raceId,
       RefereeReportType.START,
     );
-    if (!report) throw new NotFoundException('Chưa có start report cho race này');
+    if (!report)
+      throw new NotFoundException('Chưa có start report cho race này');
     return this.toResponse(report);
   }
 }
