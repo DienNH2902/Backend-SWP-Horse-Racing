@@ -1,7 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsMongoId, IsOptional, IsString, IsArray } from 'class-validator';
 
-
 export class CreateEndReportDto {
   @ApiPropertyOptional({
     description: 'Danh sách ID của các RawResult bị vi phạm (nếu có)',
