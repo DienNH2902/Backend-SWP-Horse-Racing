@@ -21,7 +21,7 @@ import { RoleEnum } from 'src/constants/roleEnum.enum';
 export class RefereeReportController {
   constructor(private readonly reportService: RefereeReportService) {}
 
-  // ── POST /referee-reports/:raceId/end 
+  // ── POST /referee-reports/:raceId/end
   @Post(':raceId/end')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleEnum.REFEREE)
@@ -40,7 +40,7 @@ export class RefereeReportController {
     return await this.reportService.createEndReport(raceId, refereeId, dto);
   }
 
-  // ── GET /referee-reports/:raceId 
+  // ── GET /referee-reports/:raceId
   @Get(':raceId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleEnum.REFEREE, RoleEnum.ADMIN)
@@ -54,7 +54,7 @@ export class RefereeReportController {
     return await this.reportService.getReportsByRace(raceId);
   }
 
-  // ── GET /referee-reports/:raceId/start 
+  // ── GET /referee-reports/:raceId/start
   @Get(':raceId/start')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleEnum.REFEREE, RoleEnum.ADMIN)
