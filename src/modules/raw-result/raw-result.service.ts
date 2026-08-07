@@ -28,7 +28,6 @@ import { NotificationRepository } from '../notification/notification.repository'
 import { JockeyStatusEnum } from 'src/constants/jockeyStatusEnum.enum';
 import { RefereeReportType } from '../../constants/refereeReportType.enum';
 
-
 @Injectable()
 export class RawResultService {
   private readonly logger = new Logger(RawResultService.name);
@@ -82,10 +81,11 @@ export class RawResultService {
       );
     }
 
-    const hasEndReport = await this.refereeReportRepository.existsByRaceIdAndType(
-      raceId,
-      RefereeReportType.END,
-    );
+    const hasEndReport =
+      await this.refereeReportRepository.existsByRaceIdAndType(
+        raceId,
+        RefereeReportType.END,
+      );
     if (!hasEndReport) {
       throw new BadRequestException(
         'Chưa có report kết thúc cho race này. Referee phải tạo report trước khi confirm final rank',
