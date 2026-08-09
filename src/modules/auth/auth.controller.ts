@@ -40,24 +40,6 @@ export class AuthController {
     return this.authService.login(dto);
   }
 
-  // @Get('google')
-  // @UseGuards(AuthGuard('google'))
-  // async googleAuth(@Request() req) {}
-
-  // // Link Google gọi về sau khi user đăng nhập thành công
-  // @Get('google/callback')
-  // @UseGuards(AuthGuard('google'))
-  // async googleAuthRedirect(@Request() req, @Response() res) {
-  //   // Gọi service để xử lý dữ liệu và tạo JWT format của riêng BE
-  //   const result = await this.authService.loginWithGoogle(req.user);
-
-  //   // Trả JWT về cho Client. Cách đơn giản nhất là chuyển hướng kèm token trên URL,
-  //   // hoặc bạn có thể render ra JSON tùy cấu trúc dự án.
-  //   return res.redirect(
-  //     `http://localhost:5173/oauth-success?token=${result.access_token}`,
-  //   );
-  // }
-
   // Link kích hoạt đăng nhập từ trình duyệt: http://localhost:3000/auth/google
   @Get('google')
   @UseGuards(AuthGuard('google'))
@@ -130,4 +112,22 @@ export class AuthController {
   getProfile(@Request() req: any): ResponseUserDto {
     return this.authService.getProfile(req.user);
   }
+
+  // @Get('google')
+  // @UseGuards(AuthGuard('google'))
+  // async googleAuth(@Request() req) {}
+
+  // // Link Google gọi về sau khi user đăng nhập thành công
+  // @Get('google/callback')
+  // @UseGuards(AuthGuard('google'))
+  // async googleAuthRedirect(@Request() req, @Response() res) {
+  //   // Gọi service để xử lý dữ liệu và tạo JWT format của riêng BE
+  //   const result = await this.authService.loginWithGoogle(req.user);
+
+  //   // Trả JWT về cho Client. Cách đơn giản nhất là chuyển hướng kèm token trên URL,
+  //   // hoặc bạn có thể render ra JSON tùy cấu trúc dự án.
+  //   return res.redirect(
+  //     `http://localhost:5173/oauth-success?token=${result.access_token}`,
+  //   );
+  // }
 }
