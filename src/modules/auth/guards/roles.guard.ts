@@ -35,7 +35,7 @@ export class RolesGuard implements CanActivate {
 
     if (!hasRole) {
       throw new ForbiddenException(
-        'Bạn không có quyền thực hiện hành động này',
+        'Role không phù hợp, bạn không có quyền thực hiện hành động này',
       );
     }
 
