@@ -228,29 +228,6 @@ export class AuthService {
     });
   }
 
-  // loginWithGoogle(googleUser: GoogleUserPayload | undefined) {
-  //   if (!googleUser) {
-  //     return { message: 'No user from google' };
-  //   }
-
-  //   // Giả sử lấy được thông tin user từ DB bao gồm id và role:
-  //   const internalUser = {
-  //     id: 'user_uuid_123',
-  //     email: googleUser.email, // ESLint đã biết chắc chắn đây là string, không còn là any
-  //     role: 'USER',
-  //   };
-
-  //   const payload = {
-  //     sub: internalUser.id,
-  //     email: internalUser.email,
-  //     role: internalUser.role,
-  //   };
-
-  //   return {
-  //     access_token: this.jwtService.sign(payload),
-  //   };
-  // }
-
   // Luồng xử lý đăng nhập bằng Google OAuth2 công phá trực tiếp vào DB
   async loginWithGoogle(
     googleUser: GoogleUserPayload | undefined,
@@ -354,4 +331,27 @@ export class AuthService {
       excludeExtraneousValues: true,
     });
   }
+
+  // loginWithGoogle(googleUser: GoogleUserPayload | undefined) {
+  //   if (!googleUser) {
+  //     return { message: 'No user from google' };
+  //   }
+
+  //   // Giả sử lấy được thông tin user từ DB bao gồm id và role:
+  //   const internalUser = {
+  //     id: 'user_uuid_123',
+  //     email: googleUser.email, // ESLint đã biết chắc chắn đây là string, không còn là any
+  //     role: 'USER',
+  //   };
+
+  //   const payload = {
+  //     sub: internalUser.id,
+  //     email: internalUser.email,
+  //     role: internalUser.role,
+  //   };
+
+  //   return {
+  //     access_token: this.jwtService.sign(payload),
+  //   };
+  // }
 }
