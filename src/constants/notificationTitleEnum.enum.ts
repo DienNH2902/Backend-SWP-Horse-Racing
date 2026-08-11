@@ -1,5 +1,3 @@
-// src/constants/notificationTitle.enum.ts
-
 export enum NotificationTitleEnum {
   DEPOSIT_SUCCESS = 'Nạp tiền thành công',
   DEPOSIT_FAILED = 'Nạp tiền thất bại',
