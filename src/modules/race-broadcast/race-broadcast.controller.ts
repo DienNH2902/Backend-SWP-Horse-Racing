@@ -5,6 +5,7 @@ import {
   ApiParam,
   ApiQuery,
   ApiTags,
+  BadRequestException
 } from '@nestjs/swagger';
 import { RaceBroadcastService } from './race-broadcast.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -35,6 +36,9 @@ export class RaceBroadcastController {
     @Query('fromTick') fromTick?: string,
   ) {
     const startFrom = fromTick ? parseInt(fromTick, 10) : 0;
+    if (!Number.isInteger(startFrom)) {
+      throw new BadRequestException('fromTick phải là một số nguyên hợp lệ');
+    }
     return await this.broadcastService.startBroadcast(raceId, startFrom);
   }
 

@@ -60,7 +60,7 @@ export class RaceBroadcastService implements OnModuleInit {
   }
 
   // ── LIVE: Referee trigger 
-  async startBroadcast(
+async startBroadcast(
     raceId: string,
     fromTick = 0,
   ): Promise<{ message: string }> {
@@ -88,24 +88,27 @@ export class RaceBroadcastService implements OnModuleInit {
       await this.raceRepo.updateStatus(raceId, RaceStatusEnum.ONGOING);
     }
 
-    await this.raceRepo.updateStatus(raceId, RaceStatusEnum.ONGOING);
     this.activeBroadcasts.add(raceId);
 
-    // 1. Lấy danh sách tất cả các user có vai trò SPECTATOR
-    const spectators = await this.spectatorProfileModel.find().lean();
+    try {
+      const spectators = await this.spectatorProfileModel.find().lean();
 
-    // 2. Map dữ liệu tạo notification cho từng Spectator
-    if (spectators.length > 0) {
-      const notifications = spectators.map((spectator) => ({
-        userId: spectator.userId,
-        type: NotificationTypeEnum.RACE_BROADCAST_STARTED,
-        title: NotificationTitleEnum.RACE_BROADCAST_STARTED,
-        content: `Cuộc đua ${race.name || raceId} đã chính thức bắt đầu trực tiếp!`,
-        isRead: false,
-      }));
+      if (spectators.length > 0) {
+        const notifications = spectators.map((spectator) => ({
+          userId: spectator.userId,
+          type: NotificationTypeEnum.RACE_BROADCAST_STARTED,
+          title: NotificationTitleEnum.RACE_BROADCAST_STARTED,
+          content: `Cuộc đua ${race.name || raceId} đã chính thức bắt đầu trực tiếp!`,
+          isRead: false,
+        }));
 
-      // 3. Insert hàng loạt vào DB
-      await this.notificationRepository.createMany(notifications);
+        await this.notificationRepository.createMany(notifications);
+      }
+    } catch (err: any) {
+      this.logger.error(
+        `[BROADCAST] Gửi notification thất bại cho ${raceId}: ${err?.message}`,
+      );
+      // không throw — broadcast vẫn tiếp tục chạy dù notification lỗi
     }
 
     this.logger.log(
