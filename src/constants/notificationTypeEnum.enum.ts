@@ -1,5 +1,3 @@
-// src/constants/notificationType.enum.ts
-
 export enum NotificationTypeEnum {
   // --- Hệ thống tài chính (Wallet / Payment) ---
   DEPOSIT_SUCCESS = 'Deposit_success',
