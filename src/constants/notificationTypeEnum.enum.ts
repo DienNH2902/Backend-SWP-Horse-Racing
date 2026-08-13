@@ -9,7 +9,7 @@ export enum NotificationTypeEnum {
   REWARD_RECEIVED = 'Reward_received', // Nài ngựa nhận được tiền thưởng giải đấu
 
   // --- Hệ thống giao kèo / Thư mời (Invitation / Contract) ---
-  INVITATION_RECEIVED = 'Invitation_received', // Nài ngựa nhận được lời mời mới
+  INVITATION_RECEIVED = 'Invitation_received', // Nài ngựa nhận được lời mời mới từ chủ ngựa
   INVITATION_SENT = 'Invitation_sent', // Nài ngựa nhận được lời mời mới
   INVITATION_ACCEPTED = 'Invitation_accepted', // Chủ ngựa nhận thông báo nài đã đồng ý
   INVITATION_REJECTED = 'Invitation_rejected', // Chủ ngựa nhận thông báo nài đã từ chối
