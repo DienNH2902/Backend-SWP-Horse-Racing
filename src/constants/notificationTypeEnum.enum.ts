@@ -27,7 +27,7 @@ export enum NotificationTypeEnum {
   JOCKEY_INJURED = 'Jockey_injured', // Cảnh báo nài gặp chấn thương (gửi ban tổ chức/chủ ngựa)
 
   // --- Tài khoản hệ thống (Account) ---
-  ACCOUNT_LOCKED = 'Account_locked',
+  ACCOUNT_LOCKED = 'Account_locked', // Tài khoản đã bị khóa
   PROFILE_VERIFIED = 'Profile_verified',
   BALANCE_NOT_ENOUGH = 'Balance_not_enough',
 
