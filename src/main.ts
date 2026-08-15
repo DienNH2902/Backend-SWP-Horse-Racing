@@ -5,6 +5,7 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
+import { RedisIoAdapter } from '../src/modules/redis/redis-io.adapter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -61,6 +62,14 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+
+  //phải connect Redis + gắn adapter TRƯỚC app.listen(),
+  // nếu không client WS đầu tiên connect vào lúc adapter chưa sẵn sàng.  
+  
+  const redisIoAdapter = new RedisIoAdapter(app);
+  await redisIoAdapter.connectToRedis();
+  app.useWebSocketAdapter(redisIoAdapter);
 
   // app.useStaticAssets(join(__dirname, '..', 'uploads'), {
   //   prefix: '/static/',

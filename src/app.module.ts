@@ -30,6 +30,7 @@ import { PrizeDistributionModule } from './modules/prize-distribution/prize-dist
 import { BetModule } from './modules/bet/bet.module';
 import { ReportModule } from './modules/report/report.module';
 import { RaceScheduleModule } from './modules/schedule/schedule.module';
+import { RedisModule } from './modules/redis/redis.module';
 
 @Module({
   imports: [
@@ -100,6 +101,7 @@ import { RaceScheduleModule } from './modules/schedule/schedule.module';
     BetModule,
     ReportModule,
     RaceScheduleModule,
+    RedisModule
   ],
   controllers: [AppController],
   providers: [AppService],

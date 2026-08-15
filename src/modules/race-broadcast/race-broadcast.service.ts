@@ -1,10 +1,12 @@
 import {
+  Inject,
   Injectable,
   Logger,
   BadRequestException,
   NotFoundException,
   OnModuleInit,
 } from '@nestjs/common';
+import Redis from 'ioredis';  
 import {
   RaceBroadcastGateway,
   RaceTickFrame,
@@ -22,11 +24,15 @@ import { NotificationTypeEnum } from 'src/constants/notificationTypeEnum.enum';
 import { NotificationTitleEnum } from 'src/constants/notificationTitleEnum.enum';
 import { InjectModel } from '@nestjs/mongoose';
 import { SpectatorProfile } from '../user/schemas/spectator-profile.schema';
+import { REDIS_CLIENT } from '../redis/redis.constants';
 
 import { PaginatedBroadcastRacesDto } from './dto/broadcast-race-list.dto';
 import { Model } from 'mongoose';
 
 const TICK_INTERVAL_MS = 500;
+// TTL cho mọi key Redis liên quan tới 1 lần broadcast/replay,
+// để nếu process crash mà không kịp cleanup() thì key vẫn tự hết hạn thay vì leak.
+const BROADCAST_STATE_TTL_SECONDS = 60 * 60 * 3; // 3h
 
 @Injectable()
 export class RaceBroadcastService implements OnModuleInit {
