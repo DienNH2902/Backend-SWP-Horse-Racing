@@ -28,7 +28,7 @@ export enum NotificationTypeEnum {
 
   // --- Tài khoản hệ thống (Account) ---
   ACCOUNT_LOCKED = 'Account_locked', // Tài khoản đã bị khóa
-  PROFILE_VERIFIED = 'Profile_verified',
+  PROFILE_VERIFIED = 'Profile_verified', // Xác thực tài khoản
   BALANCE_NOT_ENOUGH = 'Balance_not_enough',
 
   // Hệ thống
