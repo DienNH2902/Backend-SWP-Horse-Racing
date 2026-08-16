@@ -39,15 +39,15 @@ export class RaceBroadcastService implements OnModuleInit {
   private readonly logger = new Logger(RaceBroadcastService.name);
 
   // Live broadcast sessions
-  private readonly activeBroadcasts = new Set<string>();
+  // private readonly activeBroadcasts = new Set<string>();
 
-  // Replay sessions đang chạy — tránh 2 replay loop chồng nhau cho cùng raceId
-  private readonly activeReplays = new Set<string>();
+  // // Replay sessions đang chạy — tránh 2 replay loop chồng nhau cho cùng raceId
+  // private readonly activeReplays = new Set<string>();
 
-  // Snapshot tick hiện tại để client join muộn catch-up
-  // private readonly currentSnapshots = new Map<string, RaceTickFrame>();
-  private readonly currentSnapshots = new Map<string, Map<string, HorseTickState>>();
-  private readonly currentSnapshotTick = new Map<string, number>(); // raceId -> tick mới nhất
+  // // Snapshot tick hiện tại để client join muộn catch-up
+  // // private readonly currentSnapshots = new Map<string, RaceTickFrame>();
+  // private readonly currentSnapshots = new Map<string, Map<string, HorseTickState>>();
+  // private readonly currentSnapshotTick = new Map<string, number>(); 
 
   constructor(
     private readonly gateway: RaceBroadcastGateway,
@@ -59,14 +59,28 @@ export class RaceBroadcastService implements OnModuleInit {
     private readonly registrationRepo: RegistrationRepository, 
     @InjectModel(SpectatorProfile.name)
     private readonly spectatorProfileModel: Model<SpectatorProfile>,
+    @Inject(REDIS_CLIENT) private readonly redis: Redis,
   ) {}
 
   onModuleInit() {
     this.gateway.setBroadcastService(this);
   }
 
+  private activeBroadcastKey(raceId: string): string {
+    return `broadcast:active:${raceId}`;
+  }
+  private activeReplayKey(raceId: string): string {
+    return `replay:active:${raceId}`;
+  }
+  private snapshotKey(raceId: string): string {
+    return `broadcast:snapshot:${raceId}`;
+  }
+  private snapshotTickKey(raceId: string): string {
+    return `broadcast:snapshot:tick:${raceId}`;
+  }
+
   // ── LIVE: Referee trigger 
-async startBroadcast(
+  async startBroadcast(
     raceId: string,
     fromTick = 0,
   ): Promise<{ message: string }> {
@@ -80,64 +94,84 @@ async startBroadcast(
       );
     }
 
-    if (this.activeBroadcasts.has(raceId)) {
+    // từ Set.has() (không share giữa nhiều instance) sang
+    // SET NX EX atomic trên Redis. Đây vừa là check "đã broadcast chưa"
+    // vừa là acquire lock cùng lúc, tránh race condition giữa 2 request
+    // /2 instance đến gần như đồng thời.
+    const lockAcquired = await this.redis.set(
+      this.activeBroadcastKey(raceId),
+      '1',
+      'EX',
+      BROADCAST_STATE_TTL_SECONDS,
+      'NX',
+    );
+    if (lockAcquired !== 'OK') {
       throw new BadRequestException('Race này đang được broadcast rồi');
     }
 
-    const { tickMap, eventMap, maxTick } = await this.loadRaceData(raceId);
-
-    if (fromTick < 0 || fromTick > maxTick) {
-      throw new BadRequestException(`fromTick phải trong khoảng 0–${maxTick}`);
-    }
-
-    if (race.status === RaceStatusEnum.SIMULATED) {
-      await this.raceRepo.updateStatus(raceId, RaceStatusEnum.ONGOING);
-    }
-
-    this.activeBroadcasts.add(raceId);
-
+    // bọc try/catch để nếu có lỗi xảy ra SAU khi acquire lock
+    // (validate fromTick, loadRaceData throw...) thì giải phóng lock ngay,
+    // không để race bị kẹt ở trạng thái "đang broadcast" cho tới khi TTL hết hạn.
     try {
-      const spectators = await this.spectatorProfileModel.find().lean();
+      const { tickMap, eventMap, maxTick } = await this.loadRaceData(raceId);
 
-      if (spectators.length > 0) {
-        const notifications = spectators.map((spectator) => ({
-          userId: spectator.userId,
-          type: NotificationTypeEnum.RACE_BROADCAST_STARTED,
-          title: NotificationTitleEnum.RACE_BROADCAST_STARTED,
-          content: `Cuộc đua ${race.name || raceId} đã chính thức bắt đầu trực tiếp!`,
-          isRead: false,
-        }));
-
-        await this.notificationRepository.createMany(notifications);
+      if (!Number.isInteger(fromTick) || fromTick < 0 || fromTick > maxTick) {
+        throw new BadRequestException(`fromTick phải là số nguyên trong khoảng 0–${maxTick}`);
       }
-    } catch (err: any) {
-      this.logger.error(
-        `[BROADCAST] Gửi notification thất bại cho ${raceId}: ${err?.message}`,
+
+      if (race.status === RaceStatusEnum.SIMULATED) {
+        await this.raceRepo.updateStatus(raceId, RaceStatusEnum.ONGOING);
+      }
+
+      try {
+        const spectators = await this.spectatorProfileModel.find().lean();
+
+        if (spectators.length > 0) {
+          const notifications = spectators.map((spectator) => ({
+            userId: spectator.userId,
+            type: NotificationTypeEnum.RACE_BROADCAST_STARTED,
+            title: NotificationTitleEnum.RACE_BROADCAST_STARTED,
+            content: `Cuộc đua ${race.name || raceId} đã chính thức bắt đầu trực tiếp!`,
+            isRead: false,
+          }));
+
+          await this.notificationRepository.createMany(notifications);
+        }
+      } catch (err: any) {
+        this.logger.error(
+          `[BROADCAST] Gửi notification thất bại cho ${raceId}: ${err?.message}`,
+        );
+        // không throw — broadcast vẫn tiếp tục chạy dù notification lỗi
+      }
+
+      this.logger.log(
+        `[BROADCAST] Live race ${raceId} từ tick ${fromTick}/${maxTick}`,
       );
-      // không throw — broadcast vẫn tiếp tục chạy dù notification lỗi
+
+      // Chạy async — không block response
+      this.runBroadcastLoop(
+        raceId,
+        maxTick,
+        tickMap,
+        eventMap,
+        fromTick,
+        'live',
+      ).catch((err: any) => {
+        this.logger.error(`[BROADCAST] ❌ ${raceId}: ${err?.message}`);
+        this.cleanup(raceId).catch((cleanupErr: any) =>
+          this.logger.error(`[BROADCAST] Cleanup lỗi ${raceId}: ${cleanupErr?.message}`),
+        );
+      });
+
+      const remaining = maxTick - fromTick + 1;
+      return {
+        message: `Broadcast bắt đầu từ tick ${fromTick}. ~${Math.round(remaining * 0.5)}s`,
+      };
+    } catch (err) {
+      // giải phóng lock ngay khi có lỗi xảy ra sau khi đã acquire
+      await this.redis.del(this.activeBroadcastKey(raceId));
+      throw err;
     }
-
-    this.logger.log(
-      `[BROADCAST] Live race ${raceId} từ tick ${fromTick}/${maxTick}`,
-    );
-
-    // Chạy async — không block response
-    this.runBroadcastLoop(
-      raceId,
-      maxTick,
-      tickMap,
-      eventMap,
-      fromTick,
-      'live',
-    ).catch((err: any) => {
-      this.logger.error(`[BROADCAST] ❌ ${raceId}: ${err?.message}`);
-      this.cleanup(raceId);
-    });
-
-    const remaining = maxTick - fromTick + 1;
-    return {
-      message: `Broadcast bắt đầu từ tick ${fromTick}. ~${Math.round(remaining * 0.5)}s`,
-    };
   }
 
   // ── REPLAY: Tất cả role xem lại 
@@ -145,56 +179,60 @@ async startBroadcast(
     const race = await this.raceRepo.findById(raceId);
     if (!race) throw new NotFoundException('Không tìm thấy race');
 
-
-   // Không cho replay khi race đang live broadcast
-   if (this.activeBroadcasts.has(raceId)) {
-     throw new BadRequestException(
-       'Race này đang broadcast live, không thể replay',
-     );
-   }
-
-   // Không cho chạy 2 replay loop chồng nhau cho cùng raceId
-   if (this.activeReplays.has(raceId)) {
-     throw new BadRequestException(
-       'Race này đang được replay rồi, vui lòng đợi replay hiện tại kết thúc',
-     );
-   }
-
-    // Replay được khi race đã Finished hoặc Ongoing
-    const replayableStatuses = [
-      RaceStatusEnum.FINISHED,
-      RaceStatusEnum.ONGOING,
-      // RaceStatusEnum.SIMULATED,
-    ];
-    if (!replayableStatuses.includes(race.status as RaceStatusEnum)) {
+    // >>> THAY ĐỔI — this.activeBroadcasts.has(raceId) → await isBroadcasting(raceId) (Redis, async)
+    if (await this.isBroadcasting(raceId)) {
       throw new BadRequestException(
-       'Race chưa được broadcast — chỉ có thể replay khi race đang ONGOING hoặc đã FINISHED'
+        'Race này đang broadcast live, không thể replay',
       );
     }
 
-    const { tickMap, eventMap, maxTick } = await this.loadRaceData(raceId);
+    const lockAcquired = await this.redis.set(
+      this.activeReplayKey(raceId),
+      '1',
+      'EX',
+      BROADCAST_STATE_TTL_SECONDS,
+      'NX',
+    );
+    if (lockAcquired !== 'OK') {
+      throw new BadRequestException(
+        'Race này đang được replay rồi, vui lòng đợi replay hiện tại kết thúc',
+      );
+    }
 
-    this.logger.log(`[REPLAY] Race ${raceId} — ${maxTick + 1} ticks`);
+    try {
+      const replayableStatuses = [
+        RaceStatusEnum.FINISHED,
+        RaceStatusEnum.ONGOING,
+      ];
+      if (!replayableStatuses.includes(race.status as RaceStatusEnum)) {
+        throw new BadRequestException(
+         'Race chưa được broadcast — chỉ có thể replay khi race đang ONGOING hoặc đã FINISHED'
+        );
+      }
 
-    this.activeReplays.add(raceId);
+      const { tickMap, eventMap, maxTick } = await this.loadRaceData(raceId);
 
-    // Replay dùng namespace riêng để không conflict với live
-    // Chạy async
-    this.runBroadcastLoop(
-      raceId,
-      maxTick,
-      tickMap,
-      eventMap,
-      0,
-      'replay',
-    ).catch((err: any) => {
-      this.logger.error(`[REPLAY] ❌ ${raceId}: ${err?.message}`);
-      this.activeReplays.delete(raceId);
-    });
+      this.logger.log(`[REPLAY] Race ${raceId} — ${maxTick + 1} ticks`);
 
-    return {
-      message: `Replay bắt đầu. ~${Math.round((maxTick + 1) * 0.5)}s`,
-    };
+      this.runBroadcastLoop(
+        raceId,
+        maxTick,
+        tickMap,
+        eventMap,
+        0,
+        'replay',
+      ).catch((err: any) => {
+        this.logger.error(`[REPLAY] ❌ ${raceId}: ${err?.message}`);
+        this.redis.del(this.activeReplayKey(raceId)).catch(() => undefined);
+      });
+
+      return {
+        message: `Replay bắt đầu. ~${Math.round((maxTick + 1) * 0.5)}s`,
+      };
+    } catch (err) {
+      await this.redis.del(this.activeReplayKey(raceId));
+      throw err;
+    }
   }
 
   // ── Load tick + event data từ DB 
@@ -230,7 +268,7 @@ async startBroadcast(
     return { tickMap, eventMap, maxTick };
   }
 
-  // ── Loop push tick mỗi 500ms ──────────────────────────────────────────────
+  // Loop push tick mỗi 500ms 
   private async runBroadcastLoop(
     raceId: string,
     maxTick: number,
@@ -243,7 +281,6 @@ async startBroadcast(
       const frameTicks = tickMap.get(t) ?? [];
       const frameEvents = eventMap.get(t) ?? [];
 
-      // Build tick frame
       const tickFrame: RaceTickFrame = {
         tickNumber: t,
         horses: frameTicks.map((tick) => ({
@@ -254,25 +291,20 @@ async startBroadcast(
         })),
       };
 
-      // Chỉ lưu snapshot cho live broadcast (không phải replay)
-      // if (mode === 'live') {
-      //   this.currentSnapshots.set(raceId, tickFrame);
-      // }
-      if (mode === 'live') {
-        let horseMap = this.currentSnapshots.get(raceId);
-        if (!horseMap) {
-          horseMap = new Map<string, HorseTickState>();
-          this.currentSnapshots.set(raceId, horseMap);
-        }
+      if (mode === 'live' && tickFrame.horses.length > 0) {
+        const pipeline = this.redis.pipeline();
         for (const h of tickFrame.horses) {
-          horseMap.set(h.horseId, h); // chỉ ghi đè ngựa có mặt ở tick này, ngựa khác giữ nguyên
+          pipeline.hset(this.snapshotKey(raceId), h.horseId, JSON.stringify(h));
         }
-        this.currentSnapshotTick.set(raceId, t);
-      }      
+        // HSET không nhận EX trực tiếp — phải EXPIRE riêng, nếu không
+        // snapshot của race bị crash sẽ leak vĩnh viễn trong Redis.
+        pipeline.expire(this.snapshotKey(raceId), BROADCAST_STATE_TTL_SECONDS);
+        pipeline.set(this.snapshotTickKey(raceId), t, 'EX', BROADCAST_STATE_TTL_SECONDS);
+        await pipeline.exec();
+      }
 
       this.gateway.emitTick(raceId, tickFrame);
 
-      // Emit events tại tick này
       for (const event of frameEvents) {
         const eventFrame: RaceEventFrame = {
           tickNumber: t,
@@ -286,12 +318,10 @@ async startBroadcast(
       await this.sleep(TICK_INTERVAL_MS);
     }
 
-    // Xong
     if (mode === 'live') {
       await this.onLiveBroadcastFinished(raceId);
     } else {
       this.logger.log(`[REPLAY] Race ${raceId} replay xong`);
-      // Emit finished để FE biết replay xong
       const results = await this.rawResultRepo.findByRaceId(raceId);
       this.gateway.emitRaceFinished(raceId, {
         raceId,
@@ -301,7 +331,7 @@ async startBroadcast(
           finishedTime: r.finishedTime,
         })),
       });
-      this.activeReplays.delete(raceId);
+      await this.redis.del(this.activeReplayKey(raceId));
     }
   }
 
@@ -319,7 +349,7 @@ async startBroadcast(
       })),
     });
 
-    this.cleanup(raceId);
+    await this.cleanup(raceId);
     this.logger.log(`[BROADCAST] Chờ Referee confirm finalRank`);
   }
 
@@ -329,7 +359,7 @@ async startBroadcast(
     limit = 10,
   ): Promise<PaginatedBroadcastRacesDto> {
     const safePage = page < 1 ? 1 : page;
-    const safeLimit = limit < 1 ? 10 : Math.min(limit, 100); // chặn limit quá lớn
+    const safeLimit = limit < 1 ? 10 : Math.min(limit, 100);
     const skip = (safePage - 1) * safeLimit;
 
     const [races, total] = await Promise.all([
@@ -342,8 +372,12 @@ async startBroadcast(
     }
 
     const raceIds = races.map((r: any) => r._id);
-    const registrations =
-      await this.registrationRepo.findConfirmedByRaceIds(raceIds);
+
+    const [registrations, liveStatusMap, replayStatusMap] = await Promise.all([
+      this.registrationRepo.findConfirmedByRaceIds(raceIds),
+      this.batchCheckExists(raceIds.map((id: any) => this.activeBroadcastKey(id.toString()))),
+      this.batchCheckExists(raceIds.map((id: any) => this.activeReplayKey(id.toString()))),
+    ]);
 
     const participantsByRace = new Map<string, any[]>();
     for (const reg of registrations as any[]) {
@@ -373,8 +407,8 @@ async startBroadcast(
         totalSlots,
         filledSlots,
         availableSlots: totalSlots - filledSlots,
-        isLive: this.isBroadcasting(raceIdStr),
-        isReplaying: this.isReplaying(raceIdStr),
+        isLive: liveStatusMap.get(raceIdStr) ?? false,
+        isReplaying: replayStatusMap.get(raceIdStr) ?? false,
         participants: regs.map((r: any) => ({
           horseId: r.horseId?._id?.toString() ?? '',
           horseName: r.horseId?.name ?? 'Unknown Horse',
@@ -394,34 +428,52 @@ async startBroadcast(
     };
   }
 
-  // ── Cleanup 
-  private cleanup(raceId: string): void {
-    this.activeBroadcasts.delete(raceId);
-    this.currentSnapshots.delete(raceId);
-    this.currentSnapshotTick.delete(raceId);
+  private async batchCheckExists(keys: string[]): Promise<Map<string, boolean>> {
+    const map = new Map<string, boolean>();
+    if (keys.length === 0) return map;
+
+    const pipeline = this.redis.pipeline();
+    keys.forEach((k) => pipeline.exists(k));
+    const results = await pipeline.exec();
+
+    keys.forEach((key, idx) => {
+      const raceId = key.split(':').pop()!;
+      const exists = results?.[idx]?.[1] === 1;
+      map.set(raceId, exists);
+    });
+    return map;
   }
 
-  // ── Public helpers 
-  // getCurrentSnapshot(raceId: string): RaceTickFrame | null {
-  //   return this.currentSnapshots.get(raceId) ?? null;
-  // }
+  // ── Cleanup 
+  private async cleanup(raceId: string): Promise<void> {
+    await this.redis
+      .multi()
+      .del(this.activeBroadcastKey(raceId))
+      .del(this.snapshotKey(raceId))
+      .del(this.snapshotTickKey(raceId))
+      .exec();
+  }
 
-  getCurrentSnapshot(raceId: string): RaceTickFrame | null {
-    const horseMap = this.currentSnapshots.get(raceId);
-    if (!horseMap || horseMap.size === 0) return null;
+  // Public helpers 
+  async getCurrentSnapshot(raceId: string): Promise<RaceTickFrame | null> {
+    const horseMapRaw = await this.redis.hgetall(this.snapshotKey(raceId));
+    if (!horseMapRaw || Object.keys(horseMapRaw).length === 0) return null;
+
+    const tickStr = await this.redis.get(this.snapshotTickKey(raceId));
 
     return {
-      tickNumber: this.currentSnapshotTick.get(raceId) ?? 0,
-      horses: Array.from(horseMap.values()),
+      tickNumber: tickStr ? parseInt(tickStr, 10) : 0,
+      horses: Object.values(horseMapRaw).map((v) => JSON.parse(v) as HorseTickState),
     };
   }
 
-  isBroadcasting(raceId: string): boolean {
-    return this.activeBroadcasts.has(raceId);
+  async isBroadcasting(raceId: string): Promise<boolean> {
+    return (await this.redis.exists(this.activeBroadcastKey(raceId))) === 1;
   }
 
-  isReplaying(raceId: string): boolean {
-    return this.activeReplays.has(raceId);
+  // >>> THAY ĐỔI — đồng bộ → async (Redis EXISTS)
+  async isReplaying(raceId: string): Promise<boolean> {
+    return (await this.redis.exists(this.activeReplayKey(raceId))) === 1;
   }
 
   private sleep(ms: number): Promise<void> {

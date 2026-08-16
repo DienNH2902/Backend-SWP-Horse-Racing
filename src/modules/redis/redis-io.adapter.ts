@@ -4,6 +4,7 @@ import { INestApplicationContext, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ServerOptions } from 'socket.io';
 import { createAdapter } from '@socket.io/redis-adapter';
+import { buildRedisConnectionInput } from './redis.options';
 import Redis from 'ioredis';
 
 export class RedisIoAdapter extends IoAdapter {
@@ -18,16 +19,12 @@ export class RedisIoAdapter extends IoAdapter {
 
   async connectToRedis(): Promise<void> {
     const configService = this.app.get(ConfigService);
-    const redisOptions = {
-      host: configService.get<string>('REDIS_HOST', 'localhost'),
-      port: configService.get<number>('REDIS_PORT', 6379),
-      password: configService.get<string>('REDIS_PASSWORD') || undefined,
-    };
+    const connectionInput = buildRedisConnectionInput(configService);
 
-    // Pub/sub PHẢI dùng connection riêng, không share với REDIS_CLIENT
-    // dùng cho state (GET/SET/HSET...) — ioredis ở chế độ subscribe
-    // sẽ block mọi lệnh khác trên cùng 1 connection.
-    this.pubClient = new Redis(redisOptions);
+    this.pubClient =
+      typeof connectionInput === 'string'
+        ? new Redis(connectionInput)
+        : new Redis(connectionInput);
     this.subClient = this.pubClient.duplicate();
 
     this.pubClient.on('error', (err) =>
