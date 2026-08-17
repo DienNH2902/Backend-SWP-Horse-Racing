@@ -32,7 +32,7 @@ export enum NotificationTypeEnum {
   BALANCE_NOT_ENOUGH = 'Balance_not_enough', // không đủ số dư
 
   // Hệ thống
-  SYSTEM_ALERT = 'System_alert',
+  SYSTEM_ALERT = 'System_alert', // Thông báo hệ thống
 
   PLACE_BET_SUCCESS = 'Place_bet_success',
   UPDATE_BET_SUCCESS = 'Update_bet_success',
