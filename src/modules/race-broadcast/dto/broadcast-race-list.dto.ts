@@ -30,6 +30,6 @@ export class BroadcastRaceItemDto {
   filledSlots: number;
   availableSlots: number;
   isLive: boolean;
-  isReplaying: boolean;
+  // isReplaying: boolean;
   participants: BroadcastParticipantDto[];
 }

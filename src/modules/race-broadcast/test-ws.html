@@ -12,7 +12,7 @@
 
     .row { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
 
-    input, button {
+    input, button, select {
       padding: 8px 12px;
       border-radius: 6px;
       border: 1px solid #444;
@@ -21,6 +21,7 @@
     }
     input { background: #16213e; color: #eee; flex: 1; min-width: 200px; }
     input.small { flex: none; width: 110px; min-width: 0; }
+    select { background: #16213e; color: #eee; }
     button {
       background: #e94560;
       color: white;
@@ -40,6 +41,8 @@
     button.cyan { background: #16a085; }
     button.cyan:hover { background: #128c76; }
     button:disabled { background: #333; color: #777; cursor: not-allowed; }
+
+    input[type="range"] { flex: 1; min-width: 200px; accent-color: #9b59b6; }
 
     .status {
       padding: 6px 14px;
@@ -177,6 +180,9 @@
     }
     .status-badge.on  { background: #16a085; color: #fff; }
     .status-badge.off { background: #2a2a45; color: #777; }
+
+    #replay-controls { display: none; }
+    #replay-tick-label { font-size: 12px; color: #aaa; width: 90px; flex-shrink: 0; }
   </style>
 </head>
 <body>
@@ -203,16 +209,37 @@
 
 <!-- REST API triggers -->
 <div class="section">
-  <h4>REST API — trigger broadcast<span class="badge">gọi thẳng, không cần Postman</span></h4>
+  <h4>REST API — Live broadcast (qua WebSocket)<span class="badge">Referee</span></h4>
   <div class="row">
     <input id="inp-from-tick" class="small" type="number" min="0" placeholder="fromTick" value="0" />
     <button onclick="startLive()" class="blue">▶ Start Live (Referee)</button>
-    <button onclick="startReplay()" class="purple">🔁 Start Replay</button>
     <button onclick="checkStatus()" class="cyan">ℹ️ Check Status</button>
   </div>
   <div class="row" id="status-badges" style="display:none">
     <span id="badge-live" class="status-badge">● Live: —</span>
-    <span id="badge-replay" class="status-badge">● Replay: —</span>
+  </div>
+</div>
+
+<!-- Client-driven replay -->
+<div class="section">
+  <h4>Replay — client-driven <span class="badge">GET /replay-data 1 lần, phát local, không dùng socket</span></h4>
+  <div class="row">
+    <button onclick="loadReplayData()" class="purple">🔁 Load Replay Data</button>
+  </div>
+  <div class="row" id="replay-controls">
+    <button onclick="playReplay()" class="green">▶ Play</button>
+    <button onclick="pauseReplay()" class="gray">⏸ Pause</button>
+    <select id="replay-speed" onchange="setReplaySpeed(this.value)">
+      <option value="0.5">0.5x</option>
+      <option value="1" selected>1x</option>
+      <option value="2">2x</option>
+      <option value="4">4x</option>
+    </select>
+  </div>
+  <div class="row" id="replay-controls-2" style="display:none">
+    <span id="replay-tick-label">Tick: 0 / 0</span>
+    <input id="replay-slider" type="range" min="0" max="0" value="0"
+           oninput="seekReplay(parseInt(this.value, 10))" />
   </div>
 </div>
 
@@ -242,6 +269,15 @@
     '#9b59b6','#1abc9c','#e67e22','#e91e63'
   ];
   const EMOJIS = ['🐴','🐎','🦄','🐴','🐎','🦄','🐴','🐎'];
+
+  // ── Client-driven replay state ───────────────────────────────────────────
+  // KHÔNG dùng socket cho replay nữa — chỉ fetch 1 lần rồi tự chạy local.
+  let replayData = null;         // { raceId, maxTick, tickIntervalMs, ticks, events, results }
+  let replayEventsByTick = {};   // tickNumber -> events[]
+  let replayHorseState = {};     // horseId -> {horseId, progress, currentSpeed, lane} mới nhất
+  let replayTickIndex = 0;
+  let replayTimer = null;
+  let replaySpeedMultiplier = 1;
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   function getHost()  { return document.getElementById('inp-host').value.trim() || 'localhost:9000'; }
@@ -298,30 +334,21 @@
     await callApi('POST', `/race-broadcast/${raceId}/start?fromTick=${fromTick}`);
   }
 
-  async function startReplay() {
-    const raceId = getRaceId();
-    if (!raceId) { log('⚠️ Nhập Race ID', 'log-error'); return; }
-    await callApi('POST', `/race-broadcast/${raceId}/replay`);
-  }
-
+  // checkStatus() — SỬA: server không còn trả isReplaying (route /replay bị
+  // xoá, thay bằng GET /replay-data không có session để track), nên chỉ còn
+  // đọc isBroadcasting. Badge "Replay" cũ đã bỏ khỏi HTML luôn.
   async function checkStatus() {
     const raceId = getRaceId();
     if (!raceId) { log('⚠️ Nhập Race ID', 'log-error'); return; }
     const data = await callApi('GET', `/race-broadcast/${raceId}/status`, { silentSuccess: true });
     if (data) {
-      log(`ℹ️ isBroadcasting=${data.isBroadcasting}  isReplaying=${data.isReplaying}`, 'log-api');
+      log(`ℹ️ isBroadcasting=${data.isBroadcasting}`, 'log-api');
 
       const badges = document.getElementById('status-badges');
       const badgeLive = document.getElementById('badge-live');
-      const badgeReplay = document.getElementById('badge-replay');
-
       badges.style.display = 'flex';
-
       badgeLive.textContent = `● Live: ${data.isBroadcasting ? 'ON' : 'off'}`;
       badgeLive.className = 'status-badge ' + (data.isBroadcasting ? 'on' : 'off');
-
-      badgeReplay.textContent = `● Replay: ${data.isReplaying ? 'ON' : 'off'}`;
-      badgeReplay.className = 'status-badge ' + (data.isReplaying ? 'on' : 'off');
     }
   }
 
@@ -355,8 +382,6 @@
     const prog = document.getElementById(`prog-${horseId}`);
     if (!el) return;
 
-    // progress 0→1, track width - horse width = ~calc
-    // left% = progress × (100% - horse_width_percent)
     const pct = Math.min(progress * 96, 96);
     if (instant) el.style.transition = 'none';
     else el.style.transition = 'left 0.45s linear';
@@ -364,7 +389,186 @@
     if (prog) prog.textContent = (progress * 100).toFixed(1) + '%';
   }
 
-  // ── Connect ───────────────────────────────────────────────────────────────
+  // ── Client-driven replay ─────────────────────────────────────────────────
+
+  async function loadReplayData() {
+    const raceId = getRaceId();
+    if (!raceId) { log('⚠️ Nhập Race ID', 'log-error'); return; }
+
+    stopReplayTimer();
+
+    // GET /replay-data — trả TOÀN BỘ ticks/events/results 1 lần, không còn
+    // POST /replay tạo session server-side nữa.
+    const data = await callApi('GET', `/race-broadcast/${raceId}/replay-data`, { silentSuccess: true });
+    if (!data) return;
+
+    replayData = data;
+    replayEventsByTick = {};
+    data.events.forEach(ev => {
+      (replayEventsByTick[ev.tickNumber] ??= []).push(ev);
+    });
+    replayHorseState = {};
+    replayTickIndex = 0;
+
+    log(
+      `✓ Đã tải replay — ${data.maxTick + 1} ticks, ${data.events.length} events, ` +
+      `interval gốc ${data.tickIntervalMs}ms`,
+      'log-api',
+    );
+
+    // Gom danh sách ngựa từ TOÀN BỘ ticks (không chỉ tick 0) — phòng trường
+    // hợp tick 0 thiếu 1 ngựa nào đó, giống lý do phải merge theo horseId
+    // ở phần snapshot live.
+    const horseList = [];
+    const seen = new Set();
+    for (const frame of data.ticks) {
+      for (const h of frame.horses) {
+        if (!seen.has(h.horseId)) {
+          seen.add(h.horseId);
+          horseList.push(h);
+        }
+      }
+    }
+    initTrack(horseList);
+
+    document.getElementById('replay-controls').style.display = 'flex';
+    document.getElementById('replay-controls-2').style.display = 'flex';
+    const slider = document.getElementById('replay-slider');
+    slider.min = 0;
+    slider.max = data.maxTick;
+    slider.value = 0;
+
+    seekReplay(0);
+  }
+
+  // Merge toàn bộ tick 0..targetIndex theo horseId — GIỐNG HỆT logic merge
+  // server dùng cho live snapshot: ngựa không xuất hiện ở 1 tick nào đó
+  // (ví dụ đã về đích sớm) vẫn giữ nguyên progress cuối cùng thay vì "biến mất"
+  // khi tua (seek) tới sau thời điểm đó.
+  function computeReplayStateAt(targetIndex) {
+    const state = {};
+    for (let t = 0; t <= targetIndex && t < replayData.ticks.length; t++) {
+      for (const h of replayData.ticks[t].horses) {
+        state[h.horseId] = h;
+      }
+    }
+    return state;
+  }
+
+  function seekReplay(targetIndex) {
+    if (!replayData) return;
+    targetIndex = Math.max(0, Math.min(targetIndex, replayData.maxTick));
+
+    replayHorseState = computeReplayStateAt(targetIndex);
+    Object.values(replayHorseState).forEach(h => updateHorse(h.horseId, h.progress, true));
+
+    replayTickIndex = targetIndex;
+    document.getElementById('replay-slider').value = targetIndex;
+    document.getElementById('replay-tick-label').textContent = `Tick: ${targetIndex} / ${replayData.maxTick}`;
+    document.getElementById('tick-counter').textContent =
+      `Tick: ${targetIndex} / ${replayData.maxTick} (replay)`;
+
+    if (targetIndex >= replayData.maxTick) {
+      renderReplayResults();
+    } else {
+      document.getElementById('result-table').style.display = 'none';
+    }
+  }
+
+  function stepReplayForward() {
+    if (!replayData) return;
+    if (replayTickIndex >= replayData.maxTick) {
+      pauseReplay();
+      return;
+    }
+    replayTickIndex++;
+
+    const frame = replayData.ticks[replayTickIndex];
+    frame.horses.forEach(h => {
+      replayHorseState[h.horseId] = h;
+      updateHorse(h.horseId, h.progress);
+    });
+
+    (replayEventsByTick[replayTickIndex] || []).forEach(ev => {
+      const icons = { stumble: '💥', burst: '⚡', overtake: '🔄', lead_change: '🚩' };
+      const icon = icons[ev.eventType] || '❓';
+      log(
+        `${icon} [${ev.eventType.toUpperCase()}] tick=${ev.tickNumber} ` +
+        `horse=${ev.primaryHorseId.slice(-6)}` +
+        (ev.secondaryHorseId ? ` vs ${ev.secondaryHorseId.slice(-6)}` : ''),
+        'log-event',
+      );
+    });
+
+    document.getElementById('replay-slider').value = replayTickIndex;
+    document.getElementById('replay-tick-label').textContent = `Tick: ${replayTickIndex} / ${replayData.maxTick}`;
+    document.getElementById('tick-counter').textContent =
+      `Tick: ${replayTickIndex} / ${replayData.maxTick} (replay)`;
+
+    if (replayTickIndex % 10 === 0) log(`⏱ Replay tick ${replayTickIndex}`, 'log-tick');
+
+    if (replayTickIndex >= replayData.maxTick) {
+      pauseReplay();
+      renderReplayResults();
+    }
+  }
+
+  function playReplay() {
+    if (!replayData) { log('⚠️ Chưa tải replay data — bấm "Load Replay Data" trước', 'log-error'); return; }
+    if (replayTimer) return; // đang chạy rồi
+
+    if (replayTickIndex >= replayData.maxTick) seekReplay(0); // hết rồi → phát lại từ đầu
+
+    const intervalMs = replayData.tickIntervalMs / replaySpeedMultiplier;
+    replayTimer = setInterval(stepReplayForward, intervalMs);
+    log(`▶️ Play replay (x${replaySpeedMultiplier})`, 'log-system');
+  }
+
+  function pauseReplay() {
+    if (replayTimer) {
+      clearInterval(replayTimer);
+      replayTimer = null;
+      log('⏸ Pause replay', 'log-system');
+    }
+  }
+
+  function stopReplayTimer() {
+    if (replayTimer) { clearInterval(replayTimer); replayTimer = null; }
+  }
+
+  function setReplaySpeed(value) {
+    replaySpeedMultiplier = parseFloat(value);
+    if (replayTimer) { // đang chạy → restart interval theo speed mới ngay
+      stopReplayTimer();
+      playReplay();
+    }
+  }
+
+  function renderReplayResults() {
+    if (!replayData?.results?.length) return;
+    log('🏆 REPLAY tới đích! Kết quả:', 'log-finish');
+
+    const medals = ['🥇','🥈','🥉'];
+    const table = document.getElementById('result-table');
+    const rows  = document.getElementById('result-rows');
+    table.style.display = 'block';
+    rows.innerHTML = '';
+    replayData.results.forEach(r => {
+      const cls = r.rawRank <= 3 ? `rank-${r.rawRank}` : '';
+      const medal = medals[r.rawRank - 1] || '';
+      const row = document.createElement('div');
+      row.className = `result-row ${cls}`;
+      row.innerHTML = `
+        <span style="width:30px">${medal}</span>
+        <span style="width:24px">#${r.rawRank}</span>
+        <span>${r.horseId.slice(-12)}</span>
+        <span style="color:#aaa">${new Date(r.finishedTime).toLocaleTimeString()}</span>
+      `;
+      rows.appendChild(row);
+    });
+  }
+
+  // ── Connect (chỉ dùng cho LIVE — replay không dùng socket nữa) ────────────
   function connect() {
     if (socket?.connected) { log('Đã connected rồi', 'log-system'); return; }
 
@@ -396,31 +600,28 @@
       log('❌ Connect error: ' + err.message, 'log-error');
     });
 
-    // ── Events ───────────────────────────────────────────────────────────
+    // ── Events (LIVE) ───────────────────────────────────────────────────
     socket.on('joined', (data) => {
       log('🏇 Joined race: ' + data.raceId, 'log-system');
     });
 
-    // Catch-up: join giữa chừng
+    // Catch-up: join giữa chừng 1 buổi live đang chạy
     socket.on('race_snapshot', (data) => {
       log(`📸 Catch-up snapshot tick=${data.tickNumber} (${data.horses.length} ngựa)`, 'log-snap');
       if (!Object.keys(horses).length) {
         initTrack(data.horses);
       }
-      // Teleport ngay, không animate
       data.horses.forEach(h => updateHorse(h.horseId, h.progress, true));
       currentTick = data.tickNumber;
       document.getElementById('tick-counter').textContent =
         `Tick: ${currentTick} (catch-up)`;
     });
 
-    // Tick frame mỗi 500ms
+    // Tick frame mỗi 500ms — CHỈ còn xảy ra cho live, replay không emit qua đây nữa
     socket.on('race_tick', (frame) => {
       currentTick = frame.tickNumber;
       if (maxTick < currentTick) maxTick = currentTick;
 
-      // Init track lần đầu — bất kể tick nào, miễn có dữ liệu ngựa
-      // (phòng trường hợp join trễ và miss tick 0 / snapshot)
       let justInited = false;
       if (!Object.keys(horses).length && frame.horses.length) {
         initTrack(frame.horses);
@@ -433,13 +634,11 @@
       document.getElementById('tick-counter').textContent =
         `Tick: ${currentTick} / ~${maxTick}`;
 
-      // Log thưa hơn (mỗi 10 tick) để không spam
       if (frame.tickNumber % 10 === 0) {
         log(`⏱ Tick ${frame.tickNumber}`, 'log-tick');
       }
     });
 
-    // Event (stumble/burst/overtake/lead_change)
     socket.on('race_event', (event) => {
       const icons = {
         stumble: '💥', burst: '⚡',
@@ -454,7 +653,6 @@
       );
     });
 
-    // Kết thúc
     socket.on('race_finished', (data) => {
       log('🏆 RACE FINISHED! Kết quả:', 'log-finish');
 
@@ -464,7 +662,6 @@
         log(`  ${medal} Rank ${r.rawRank}: ${r.horseId.slice(-8)}`, 'log-finish');
       });
 
-      // Hiện bảng kết quả
       const table = document.getElementById('result-table');
       const rows  = document.getElementById('result-rows');
       table.style.display = 'block';
