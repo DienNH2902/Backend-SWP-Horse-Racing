@@ -9,13 +9,13 @@ export enum NotificationTypeEnum {
   REWARD_RECEIVED = 'Reward_received', // Nài ngựa nhận được tiền thưởng giải đấu
 
   // --- Hệ thống giao kèo / Thư mời (Invitation / Contract) ---
-  INVITATION_RECEIVED = 'Invitation_received', // Nài ngựa nhận được lời mời mới
+  INVITATION_RECEIVED = 'Invitation_received', // Nài ngựa nhận được lời mời mới từ chủ ngựa
   INVITATION_SENT = 'Invitation_sent', // Nài ngựa nhận được lời mời mới
   INVITATION_ACCEPTED = 'Invitation_accepted', // Chủ ngựa nhận thông báo nài đã đồng ý
   INVITATION_REJECTED = 'Invitation_rejected', // Chủ ngựa nhận thông báo nài đã từ chối
   CONTRACT_CANCELLED = 'Contract_cancelled', // Hợp đồng bị hủy bỏ
   CONTRACT_BREACHED = 'Contract_breached', // Hợp đồng bị vi phạm
-  CONTRACT_BREACHED_SENT = 'Contract_breached_sent',
+  CONTRACT_BREACHED_SENT = 'Contract_breached_sent', // Đã gửi hợp đồng vi phạm
   CONTRACT_BREACHED_SENT_REJECTED = 'Contract_breached_sent_rejected',
   CONTRACT_COMPLETED = 'Contract_completed', // Hợp đồng hoàn thành tốt đẹp
 
@@ -27,14 +27,14 @@ export enum NotificationTypeEnum {
   JOCKEY_INJURED = 'Jockey_injured', // Cảnh báo nài gặp chấn thương (gửi ban tổ chức/chủ ngựa)
 
   // --- Tài khoản hệ thống (Account) ---
-  ACCOUNT_LOCKED = 'Account_locked',
-  PROFILE_VERIFIED = 'Profile_verified',
-  BALANCE_NOT_ENOUGH = 'Balance_not_enough',
+  ACCOUNT_LOCKED = 'Account_locked', // Tài khoản đã bị khóa
+  PROFILE_VERIFIED = 'Profile_verified', // Xác thực tài khoản
+  BALANCE_NOT_ENOUGH = 'Balance_not_enough', // không đủ số dư
 
   // Hệ thống
-  SYSTEM_ALERT = 'System_alert',
+  SYSTEM_ALERT = 'System_alert', // Thông báo hệ thống
 
-  PLACE_BET_SUCCESS = 'Place_bet_success',
+  PLACE_BET_SUCCESS = 'Place_bet_success', // Thông báo đặt cược thành công
   UPDATE_BET_SUCCESS = 'Update_bet_success',
   BET_WIN = 'Bet_win',
   BET_LOSE = 'Bet_lose',
