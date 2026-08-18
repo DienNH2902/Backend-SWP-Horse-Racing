@@ -106,9 +106,9 @@ export class RaceBroadcastGateway
     this.logger.log(`[WS] Disconnected: ${client.id}`);
   }
 
-  // ── Join room ─────────────────────────────────────────────────────────────
+  // Join room 
   @SubscribeMessage('join_race')
-  handleJoinRace(
+  async handleJoinRace(  
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { raceId: string },
   ) {
@@ -116,13 +116,10 @@ export class RaceBroadcastGateway
     client.join(room);
     this.logger.log(`[WS] ${client.id} joined ${room}`);
 
-    // Catch-up: nếu race đang broadcast → gửi snapshot hiện tại
     if (this.broadcastService) {
-      const snapshot = this.broadcastService.getCurrentSnapshot(data.raceId);
+      const snapshot = await this.broadcastService.getCurrentSnapshot(data.raceId); 
       if (snapshot) {
-        this.logger.log(
-          `[WS] Catch-up tick=${snapshot.tickNumber} → ${client.id}`,
-        );
+        this.logger.log(`[WS] Catch-up tick=${snapshot.tickNumber} → ${client.id}`);
         client.emit('race_snapshot', {
           type: 'catch_up',
           tickNumber: snapshot.tickNumber,
@@ -137,7 +134,7 @@ export class RaceBroadcastGateway
     });
   }
 
-  // ── Leave room ────────────────────────────────────────────────────────────
+  // Leave room 
   @SubscribeMessage('leave_race')
   handleLeaveRace(
     @ConnectedSocket() client: Socket,
@@ -147,7 +144,7 @@ export class RaceBroadcastGateway
     this.logger.log(`[WS] ${client.id} left race:${data.raceId}`);
   }
 
-  // ── Emit methods ──────────────────────────────────────────────────────────
+  // Emit methods
   emitTick(raceId: string, payload: RaceTickFrame) {
     this.server.to(`race:${raceId}`).emit('race_tick', payload);
   }
