@@ -38,7 +38,7 @@ export enum NotificationTypeEnum {
   UPDATE_BET_SUCCESS = 'Update_bet_success', // Thông báo chỉnh sửa đặt cược thành công
   BET_WIN = 'Bet_win', // Cá cược thành công
   BET_LOSE = 'Bet_lose', // Cá cược thua cuộc
-  REFUND = 'Refund', // Hoàn trả
+  REFUND = 'Refund', // Hoàn trả điểm cược
   RACE_BROADCAST_STARTED = 'Race_broadcast-started',
   RACE_BROADCAST_END = 'Race_broadcast-end',
 }
