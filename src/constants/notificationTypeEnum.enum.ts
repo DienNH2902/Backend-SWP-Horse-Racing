@@ -40,5 +40,5 @@ export enum NotificationTypeEnum {
   BET_LOSE = 'Bet_lose', // Thông báo cá cược thua cuộc
   REFUND = 'Refund', // Thông báo hoàn trả điểm cược, tiền
   RACE_BROADCAST_STARTED = 'Race_broadcast-started', // Thông báo bắt đầu stream cho spectator xem trực tiếp đua ngựa
-  RACE_BROADCAST_END = 'Race_broadcast-end', // Thông báo trận đua kết thúc
+  RACE_BROADCAST_END = 'Race_broadcast-end', // Thông báo trận đua đã kết thúc
 }
